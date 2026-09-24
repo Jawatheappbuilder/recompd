@@ -21,6 +21,7 @@ import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
 import { Route as ProgressRecordsRouteImport } from './routes/progress.records'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
+import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTrainingRouteImport } from './routes/settings.training'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
@@ -86,6 +87,11 @@ const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsExercisesRoute = SettingsExercisesRouteImport.update({
+  id: '/exercises',
+  path: '/exercises',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/progress/records': typeof ProgressRecordsRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/progress/records': typeof ProgressRecordsRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress': typeof ProgressIndexRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/progress/records': typeof ProgressRecordsRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/progress/records'
     | '/settings/account'
     | '/settings/appearance'
+    | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/progress/records'
     | '/settings/account'
     | '/settings/appearance'
+    | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/progress/records'
     | '/settings/account'
     | '/settings/appearance'
+    | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
@@ -312,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAppearanceRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/exercises': {
+      id: '/settings/exercises'
+      path: '/exercises'
+      fullPath: '/settings/exercises'
+      preLoaderRoute: typeof SettingsExercisesRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/profile': {
       id: '/settings/profile'
       path: '/profile'
@@ -368,6 +387,7 @@ const ProgressRouteWithChildren = ProgressRoute._addFileChildren(
 interface SettingsRouteChildren {
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
+  SettingsExercisesRoute: typeof SettingsExercisesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTrainingRoute: typeof SettingsTrainingRoute
 }
@@ -375,6 +395,7 @@ interface SettingsRouteChildren {
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
+  SettingsExercisesRoute: SettingsExercisesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTrainingRoute: SettingsTrainingRoute,
 }
