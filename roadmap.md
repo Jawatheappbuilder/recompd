@@ -10,3 +10,4 @@
 - [ ] Build and validate the generated workout preview flow
 
 - [x] Build and validate the Active Workout experience
+- [ ] Refine Active Workout current styling, rest controls, supersets, and completed summary
