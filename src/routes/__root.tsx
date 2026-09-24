@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
+import { OnboardingProvider } from "@/components/recomp/onboarding-context";
 
 function NotFoundComponent() {
   return (
@@ -122,7 +123,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell><Outlet /></AppShell>
+      <OnboardingProvider><AppShell><Outlet /></AppShell></OnboardingProvider>
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

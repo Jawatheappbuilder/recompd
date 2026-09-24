@@ -12,7 +12,7 @@ export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
 });
 
-const genders: Gender[] = ["Woman", "Man", "Non-binary", "Prefer not to say"];
+const genders: Gender[] = ["Male", "Female", "Prefer not to say"];
 function ProfilePage() {
   const [preferences, setPreferences] = useUserPreferences();
   const [name, setName] = useState(""); const [height, setHeight] = useState(""); const [gender, setGender] = useState<Gender>("");

@@ -11,10 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuildRouteImport } from './routes/build'
+import { Route as CreateAccountRouteImport } from './routes/create-account'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WorkoutRouteImport } from './routes/workout'
+import { Route as OnboardingAboutRouteImport } from './routes/onboarding.about'
+import { Route as OnboardingTrainingRouteImport } from './routes/onboarding.training'
 import { Route as ProgressIndexRouteImport } from './routes/progress.index'
 import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
 import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
@@ -38,9 +45,29 @@ const BuildRoute = BuildRouteImport.update({
   path: '/build',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CreateAccountRoute = CreateAccountRouteImport.update({
+  id: '/create-account',
+  path: '/create-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GeneratedWorkoutRoute = GeneratedWorkoutRouteImport.update({
   id: '/generated-workout',
   path: '/generated-workout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -53,10 +80,25 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkoutRoute = WorkoutRouteImport.update({
   id: '/workout',
   path: '/workout',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingAboutRoute = OnboardingAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingTrainingRoute = OnboardingTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => OnboardingRoute,
 } as any)
 const ProgressIndexRoute = ProgressIndexRouteImport.update({
   id: '/',
@@ -122,10 +164,17 @@ const ProgressWorkoutIdRoute = ProgressWorkoutIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/create-account': typeof CreateAccountRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/progress': typeof ProgressRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
+  '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
+  '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
@@ -142,8 +191,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/create-account': typeof CreateAccountRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
+  '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
+  '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
@@ -161,10 +217,17 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/create-account': typeof CreateAccountRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/progress': typeof ProgressRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
+  '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
+  '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
@@ -183,10 +246,17 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/build'
+    | '/create-account'
+    | '/forgot-password'
     | '/generated-workout'
+    | '/login'
+    | '/onboarding'
     | '/progress'
     | '/settings'
+    | '/welcome'
     | '/workout'
+    | '/onboarding/about'
+    | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
@@ -203,8 +273,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/build'
+    | '/create-account'
+    | '/forgot-password'
     | '/generated-workout'
+    | '/login'
+    | '/onboarding'
+    | '/welcome'
     | '/workout'
+    | '/onboarding/about'
+    | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
@@ -221,10 +298,17 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/build'
+    | '/create-account'
+    | '/forgot-password'
     | '/generated-workout'
+    | '/login'
+    | '/onboarding'
     | '/progress'
     | '/settings'
+    | '/welcome'
     | '/workout'
+    | '/onboarding/about'
+    | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
@@ -242,9 +326,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuildRoute: typeof BuildRoute
+  CreateAccountRoute: typeof CreateAccountRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GeneratedWorkoutRoute: typeof GeneratedWorkoutRoute
+  LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   ProgressRoute: typeof ProgressRouteWithChildren
   SettingsRoute: typeof SettingsRouteWithChildren
+  WelcomeRoute: typeof WelcomeRoute
   WorkoutRoute: typeof WorkoutRoute
 }
 
@@ -264,11 +353,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuildRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/create-account': {
+      id: '/create-account'
+      path: '/create-account'
+      fullPath: '/create-account'
+      preLoaderRoute: typeof CreateAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/generated-workout': {
       id: '/generated-workout'
       path: '/generated-workout'
       fullPath: '/generated-workout'
       preLoaderRoute: typeof GeneratedWorkoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -285,12 +402,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workout': {
       id: '/workout'
       path: '/workout'
       fullPath: '/workout'
       preLoaderRoute: typeof WorkoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/about': {
+      id: '/onboarding/about'
+      path: '/about'
+      fullPath: '/onboarding/about'
+      preLoaderRoute: typeof OnboardingAboutRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/training': {
+      id: '/onboarding/training'
+      path: '/training'
+      fullPath: '/onboarding/training'
+      preLoaderRoute: typeof OnboardingTrainingRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/progress/': {
       id: '/progress/'
@@ -379,6 +517,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OnboardingRouteChildren {
+  OnboardingAboutRoute: typeof OnboardingAboutRoute
+  OnboardingTrainingRoute: typeof OnboardingTrainingRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingAboutRoute: OnboardingAboutRoute,
+  OnboardingTrainingRoute: OnboardingTrainingRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
+
 interface ProgressRouteChildren {
   ProgressBodyweightRoute: typeof ProgressBodyweightRoute
   ProgressHistoryRoute: typeof ProgressHistoryRoute
@@ -426,9 +578,14 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildRoute: BuildRoute,
+  CreateAccountRoute: CreateAccountRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GeneratedWorkoutRoute: GeneratedWorkoutRoute,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
   ProgressRoute: ProgressRouteWithChildren,
   SettingsRoute: SettingsRouteWithChildren,
+  WelcomeRoute: WelcomeRoute,
   WorkoutRoute: WorkoutRoute,
 }
 export const routeTree = rootRouteImport
