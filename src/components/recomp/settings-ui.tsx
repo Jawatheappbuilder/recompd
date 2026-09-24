@@ -38,11 +38,11 @@ export function SettingsRow({ icon: Icon, label, value, disabled = false, onClic
   );
 }
 
-export function CompactChoice<T extends string | number>({ value, options, onChange, label }: { value: T; options: readonly T[]; onChange: (value: T) => void; label: string }) {
+export function CompactChoice<T extends string | number>({ value, options, onChange, label, className }: { value: T; options: readonly T[]; onChange: (value: T) => void; label: string; className?: string | undefined }) {
   return (
     <div>
       <div className="mb-2 text-xs font-bold text-muted-foreground">{label}</div>
-      <div role="radiogroup" aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg border border-border bg-secondary p-1">
+      <div role="radiogroup" aria-label={label} className={cn("grid auto-cols-fr grid-flow-col gap-1 rounded-lg border border-border bg-secondary p-1", className)}>
         {options.map((option) => <Button key={String(option)} role="radio" aria-checked={value === option} variant={value === option ? "segmentActive" : "segment"} className={cn("h-9 min-w-0 px-2 text-xs", value === option && "text-primary")} onClick={() => onChange(option)}>{option}</Button>)}
       </div>
     </div>
