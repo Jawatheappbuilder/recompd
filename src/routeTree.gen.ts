@@ -19,6 +19,7 @@ import { Route as ProgressIndexRouteImport } from './routes/progress.index'
 import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
 import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
 import { Route as ProgressRecordsRouteImport } from './routes/progress.records'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
 import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
@@ -77,6 +78,11 @@ const ProgressRecordsRoute = ProgressRecordsRouteImport.update({
   path: '/records',
   getParentRoute: () => ProgressRoute,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsAccountRoute = SettingsAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -136,7 +143,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
-  '/settings': typeof SettingsRouteWithChildren
   '/workout': typeof WorkoutRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
@@ -147,6 +153,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress': typeof ProgressIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -167,6 +174,7 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -188,6 +196,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
+    | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -195,7 +204,6 @@ export interface FileRouteTypes {
     | '/'
     | '/build'
     | '/generated-workout'
-    | '/settings'
     | '/workout'
     | '/progress/bodyweight'
     | '/progress/history'
@@ -206,6 +214,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/training'
     | '/progress'
+    | '/settings'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   id:
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
+    | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   fileRoutesById: FileRoutesById
@@ -310,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgressRecordsRouteImport
       parentRoute: typeof ProgressRoute
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/account': {
       id: '/settings/account'
       path: '/account'
@@ -390,6 +407,7 @@ interface SettingsRouteChildren {
   SettingsExercisesRoute: typeof SettingsExercisesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTrainingRoute: typeof SettingsTrainingRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -398,6 +416,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsExercisesRoute: SettingsExercisesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTrainingRoute: SettingsTrainingRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
