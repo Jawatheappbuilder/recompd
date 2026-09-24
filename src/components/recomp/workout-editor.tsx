@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Minus, Plus, Search, Shuffle, Trash2 } from "lucide-react";
+import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 
 const repRanges = ["4–6", "6–8", "8–10", "10–12", "12–15", "15–20"];
 
-type SheetState = { kind: "closed" } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "add" };
+type SheetState = { kind: "closed" } | { kind: "superset"; key: string } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "add" };
 
 const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || !!exercise.muscles?.includes(muscle);
 
@@ -50,7 +50,8 @@ function useLibrary() {
 }
 
 /** Shared editor used by both generated and manually built workouts. */
-export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange }: {
+export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange, supersets = false }: {
+  supersets?: boolean | undefined;
   workout: WorkoutExercise[];
   setWorkout: Dispatch<SetStateAction<WorkoutExercise[]>>;
   pickerOpen?: boolean | undefined;
@@ -68,9 +69,25 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
 
   const update = (key: string, patch: Partial<WorkoutExercise>) => setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...exercise, ...patch } : exercise));
   const replace = (key: string, alternative: Exercise) => {
-    setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...toWorkoutExercise(alternative), sets: exercise.sets, reps: exercise.reps } : exercise));
+    setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...toWorkoutExercise(alternative), key: exercise.key, sets: exercise.sets, reps: exercise.reps, supersetWith: exercise.supersetWith } : exercise));
     setSheet({ kind: "closed" });
   };
+  const unlink = (key: string) => setWorkout((current) => {
+    const partner = current.find((exercise) => exercise.key === key)?.supersetWith;
+    return current.map(({ supersetWith, ...exercise }) => exercise.key === key || exercise.key === partner ? exercise : { ...exercise, supersetWith });
+  });
+  const pair = (key: string, partnerKey: string) => {
+    setWorkout((current) => {
+      const linked = current.map((exercise) => exercise.key === key ? { ...exercise, supersetWith: partnerKey } : exercise.key === partnerKey ? { ...exercise, supersetWith: key } : exercise);
+      const partner = linked.find((exercise) => exercise.key === partnerKey)!;
+      const rest = linked.filter((exercise) => exercise.key !== partnerKey);
+      rest.splice(rest.findIndex((exercise) => exercise.key === key) + 1, 0, partner);
+      return rest;
+    });
+    setSheet({ kind: "closed" });
+  };
+  const remove = (key: string) => setWorkout((current) => current.filter((item) => item.key !== key).map((item) => item.supersetWith === key ? { ...item, supersetWith: undefined } : item));
+  const partnerOf = (exercise: WorkoutExercise) => exercise.supersetWith ? workout.find((item) => item.key === exercise.supersetWith) : undefined;
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
     setWorkout((current) => {
@@ -94,7 +111,11 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   onSets={(sets) => update(exercise.key, { sets })}
                   onReplace={() => setSheet({ kind: "replace", key: exercise.key })}
                   onReps={() => setSheet({ kind: "reps", key: exercise.key })}
-                  onRemove={() => setWorkout((current) => current.filter((item) => item.key !== exercise.key))}
+                  onRemove={() => remove(exercise.key)}
+                  onSuperset={supersets ? () => setSheet({ kind: "superset", key: exercise.key }) : undefined}
+                  partnerName={partnerOf(exercise)?.name}
+                  linkedAbove={!!partnerOf(exercise) && workout[index - 1]?.key === exercise.supersetWith}
+                  linkedBelow={!!partnerOf(exercise) && workout[index + 1]?.key === exercise.supersetWith}
                 />
               ))}
             </div>
@@ -111,6 +132,13 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(exercise) => { if (sheet.kind === "replace") replace(sheet.key, exercise); }}
       />
+      {supersets && <SupersetDrawer
+        exercise={sheet.kind === "superset" ? workout.find((item) => item.key === sheet.key) : undefined}
+        workout={workout}
+        onClose={() => setSheet({ kind: "closed" })}
+        onPair={pair}
+        onUnlink={(key) => { unlink(key); setSheet({ kind: "closed" }); }}
+      />}
       <RepDrawer
         open={sheet.kind === "reps"}
         value={sheet.kind === "reps" ? workout.find((item) => item.key === sheet.key)?.reps : undefined}
@@ -128,7 +156,11 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
   );
 }
 
-function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove }: {
+function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove, onSuperset, partnerName, linkedAbove, linkedBelow }: {
+  onSuperset: (() => void) | undefined;
+  partnerName: string | undefined;
+  linkedAbove: boolean;
+  linkedBelow: boolean;
   exercise: WorkoutExercise;
   index: number;
   onSets: (sets: number) => void;
@@ -141,8 +173,9 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
     <Card
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("grid grid-cols-[auto_minmax(0,1fr)] gap-2.5 p-3", isDragging && "relative z-10 border-primary opacity-90")}
+      className={cn("relative grid grid-cols-[auto_minmax(0,1fr)] gap-2.5 p-3", partnerName && "border-primary/30", isDragging && "z-10 border-primary opacity-90")}
     >
+      {partnerName && <span aria-hidden className={cn("absolute left-0 w-0.5 bg-primary", linkedAbove ? "-top-2.5" : "top-3", linkedBelow ? "-bottom-2.5" : "bottom-3")} />}
       <button
         type="button"
         aria-label={`Reorder ${exercise.name}, position ${index + 1}`}
@@ -157,6 +190,7 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
           <div className="min-w-0">
             <h2 className="truncate text-sm font-extrabold">{exercise.name}</h2>
             <p className="mt-0.5 text-[0.7rem] font-medium text-muted-foreground">{muscleLabel(exercise)} · {exercise.equipment}</p>
+            {partnerName && <p className="mt-1 flex items-center gap-1 truncate text-[0.65rem] font-semibold text-primary"><Link2 className="size-3 shrink-0" />{partnerName}</p>}
           </div>
           <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-9 text-muted-foreground" aria-label={`Remove ${exercise.name}`} onClick={onRemove}><Trash2 /></Button>
         </div>
@@ -167,7 +201,10 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
             <Button variant="ghost" size="icon" className="size-8" aria-label={`More sets for ${exercise.name}`} onClick={() => onSets(Math.min(10, exercise.sets + 1))}><Plus /></Button>
           </div>
           <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{exercise.reps} reps</Button>
-          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Replace ${exercise.name}`} onClick={onReplace}><Shuffle /></Button>
+          <div className="flex items-center">
+            {onSuperset && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", partnerName && "text-primary")} aria-label={`Superset ${exercise.name}`} onClick={onSuperset}><Link2 /></Button>}
+            <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Replace ${exercise.name}`} onClick={onReplace}><Shuffle /></Button>
+          </div>
         </div>
       </div>
     </Card>
@@ -200,6 +237,37 @@ function ReplaceDrawer({ open, exercise, workout, library, onOpenChange, onSelec
               </button>
             </DrawerClose>
           ))}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function SupersetDrawer({ exercise, workout, onClose, onPair, onUnlink }: {
+  exercise: WorkoutExercise | undefined;
+  workout: WorkoutExercise[];
+  onClose: () => void;
+  onPair: (key: string, partnerKey: string) => void;
+  onUnlink: (key: string) => void;
+}) {
+  const partner = exercise?.supersetWith ? workout.find((item) => item.key === exercise.supersetWith) : undefined;
+  const options = exercise ? workout.filter((item) => item.key !== exercise.key && !item.supersetWith) : [];
+  return (
+    <Drawer open={!!exercise} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="mx-auto max-h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover">
+        <DrawerHeader className="pb-2 text-left"><DrawerTitle>{partner ? "Superset" : "Superset with"}</DrawerTitle></DrawerHeader>
+        <div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {partner && exercise ? (
+            <>
+              <div className="flex items-center gap-2 border-b border-border py-3 text-sm font-bold"><Link2 className="size-4 shrink-0 text-primary" /><span className="min-w-0">{exercise.name} + {partner.name}</span></div>
+              <Button variant="surface" className="mt-3 w-full" onClick={() => onUnlink(exercise.key)}><Unlink />Remove superset</Button>
+            </>
+          ) : options.length ? options.map((item) => (
+            <button key={item.key} type="button" className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-left last:border-0" onClick={() => exercise && onPair(exercise.key, item.key)}>
+              <ExerciseText exercise={item} />
+              <Link2 className="size-4 text-primary" />
+            </button>
+          )) : <p className="py-6 text-center text-sm text-muted-foreground">No available exercises</p>}
         </div>
       </DrawerContent>
     </Drawer>
