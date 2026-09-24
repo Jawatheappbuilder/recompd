@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuildRouteImport } from './routes/build'
+import { Route as CheckEmailRouteImport } from './routes/check-email'
 import { Route as CreateAccountRouteImport } from './routes/create-account'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WorkoutRouteImport } from './routes/workout'
@@ -43,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const BuildRoute = BuildRouteImport.update({
   id: '/build',
   path: '/build',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckEmailRoute = CheckEmailRouteImport.update({
+  id: '/check-email',
+  path: '/check-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreateAccountRoute = CreateAccountRouteImport.update({
@@ -73,6 +80,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -164,12 +176,14 @@ const ProgressWorkoutIdRoute = ProgressWorkoutIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/check-email': typeof CheckEmailRoute
   '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/progress': typeof ProgressRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
@@ -191,11 +205,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/check-email': typeof CheckEmailRoute
   '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
@@ -217,12 +233,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/check-email': typeof CheckEmailRoute
   '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/progress': typeof ProgressRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
@@ -246,12 +264,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/build'
+    | '/check-email'
     | '/create-account'
     | '/forgot-password'
     | '/generated-workout'
     | '/login'
     | '/onboarding'
     | '/progress'
+    | '/reset-password'
     | '/settings'
     | '/welcome'
     | '/workout'
@@ -273,11 +293,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/build'
+    | '/check-email'
     | '/create-account'
     | '/forgot-password'
     | '/generated-workout'
     | '/login'
     | '/onboarding'
+    | '/reset-password'
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
@@ -298,12 +320,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/build'
+    | '/check-email'
     | '/create-account'
     | '/forgot-password'
     | '/generated-workout'
     | '/login'
     | '/onboarding'
     | '/progress'
+    | '/reset-password'
     | '/settings'
     | '/welcome'
     | '/workout'
@@ -326,12 +350,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuildRoute: typeof BuildRoute
+  CheckEmailRoute: typeof CheckEmailRoute
   CreateAccountRoute: typeof CreateAccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GeneratedWorkoutRoute: typeof GeneratedWorkoutRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   ProgressRoute: typeof ProgressRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   WelcomeRoute: typeof WelcomeRoute
   WorkoutRoute: typeof WorkoutRoute
@@ -351,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/build'
       fullPath: '/build'
       preLoaderRoute: typeof BuildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/check-email': {
+      id: '/check-email'
+      path: '/check-email'
+      fullPath: '/check-email'
+      preLoaderRoute: typeof CheckEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/create-account': {
@@ -393,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -578,12 +618,14 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildRoute: BuildRoute,
+  CheckEmailRoute: CheckEmailRoute,
   CreateAccountRoute: CreateAccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   GeneratedWorkoutRoute: GeneratedWorkoutRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   ProgressRoute: ProgressRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
   WelcomeRoute: WelcomeRoute,
   WorkoutRoute: WorkoutRoute,
