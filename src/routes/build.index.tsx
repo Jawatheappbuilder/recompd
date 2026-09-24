@@ -6,7 +6,7 @@ import { WorkoutBuilder } from "@/components/recomp/workout-builder";
 
 const searchSchema = z.object({ mode: fallback(z.string(), "generate").default("generate") });
 
-export const Route = createFileRoute("/build")({
+export const Route = createFileRoute("/build/")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [
     { title: "Build Workout — RECOMP'D" }, { name: "description", content: "Generate or build your next strength workout." },
