@@ -91,11 +91,11 @@ function layout(ctx: CanvasRenderingContext2D, workout: CompletedWorkout, prs: P
     const sets = wrapChips(ctx, condensedSets(e.sets), inner);
     return { name, sets, pr };
   });
-  const header = 150 + title.length * titleSize * 0.95 + 40 + 60;
+  const header = 230 + title.length * titleSize * 0.95 + 100;
   const stats = compact ? 190 : 230;
   const list = blocks.reduce((h, b) => h + b.name.length * NAME_LH + 10 + b.sets.length * SET_LH, 0) + Math.max(0, blocks.length - 1) * gap * 2;
-  const footer = 170;
-  return { title, titleSize, gap, blocks, height: Math.ceil(header + stats + 60 + list + footer) };
+  const footer = 200;
+  return { title, titleSize, gap, blocks, height: Math.ceil(header + stats + 76 + list + footer + 40) };
 }
 
 export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): Promise<Blob> {
