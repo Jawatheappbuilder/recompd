@@ -26,6 +26,7 @@ import {
   exercises as libraryExercises,
   muscleGroups,
   muscleLabel,
+  isCardioExercise,
   toWorkoutExercise,
   type Equipment,
   type Exercise,
@@ -37,8 +38,9 @@ import { newId } from "@/lib/cloud-data";
 import { cn } from "@/lib/utils";
 
 const repRanges = ["4–6", "6–8", "8–10", "10–12", "12–15", "15–20"];
+const cardioDurations = [300, 600, 900, 1200, 1800, 2700, 3600];
 
-type SheetState = { kind: "closed" } | { kind: "superset"; key: string } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "add" };
+type SheetState = { kind: "closed" } | { kind: "superset"; key: string } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "duration"; key: string } | { kind: "add" };
 
 const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || !!exercise.muscles?.includes(muscle);
 
@@ -111,6 +113,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   onSets={(sets) => update(exercise.key, { sets })}
                   onReplace={() => setSheet({ kind: "replace", key: exercise.key })}
                   onReps={() => setSheet({ kind: "reps", key: exercise.key })}
+                  onDuration={() => setSheet({ kind: "duration", key: exercise.key })}
                   onRemove={() => remove(exercise.key)}
                   onSuperset={supersets ? () => setSheet({ kind: "superset", key: exercise.key }) : undefined}
                   partnerName={partnerOf(exercise)?.name}
@@ -145,6 +148,12 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(reps) => { if (sheet.kind === "reps") update(sheet.key, { reps }); setSheet({ kind: "closed" }); }}
       />
+      <DurationDrawer
+        open={sheet.kind === "duration"}
+        value={sheet.kind === "duration" ? workout.find((item) => item.key === sheet.key)?.targetDurationSeconds : undefined}
+        onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
+        onSelect={(seconds) => { if (sheet.kind === "duration") update(sheet.key, { targetDurationSeconds: seconds }); setSheet({ kind: "closed" }); }}
+      />
       <ExercisePicker
         open={addOpen}
         library={library.all}
@@ -156,7 +165,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
   );
 }
 
-function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove, onSuperset, partnerName, linkedAbove, linkedBelow }: {
+function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, partnerName, linkedAbove, linkedBelow }: {
   onSuperset: (() => void) | undefined;
   partnerName: string | undefined;
   linkedAbove: boolean;
@@ -166,6 +175,7 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
   onSets: (sets: number) => void;
   onReplace: () => void;
   onReps: () => void;
+  onDuration: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercise.key });
@@ -195,12 +205,12 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
           <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-9 text-muted-foreground" aria-label={`Remove ${exercise.name}`} onClick={onRemove}><Trash2 /></Button>
         </div>
         <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="flex h-9 items-center rounded-lg border border-border bg-secondary">
+          {!isCardioExercise(exercise) && <div className="flex h-9 items-center rounded-lg border border-border bg-secondary">
             <Button variant="ghost" size="icon" className="size-8" aria-label={`Fewer sets for ${exercise.name}`} onClick={() => onSets(Math.max(1, exercise.sets - 1))}><Minus /></Button>
             <span className="w-12 text-center text-[0.7rem] font-bold tabular-nums">{exercise.sets} sets</span>
             <Button variant="ghost" size="icon" className="size-8" aria-label={`More sets for ${exercise.name}`} onClick={() => onSets(Math.min(10, exercise.sets + 1))}><Plus /></Button>
-          </div>
-          <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{exercise.reps} reps</Button>
+          </div>}
+          {isCardioExercise(exercise) ? <Button variant="surface" size="sm" className="h-9 px-3 text-[0.7rem] tabular-nums" onClick={onDuration}>{Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min target</Button> : <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{exercise.reps} reps</Button>}
           <div className="flex items-center">
             {onSuperset && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", partnerName && "text-primary")} aria-label={`Superset ${exercise.name}`} onClick={onSuperset}><Link2 /></Button>}
             <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Replace ${exercise.name}`} onClick={onReplace}><Shuffle /></Button>
@@ -221,7 +231,7 @@ function ReplaceDrawer({ open, exercise, workout, library, onOpenChange, onSelec
 }) {
   const alternatives = useMemo(() => {
     if (!exercise) return [];
-    const unused = library.filter((item) => !workout.some((current) => current.id === item.id));
+    const unused = library.filter((item) => isCardioExercise(item) === isCardioExercise(exercise) && !workout.some((current) => current.id === item.id));
     return [...unused.filter((item) => matchesMuscle(item, exercise.muscle)), ...unused.filter((item) => !matchesMuscle(item, exercise.muscle))].slice(0, 8);
   }, [exercise, workout, library]);
   return (
@@ -251,7 +261,7 @@ function SupersetDrawer({ exercise, workout, onClose, onPair, onUnlink }: {
   onUnlink: (key: string) => void;
 }) {
   const partner = exercise?.supersetWith ? workout.find((item) => item.key === exercise.supersetWith) : undefined;
-  const options = exercise ? workout.filter((item) => item.key !== exercise.key && !item.supersetWith) : [];
+    const options = exercise ? workout.filter((item) => item.key !== exercise.key && !item.supersetWith && !isCardioExercise(item) && !isCardioExercise(exercise)) : [];
   return (
     <Drawer open={!!exercise} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DrawerContent className="mx-auto max-h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover">
@@ -285,6 +295,10 @@ function RepDrawer({ open, value, onOpenChange, onSelect }: { open: boolean; val
       </DrawerContent>
     </Drawer>
   );
+}
+
+function DurationDrawer({ open, value, onOpenChange, onSelect }: { open: boolean; value: number | undefined; onOpenChange: (open: boolean) => void; onSelect: (value: number) => void }) {
+  return <Drawer open={open} onOpenChange={onOpenChange}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Target duration</DrawerTitle></DrawerHeader><div className="grid grid-cols-2 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{cardioDurations.map((seconds) => <Button key={seconds} variant={value === seconds ? "choiceActive" : "choice"} className="h-11 tabular-nums" onClick={() => onSelect(seconds)}>{seconds / 60} min</Button>)}</div></DrawerContent></Drawer>;
 }
 
 function ExerciseText({ exercise, active }: { exercise: Exercise; active?: boolean }) {

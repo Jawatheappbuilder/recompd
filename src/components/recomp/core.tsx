@@ -26,7 +26,7 @@ export function SectionHeading({ children, action }: { children: ReactNode; acti
 }
 
 export function Metric({ value, label, accent = false }: { value: string; label: string; accent?: boolean }) {
-  return <div><div className={cn("text-lg font-bold tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-0.5 text-[0.68rem] font-medium text-muted-foreground">{label}</div></div>;
+  return <div className="min-w-0"><div className={cn("truncate text-lg font-bold tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-0.5 text-[0.68rem] font-medium leading-tight text-muted-foreground">{label}</div></div>;
 }
 
 export function SummaryRow({ title, subtitle, meta, onClick }: { title: string; subtitle: string; meta: string; onClick?: () => void }) {

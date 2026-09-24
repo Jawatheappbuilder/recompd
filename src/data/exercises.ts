@@ -1,9 +1,16 @@
 export const muscleGroups = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Core"] as const;
 export type Muscle = (typeof muscleGroups)[number];
-export const equipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight", "Smith Machine"] as const;
+export const equipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Plate-loaded Machine", "Pin-loaded Machine", "Bodyweight", "Smith Machine", "Cardio Machine"] as const;
 export type Equipment = (typeof equipmentTypes)[number];
-export type Exercise = { id: string; name: string; muscle: Muscle; equipment: Equipment; type: "Compound" | "Isolation"; muscles?: Muscle[]; custom?: boolean };
-export const muscleLabel = (e: Pick<Exercise, "muscle" | "muscles">) => (e.muscles?.length ? e.muscles : [e.muscle]).join(" + ");
+export type ExerciseType = "Compound" | "Isolation" | "Cardio";
+export type CardioMetric = "duration" | "distance" | "speed" | "pace" | "incline" | "level" | "floors" | "steps" | "pace500m";
+export type Exercise = {
+  id: string; name: string; muscle: Muscle; equipment: Equipment; type: ExerciseType;
+  muscles?: Muscle[]; custom?: boolean; tracking?: "strength" | "cardio"; cardioMetrics?: CardioMetric[];
+};
+export const isCardioExercise = (exercise: Pick<Exercise, "tracking" | "type">) => exercise.tracking === "cardio" || exercise.type === "Cardio";
+export const muscleLabel = (exercise: Pick<Exercise, "muscle" | "muscles" | "tracking">) => exercise.tracking === "cardio" ? "Cardio" : (exercise.muscles?.length ? exercise.muscles : [exercise.muscle]).join(" + ");
+export const exerciseLabel = (exercise: Pick<Exercise, "muscle" | "muscles" | "tracking" | "equipment">) => `${muscleLabel(exercise)} · ${exercise.equipment}`;
 
 export const quickSelects: { label: string; muscles: Muscle[] }[] = [
   { label: "Upper", muscles: ["Chest", "Back", "Shoulders", "Biceps", "Triceps"] },
@@ -13,69 +20,130 @@ export const quickSelects: { label: string; muscles: Muscle[] }[] = [
   { label: "Core", muscles: ["Core"] },
 ];
 
-const raw: [string, Muscle, Equipment, "C" | "I"][] = [
-  ["Bench Press", "Chest", "Barbell", "C"], ["Incline Dumbbell Press", "Chest", "Dumbbell", "C"], ["Machine Chest Press", "Chest", "Machine", "C"], ["Push-Up", "Chest", "Bodyweight", "C"], ["Cable Fly", "Chest", "Cable", "I"], ["Pec Deck", "Chest", "Machine", "I"],
-  ["Barbell Row", "Back", "Barbell", "C"], ["Pull-Up", "Back", "Bodyweight", "C"], ["Lat Pulldown", "Back", "Cable", "C"], ["Chest-Supported Row", "Back", "Machine", "C"], ["Straight-Arm Pulldown", "Back", "Cable", "I"],
-  ["Overhead Press", "Shoulders", "Barbell", "C"], ["Seated Dumbbell Press", "Shoulders", "Dumbbell", "C"], ["Lateral Raise", "Shoulders", "Dumbbell", "I"], ["Cable Lateral Raise", "Shoulders", "Cable", "I"], ["Rear Delt Fly", "Shoulders", "Machine", "I"],
-  ["Chin-Up", "Biceps", "Bodyweight", "C"], ["Barbell Curl", "Biceps", "Barbell", "I"], ["Incline Dumbbell Curl", "Biceps", "Dumbbell", "I"], ["Cable Curl", "Biceps", "Cable", "I"],
-  ["Close-Grip Bench Press", "Triceps", "Barbell", "C"], ["Dip", "Triceps", "Bodyweight", "C"], ["Rope Pushdown", "Triceps", "Cable", "I"], ["Overhead Cable Extension", "Triceps", "Cable", "I"],
-  ["Back Squat", "Quads", "Barbell", "C"], ["Leg Press", "Quads", "Machine", "C"], ["Bulgarian Split Squat", "Quads", "Dumbbell", "C"], ["Leg Extension", "Quads", "Machine", "I"],
-  ["Romanian Deadlift", "Hamstrings", "Barbell", "C"], ["Lying Leg Curl", "Hamstrings", "Machine", "I"], ["Seated Leg Curl", "Hamstrings", "Machine", "I"],
-  ["Hip Thrust", "Glutes", "Barbell", "C"], ["Walking Lunge", "Glutes", "Dumbbell", "C"], ["Cable Kickback", "Glutes", "Cable", "I"],
-  ["Standing Calf Raise", "Calves", "Machine", "I"], ["Seated Calf Raise", "Calves", "Machine", "I"],
-  ["Smith Machine Bench Press", "Chest", "Smith Machine", "C"], ["Dumbbell Bench Press", "Chest", "Dumbbell", "C"], ["Incline Barbell Press", "Chest", "Barbell", "C"], ["Dumbbell Fly", "Chest", "Dumbbell", "I"],
-  ["Seated Cable Row", "Back", "Cable", "C"], ["Single-Arm Dumbbell Row", "Back", "Dumbbell", "C"], ["Deadlift", "Back", "Barbell", "C"], ["Machine Row", "Back", "Machine", "C"],
-  ["Smith Machine Shoulder Press", "Shoulders", "Smith Machine", "C"], ["Machine Shoulder Press", "Shoulders", "Machine", "C"], ["Face Pull", "Shoulders", "Cable", "I"],
-  ["Hammer Curl", "Biceps", "Dumbbell", "I"], ["Preacher Curl", "Biceps", "Machine", "I"], ["Skull Crusher", "Triceps", "Barbell", "I"], ["Dumbbell Overhead Extension", "Triceps", "Dumbbell", "I"],
-  ["Smith Machine Squat", "Quads", "Smith Machine", "C"], ["Hack Squat", "Quads", "Machine", "C"], ["Goblet Squat", "Quads", "Dumbbell", "C"],
-  ["Dumbbell Romanian Deadlift", "Hamstrings", "Dumbbell", "C"], ["Nordic Curl", "Hamstrings", "Bodyweight", "I"], ["Glute Bridge", "Glutes", "Bodyweight", "I"], ["Hip Abduction", "Glutes", "Machine", "I"],
-  ["Smith Machine Calf Raise", "Calves", "Smith Machine", "I"], ["Single-Leg Calf Raise", "Calves", "Bodyweight", "I"],
-  ["Hanging Leg Raise", "Core", "Bodyweight", "I"], ["Cable Crunch", "Core", "Cable", "I"], ["Plank", "Core", "Bodyweight", "I"], ["Ab Wheel Rollout", "Core", "Bodyweight", "C"],
+type RawStrength = [string, Muscle, Equipment, "C" | "I", Muscle[]?];
+const strength: RawStrength[] = [
+  // Chest
+  ["Bench Press","Chest","Barbell","C",["Triceps","Shoulders"]], ["Incline Barbell Press","Chest","Barbell","C",["Shoulders","Triceps"]], ["Decline Barbell Press","Chest","Barbell","C",["Triceps"]],
+  ["Dumbbell Bench Press","Chest","Dumbbell","C",["Triceps","Shoulders"]], ["Incline Dumbbell Press","Chest","Dumbbell","C",["Shoulders","Triceps"]], ["Decline Dumbbell Press","Chest","Dumbbell","C",["Triceps"]],
+  ["Machine Chest Press","Chest","Machine","C",["Triceps","Shoulders"]], ["Plate-Loaded Chest Press","Chest","Plate-loaded Machine","C",["Triceps","Shoulders"]], ["Incline Plate-Loaded Press","Chest","Plate-loaded Machine","C",["Shoulders","Triceps"]],
+  ["Pin-Loaded Chest Press","Chest","Pin-loaded Machine","C",["Triceps"]], ["Smith Machine Bench Press","Chest","Smith Machine","C",["Triceps","Shoulders"]], ["Smith Machine Incline Press","Chest","Smith Machine","C",["Shoulders","Triceps"]],
+  ["Push-Up","Chest","Bodyweight","C",["Triceps","Shoulders","Core"]], ["Deficit Push-Up","Chest","Bodyweight","C",["Triceps","Shoulders","Core"]], ["Chest Dip","Chest","Bodyweight","C",["Triceps","Shoulders"]],
+  ["Cable Fly","Chest","Cable","I"], ["Low-to-High Cable Fly","Chest","Cable","I"], ["High-to-Low Cable Fly","Chest","Cable","I"], ["Pec Deck","Chest","Pin-loaded Machine","I"], ["Dumbbell Fly","Chest","Dumbbell","I"], ["Dumbbell Pullover","Chest","Dumbbell","C",["Back","Triceps"]],
+  // Back
+  ["Barbell Row","Back","Barbell","C",["Biceps","Shoulders","Core"]], ["Pendlay Row","Back","Barbell","C",["Biceps","Core"]], ["Underhand Barbell Row","Back","Barbell","C",["Biceps","Core"]], ["Meadows Row","Back","Barbell","C",["Biceps","Core"]],
+  ["Single-Arm Dumbbell Row","Back","Dumbbell","C",["Biceps"]], ["Chest-Supported Dumbbell Row","Back","Dumbbell","C",["Biceps","Shoulders"]], ["Dumbbell Pullover","Back","Dumbbell","C",["Chest","Triceps"]],
+  ["Pull-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Chin-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Neutral-Grip Pull-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Inverted Row","Back","Bodyweight","C",["Biceps","Core"]],
+  ["Lat Pulldown","Back","Cable","C",["Biceps"]], ["Neutral-Grip Lat Pulldown","Back","Cable","C",["Biceps"]], ["Single-Arm Lat Pulldown","Back","Cable","C",["Biceps"]], ["Seated Cable Row","Back","Cable","C",["Biceps","Shoulders"]], ["Wide Cable Row","Back","Cable","C",["Biceps","Shoulders"]], ["Single-Arm Cable Row","Back","Cable","C",["Biceps"]], ["Straight-Arm Pulldown","Back","Cable","I",["Triceps"]],
+  ["Chest-Supported Row","Back","Machine","C",["Biceps","Shoulders"]], ["Machine Row","Back","Machine","C",["Biceps"]], ["Plate-Loaded High Row","Back","Plate-loaded Machine","C",["Biceps","Shoulders"]], ["Plate-Loaded Low Row","Back","Plate-loaded Machine","C",["Biceps"]], ["Pin-Loaded Pullover","Back","Pin-loaded Machine","I"], ["Deadlift","Back","Barbell","C",["Hamstrings","Glutes","Core"]], ["Rack Pull","Back","Barbell","C",["Glutes","Hamstrings"]],
+  // Shoulders
+  ["Overhead Press","Shoulders","Barbell","C",["Triceps","Core"]], ["Push Press","Shoulders","Barbell","C",["Triceps","Quads","Glutes","Core"]], ["Behind-the-Neck Press","Shoulders","Barbell","C",["Triceps"]],
+  ["Seated Dumbbell Press","Shoulders","Dumbbell","C",["Triceps"]], ["Standing Dumbbell Press","Shoulders","Dumbbell","C",["Triceps","Core"]], ["Arnold Press","Shoulders","Dumbbell","C",["Triceps"]],
+  ["Machine Shoulder Press","Shoulders","Machine","C",["Triceps"]], ["Plate-Loaded Shoulder Press","Shoulders","Plate-loaded Machine","C",["Triceps"]], ["Pin-Loaded Shoulder Press","Shoulders","Pin-loaded Machine","C",["Triceps"]], ["Smith Machine Shoulder Press","Shoulders","Smith Machine","C",["Triceps"]],
+  ["Lateral Raise","Shoulders","Dumbbell","I"], ["Lean-Away Lateral Raise","Shoulders","Dumbbell","I"], ["Cable Lateral Raise","Shoulders","Cable","I"], ["Behind-the-Back Cable Lateral Raise","Shoulders","Cable","I"], ["Machine Lateral Raise","Shoulders","Pin-loaded Machine","I"],
+  ["Rear Delt Fly","Shoulders","Machine","I",["Back"]], ["Cable Rear Delt Fly","Shoulders","Cable","I",["Back"]], ["Face Pull","Shoulders","Cable","I",["Back"]], ["Dumbbell Front Raise","Shoulders","Dumbbell","I"], ["Cable Front Raise","Shoulders","Cable","I"], ["Handstand Push-Up","Shoulders","Bodyweight","C",["Triceps","Core"]],
+  // Biceps
+  ["Barbell Curl","Biceps","Barbell","I"], ["EZ-Bar Curl","Biceps","Barbell","I"], ["Reverse Barbell Curl","Biceps","Barbell","I"], ["Drag Curl","Biceps","Barbell","I"],
+  ["Dumbbell Curl","Biceps","Dumbbell","I"], ["Alternating Dumbbell Curl","Biceps","Dumbbell","I"], ["Hammer Curl","Biceps","Dumbbell","I"], ["Incline Dumbbell Curl","Biceps","Dumbbell","I"], ["Concentration Curl","Biceps","Dumbbell","I"], ["Spider Curl","Biceps","Dumbbell","I"], ["Zottman Curl","Biceps","Dumbbell","I"],
+  ["Cable Curl","Biceps","Cable","I"], ["Rope Hammer Curl","Biceps","Cable","I"], ["Bayesian Cable Curl","Biceps","Cable","I"], ["High Cable Curl","Biceps","Cable","I"], ["Single-Arm Cable Curl","Biceps","Cable","I"],
+  ["Preacher Curl","Biceps","Machine","I"], ["Plate-Loaded Preacher Curl","Biceps","Plate-loaded Machine","I"], ["Pin-Loaded Biceps Curl","Biceps","Pin-loaded Machine","I"], ["Machine Preacher Curl","Biceps","Machine","I"],
+  // Triceps
+  ["Close-Grip Bench Press","Triceps","Barbell","C",["Chest","Shoulders"]], ["JM Press","Triceps","Barbell","C",["Chest"]], ["Skull Crusher","Triceps","Barbell","I"], ["Barbell Overhead Extension","Triceps","Barbell","I"],
+  ["Dumbbell Overhead Extension","Triceps","Dumbbell","I"], ["Single-Arm Dumbbell Extension","Triceps","Dumbbell","I"], ["Dumbbell Tate Press","Triceps","Dumbbell","I",["Chest"]],
+  ["Rope Pushdown","Triceps","Cable","I"], ["Straight-Bar Pushdown","Triceps","Cable","I"], ["Single-Arm Cable Pushdown","Triceps","Cable","I"], ["Reverse-Grip Pushdown","Triceps","Cable","I"], ["Overhead Cable Extension","Triceps","Cable","I"], ["Single-Arm Overhead Cable Extension","Triceps","Cable","I"], ["Cable Cross-Body Extension","Triceps","Cable","I"],
+  ["Dip","Triceps","Bodyweight","C",["Chest","Shoulders"]], ["Bench Dip","Triceps","Bodyweight","C",["Chest","Shoulders"]], ["Diamond Push-Up","Triceps","Bodyweight","C",["Chest","Shoulders","Core"]],
+  ["Machine Triceps Dip","Triceps","Pin-loaded Machine","C",["Chest"]], ["Plate-Loaded Dip Press","Triceps","Plate-loaded Machine","C",["Chest"]], ["Machine Triceps Extension","Triceps","Pin-loaded Machine","I"],
+  // Quads
+  ["Back Squat","Quads","Barbell","C",["Glutes","Hamstrings","Core"]], ["Front Squat","Quads","Barbell","C",["Glutes","Core"]], ["High-Bar Squat","Quads","Barbell","C",["Glutes","Core"]], ["Zercher Squat","Quads","Barbell","C",["Glutes","Core"]],
+  ["Goblet Squat","Quads","Dumbbell","C",["Glutes","Core"]], ["Bulgarian Split Squat","Quads","Dumbbell","C",["Glutes","Hamstrings"]], ["Dumbbell Step-Up","Quads","Dumbbell","C",["Glutes"]], ["Dumbbell Reverse Lunge","Quads","Dumbbell","C",["Glutes"]],
+  ["Smith Machine Squat","Quads","Smith Machine","C",["Glutes"]], ["Smith Machine Front Squat","Quads","Smith Machine","C",["Glutes"]], ["Smith Machine Split Squat","Quads","Smith Machine","C",["Glutes"]],
+  ["Leg Press","Quads","Plate-loaded Machine","C",["Glutes","Hamstrings"]], ["Single-Leg Press","Quads","Plate-loaded Machine","C",["Glutes"]], ["Hack Squat","Quads","Plate-loaded Machine","C",["Glutes"]], ["Pendulum Squat","Quads","Plate-loaded Machine","C",["Glutes"]], ["Belt Squat","Quads","Plate-loaded Machine","C",["Glutes"]],
+  ["Leg Extension","Quads","Pin-loaded Machine","I"], ["Single-Leg Extension","Quads","Pin-loaded Machine","I"], ["Sissy Squat","Quads","Bodyweight","I"], ["Walking Lunge","Quads","Dumbbell","C",["Glutes","Hamstrings"]],
+  // Hamstrings
+  ["Romanian Deadlift","Hamstrings","Barbell","C",["Glutes","Back","Core"]], ["Stiff-Leg Deadlift","Hamstrings","Barbell","C",["Glutes","Back"]], ["Good Morning","Hamstrings","Barbell","C",["Glutes","Back","Core"]],
+  ["Dumbbell Romanian Deadlift","Hamstrings","Dumbbell","C",["Glutes","Back"]], ["Single-Leg Romanian Deadlift","Hamstrings","Dumbbell","C",["Glutes","Core"]],
+  ["Lying Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Seated Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Standing Single-Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Kneeling Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Plate-Loaded Leg Curl","Hamstrings","Plate-loaded Machine","I"],
+  ["Nordic Curl","Hamstrings","Bodyweight","I",["Glutes"]], ["Sliding Leg Curl","Hamstrings","Bodyweight","I",["Glutes","Core"]], ["Swiss Ball Leg Curl","Hamstrings","Bodyweight","I",["Glutes","Core"]], ["Glute-Ham Raise","Hamstrings","Bodyweight","C",["Glutes","Back"]],
+  ["Cable Pull-Through","Hamstrings","Cable","C",["Glutes"]], ["Cable Romanian Deadlift","Hamstrings","Cable","C",["Glutes"]], ["Smith Machine Romanian Deadlift","Hamstrings","Smith Machine","C",["Glutes","Back"]],
+  // Glutes
+  ["Hip Thrust","Glutes","Barbell","C",["Hamstrings","Quads"]], ["Barbell Glute Bridge","Glutes","Barbell","C",["Hamstrings"]], ["Kas Glute Bridge","Glutes","Barbell","I",["Hamstrings"]],
+  ["Dumbbell Hip Thrust","Glutes","Dumbbell","C",["Hamstrings"]], ["Walking Lunge","Glutes","Dumbbell","C",["Quads","Hamstrings"]], ["Dumbbell Curtsy Lunge","Glutes","Dumbbell","C",["Quads"]],
+  ["Cable Kickback","Glutes","Cable","I"], ["Cable Hip Abduction","Glutes","Cable","I"], ["Cable Pull-Through","Glutes","Cable","C",["Hamstrings"]],
+  ["Hip Abduction","Glutes","Pin-loaded Machine","I"], ["Standing Hip Abduction Machine","Glutes","Pin-loaded Machine","I"], ["Glute Drive Machine","Glutes","Plate-loaded Machine","C",["Hamstrings"]], ["Reverse Hyperextension","Glutes","Machine","C",["Hamstrings","Back"]],
+  ["Smith Machine Hip Thrust","Glutes","Smith Machine","C",["Hamstrings"]], ["Smith Machine Reverse Lunge","Glutes","Smith Machine","C",["Quads"]],
+  ["Glute Bridge","Glutes","Bodyweight","I",["Hamstrings"]], ["Single-Leg Glute Bridge","Glutes","Bodyweight","I",["Hamstrings","Core"]], ["Frog Pump","Glutes","Bodyweight","I"], ["45-Degree Back Extension","Glutes","Bodyweight","C",["Hamstrings","Back"]],
+  // Calves
+  ["Standing Calf Raise","Calves","Machine","I"], ["Seated Calf Raise","Calves","Machine","I"], ["Donkey Calf Raise","Calves","Machine","I"], ["Leg Press Calf Raise","Calves","Plate-loaded Machine","I"],
+  ["Plate-Loaded Standing Calf Raise","Calves","Plate-loaded Machine","I"], ["Plate-Loaded Seated Calf Raise","Calves","Plate-loaded Machine","I"], ["Pin-Loaded Calf Raise","Calves","Pin-loaded Machine","I"],
+  ["Smith Machine Calf Raise","Calves","Smith Machine","I"], ["Smith Machine Seated Calf Raise","Calves","Smith Machine","I"], ["Barbell Calf Raise","Calves","Barbell","I"],
+  ["Dumbbell Calf Raise","Calves","Dumbbell","I"], ["Single-Leg Dumbbell Calf Raise","Calves","Dumbbell","I"], ["Single-Leg Calf Raise","Calves","Bodyweight","I"], ["Tibialis Raise","Calves","Bodyweight","I"], ["Tibialis Machine Raise","Calves","Machine","I"],
+  // Core
+  ["Cable Crunch","Core","Cable","I"], ["Kneeling Cable Crunch","Core","Cable","I"], ["Cable Wood Chop","Core","Cable","C",["Shoulders"]], ["Pallof Press","Core","Cable","I"], ["Cable Side Bend","Core","Cable","I"],
+  ["Hanging Leg Raise","Core","Bodyweight","I"], ["Hanging Knee Raise","Core","Bodyweight","I"], ["Captain's Chair Leg Raise","Core","Bodyweight","I"], ["Ab Wheel Rollout","Core","Bodyweight","C",["Shoulders"]], ["Plank","Core","Bodyweight","I"], ["Side Plank","Core","Bodyweight","I"], ["Dead Bug","Core","Bodyweight","I"], ["Bird Dog","Core","Bodyweight","I"], ["Reverse Crunch","Core","Bodyweight","I"], ["Bicycle Crunch","Core","Bodyweight","I"], ["V-Up","Core","Bodyweight","I"], ["Dragon Flag","Core","Bodyweight","C"], ["Mountain Climber","Core","Bodyweight","C",["Shoulders"]],
+  ["Weighted Crunch","Core","Dumbbell","I"], ["Dumbbell Side Bend","Core","Dumbbell","I"], ["Decline Sit-Up","Core","Bodyweight","I"], ["Rotary Torso Machine","Core","Pin-loaded Machine","I"],
 ];
 
-export const exercises: Exercise[] = raw.map(([name, muscle, equipment, t]) => ({ id: name.toLowerCase().replace(/[^a-z]+/g, "-"), name, muscle, equipment, type: t === "C" ? "Compound" : "Isolation" }));
+type RawCardio = [string, CardioMetric[]];
+const cardio: RawCardio[] = [
+  ["Treadmill", ["duration", "distance", "speed", "pace", "incline"]],
+  ["Incline Treadmill", ["duration", "distance", "speed", "pace", "incline"]],
+  ["Stair Climber / StairMaster", ["duration", "level", "floors", "steps"]],
+  ["Rower", ["duration", "distance", "pace500m", "level"]],
+  ["Elliptical", ["duration", "distance", "level"]],
+  ["SkiErg", ["duration", "distance", "pace500m", "level"]],
+];
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string };
+const slug = (name: string) => name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+const byId = new Map<string, Exercise>();
+for (const [name, muscle, equipment, type, secondary = []] of strength) {
+  const muscles = [muscle, ...secondary.filter((item) => item !== muscle)];
+  const exercise: Exercise = { id: slug(name), name, muscle, muscles, equipment, type: type === "C" ? "Compound" : "Isolation", tracking: "strength" };
+  if (!byId.has(exercise.id)) byId.set(exercise.id, exercise);
+}
+for (const [name, cardioMetrics] of cardio) {
+  byId.set(slug(name), { id: slug(name), name, muscle: "Core", muscles: [], equipment: "Cardio Machine", type: "Cardio", tracking: "cardio", cardioMetrics });
+}
+export const exercises = [...byId.values()];
+
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string; targetDurationSeconds?: number };
 let seq = 0;
 const preferredRestSeconds = () => {
   if (typeof window === "undefined") return 90;
   try { return Number((JSON.parse(localStorage.getItem("recomp-user-preferences-v1") ?? "null") as { defaultRestSeconds?: number } | null)?.defaultRestSeconds ?? 90); } catch { return 90; }
 };
-export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12", restSeconds: preferredRestSeconds() });
+export const toWorkoutExercise = (exercise: Exercise): WorkoutExercise => isCardioExercise(exercise)
+  ? { ...exercise, key: `${exercise.id}-${seq++}`, sets: 1, reps: "", targetDurationSeconds: 1200, restSeconds: 0 }
+  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: exercise.type === "Compound" ? "6–8" : "10–12", restSeconds: preferredRestSeconds() };
 
-const shuffle = <T,>(a: T[], random: () => number = Math.random) => {
-  const result = [...a];
+const shuffle = <T,>(items: T[], random: () => number = Math.random) => {
+  const result = [...items];
   for (let index = result.length - 1; index > 0; index--) {
     const swapIndex = Math.floor(random() * (index + 1));
-    [result[index], result[swapIndex]] = [result[swapIndex]!, result[index]!];
+    const current = result[index]; const swap = result[swapIndex];
+    if (current === undefined || swap === undefined) continue;
+    result[index] = swap; result[swapIndex] = current;
   }
   return result;
 };
-
-function seededRandom(seed: number) {
-  let state = seed || 1;
-  return () => {
-    state = Math.imul(state ^ (state >>> 15), 1 | state);
-    state ^= state + Math.imul(state ^ (state >>> 7), 61 | state);
-    return ((state ^ (state >>> 14)) >>> 0) / 4294967296;
-  };
-}
+function seededRandom(seed: number) { let state = seed || 1; return () => { state = Math.imul(state ^ (state >>> 15), 1 | state); state ^= state + Math.imul(state ^ (state >>> 7), 61 | state); return ((state ^ (state >>> 14)) >>> 0) / 4294967296; }; }
+const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || exercise.muscles?.includes(muscle);
 
 export function generateWorkout(muscles: Muscle[], count: number, seed = 1): WorkoutExercise[] {
   if (!muscles.length) return [];
   const random = seededRandom(seed);
-  const pools = new Map(muscles.map((m) => {
-    const list = exercises.filter((e) => e.muscle === m);
-    return [m, [...shuffle(list.filter((e) => e.type === "Compound"), random), ...shuffle(list.filter((e) => e.type === "Isolation"), random)]];
+  const pools = new Map<Muscle, Exercise[]>(muscles.map((muscle) => {
+    const list = exercises.filter((exercise) => !isCardioExercise(exercise) && matchesMuscle(exercise, muscle));
+    const primary = list.filter((exercise) => exercise.muscle === muscle);
+    const secondary = list.filter((exercise) => exercise.muscle !== muscle);
+    return [muscle, [...shuffle(primary.filter((exercise) => exercise.type === "Compound"), random), ...shuffle(primary.filter((exercise) => exercise.type === "Isolation"), random), ...shuffle(secondary, random)]];
   }));
-  const picked: Exercise[] = [];
-  let guard = 0;
+  const picked: Exercise[] = []; const used = new Set<string>(); let guard = 0;
   while (picked.length < count && guard++ < 100) {
     let added = false;
-    for (const m of muscles) {
+    for (const muscle of muscles) {
       if (picked.length >= count) break;
-      const next = pools.get(m)!.shift();
-      if (next) { picked.push(next); added = true; }
+      const pool = pools.get(muscle) ?? [];
+      const next = pool.find((exercise) => !used.has(exercise.id));
+      if (next) { picked.push(next); used.add(next.id); pools.set(muscle, pool.filter((exercise) => exercise.id !== next.id)); added = true; }
     }
     if (!added) break;
   }
@@ -83,8 +151,8 @@ export function generateWorkout(muscles: Muscle[], count: number, seed = 1): Wor
 }
 
 export function findReplacement(current: WorkoutExercise, workout: WorkoutExercise[]): Exercise | undefined {
-  const used = new Set(workout.map((e) => e.id));
-  const options = exercises.filter((e) => e.muscle === current.muscle && !used.has(e.id));
-  const same = options.filter((e) => e.type === current.type);
+  const used = new Set(workout.map((exercise) => exercise.id));
+  const options = exercises.filter((exercise) => isCardioExercise(exercise) === isCardioExercise(current) && matchesMuscle(exercise, current.muscle) && !used.has(exercise.id));
+  const same = options.filter((exercise) => exercise.type === current.type);
   return shuffle(same.length ? same : options)[0];
 }
