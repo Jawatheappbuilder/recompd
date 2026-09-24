@@ -10,6 +10,16 @@ export type ActiveSet = {
   reps: string;
   completed: boolean;
   weightEdited: boolean;
+  kind?: "strength" | "cardio";
+  durationSeconds?: string;
+  distanceKm?: string;
+  speedKph?: string;
+  pace?: string;
+  incline?: string;
+  level?: string;
+  floors?: string;
+  steps?: string;
+  pace500m?: string;
 };
 
 export type ActiveExercise = WorkoutExercise & {
@@ -45,12 +55,13 @@ export function createActiveWorkout(exercises: WorkoutExercise[], customName?: s
     exercises: exercises.map((exercise) => ({
       ...exercise,
       restSeconds: exercise.restSeconds ?? (exercise.type === "Compound" ? 120 : 90),
-      sessionSets: Array.from({ length: exercise.sets }, (_, index) => ({
+      sessionSets: Array.from({ length: exercise.tracking === "cardio" ? 1 : exercise.sets }, (_, index) => ({
         id: `${exercise.key}-set-${index}-${Date.now()}`,
         weight: "",
-        reps: repsFromTarget(exercise.reps),
+        reps: exercise.tracking === "cardio" ? "" : repsFromTarget(exercise.reps),
         completed: false,
         weightEdited: false,
+        ...(exercise.tracking === "cardio" ? { kind: "cardio" as const, durationSeconds: String(exercise.targetDurationSeconds ?? 1200) } : {}),
       })),
     })),
   };

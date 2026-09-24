@@ -65,8 +65,10 @@ async function fetchAll(): Promise<CloudData> {
   if (error) throw error;
   const byWorkout = new Map<string, CompletedExercise[]>();
   for (const row of e.data ?? []) {
-    const sets = (row.sets as { weight: number; reps: number }[]).map((set) => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
-    const exercise: CompletedExercise = { key: row.exercise_key, exerciseId: row.exercise_id, name: row.name, muscles: row.muscles as Muscle[], equipment: row.equipment as Equipment, sets, ...(row.superset_with ? { supersetWith: row.superset_with } : {}) };
+    const rawSets = row.sets as unknown as CompletedExercise["sets"];
+    const sets = rawSets.map((set) => ({ ...set, weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
+    const cardio = sets.some((set) => set.kind === "cardio" || set.durationSeconds !== undefined);
+    const exercise: CompletedExercise = { key: row.exercise_key, exerciseId: row.exercise_id, name: row.name, muscles: row.muscles as Muscle[], equipment: row.equipment as Equipment, tracking: cardio ? "cardio" : "strength", sets, ...(row.superset_with ? { supersetWith: row.superset_with } : {}) };
     byWorkout.set(row.workout_id, [...(byWorkout.get(row.workout_id) ?? []), exercise]);
   }
   return {
@@ -86,7 +88,7 @@ async function run(op: Op) {
       check(await supabase.from("workout_exercises").delete().eq("workout_id", w.id));
       if (w.exercises.length) check(await supabase.from("workout_exercises").insert(w.exercises.map((ex, position) => ({
         user_id: userId!, workout_id: w.id, position, exercise_key: ex.key, exercise_id: ex.exerciseId, name: ex.name.slice(0, 120), muscles: ex.muscles, equipment: ex.equipment,
-        superset_with: ex.supersetWith ?? null, sets: ex.sets.map((set) => ({ weight: set.weight, reps: set.reps, completed: true })) as unknown as Json,
+        superset_with: ex.supersetWith ?? null, sets: ex.sets.map((set) => ({ ...set, completed: true })) as unknown as Json,
       }))));
       return;
     }

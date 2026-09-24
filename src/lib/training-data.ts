@@ -1,4 +1,4 @@
-import type { Equipment, Muscle } from "@/data/exercises";
+import type { CardioMetric, Equipment, Muscle } from "@/data/exercises";
 import { mutate, useCloudData } from "./cloud-data";
 import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
 
@@ -8,8 +8,12 @@ import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
  * Home and Progress should both derive their numbers from the selectors below.
  */
 
-export type CompletedSet = { weight: number; reps: number };
-export type CompletedExercise = { key: string; exerciseId: string; name: string; muscles: Muscle[]; equipment: Equipment; sets: CompletedSet[]; supersetWith?: string };
+export type CompletedSet = {
+  weight: number; reps: number; kind?: "strength" | "cardio";
+  durationSeconds?: number; distanceKm?: number; speedKph?: number; pace?: string;
+  incline?: number; level?: number; floors?: number; steps?: number; pace500m?: string;
+};
+export type CompletedExercise = { key: string; exerciseId: string; name: string; muscles: Muscle[]; equipment: Equipment; tracking?: "strength" | "cardio"; cardioMetrics?: CardioMetric[]; sets: CompletedSet[]; supersetWith?: string };
 export type CompletedWorkout = { id: string; name: string; startedAt: number; durationSec: number; exercises: CompletedExercise[] };
 export type BodyweightEntry = { id: string; kg: number; loggedAt: number };
 export type TrainingData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[] };
@@ -30,8 +34,18 @@ export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: numb
       name: exercise.name,
       muscles: exercise.muscles?.length ? exercise.muscles : [exercise.muscle],
       equipment: exercise.equipment,
+      tracking: exercise.tracking ?? "strength",
+      ...(exercise.cardioMetrics ? { cardioMetrics: exercise.cardioMetrics } : {}),
       ...(exercise.supersetWith ? { supersetWith: exercise.supersetWith } : {}),
-      sets: exercise.sessionSets.filter((set) => set.completed).map((set) => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 })),
+      sets: exercise.sessionSets.filter((set) => set.completed).map((set) => exercise.tracking === "cardio" ? {
+        kind: "cardio" as const, weight: 0, reps: 0,
+        durationSeconds: Number(set.durationSeconds) || 0,
+        ...(Number(set.distanceKm) > 0 ? { distanceKm: Number(set.distanceKm) } : {}),
+        ...(Number(set.speedKph) > 0 ? { speedKph: Number(set.speedKph) } : {}),
+        ...(set.pace ? { pace: set.pace } : {}), ...(Number(set.incline) > 0 ? { incline: Number(set.incline) } : {}),
+        ...(Number(set.level) > 0 ? { level: Number(set.level) } : {}), ...(Number(set.floors) > 0 ? { floors: Number(set.floors) } : {}),
+        ...(Number(set.steps) > 0 ? { steps: Number(set.steps) } : {}), ...(set.pace500m ? { pace500m: set.pace500m } : {}),
+      } : { weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 })),
     }))
     .filter((exercise) => exercise.sets.length);
   return { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises };
@@ -61,6 +75,21 @@ export const formatLongDay = (ts: number) => new Date(ts).toLocaleDateString("en
 export const formatTime = (ts: number) => new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 export const formatKg = (kg: number) => `${Number.isInteger(kg) ? kg : kg.toFixed(1).replace(/\.0$/, "")} kg`;
 export const formatSet = (set: CompletedSet) => set.weight > 0 ? `${formatKg(set.weight)} × ${set.reps}` : `${set.reps} reps`;
+export const isCardioSet = (set: CompletedSet) => set.kind === "cardio" || set.durationSeconds !== undefined;
+export function formatCardioSet(set: CompletedSet) {
+  const values: string[] = [];
+  if (set.durationSeconds) values.push(formatDuration(set.durationSeconds));
+  if (set.distanceKm) values.push(`${set.distanceKm.toLocaleString()} km`);
+  if (set.speedKph) values.push(`${set.speedKph.toLocaleString()} km/h`);
+  if (set.pace) values.push(`${set.pace} /km`);
+  if (set.incline) values.push(`${set.incline}% incline`);
+  if (set.level) values.push(`Level ${set.level}`);
+  if (set.floors) values.push(`${set.floors} floors`);
+  if (set.steps) values.push(`${set.steps.toLocaleString()} steps`);
+  if (set.pace500m) values.push(`${set.pace500m} /500m`);
+  return values.join(" · ") || "Cardio completed";
+}
+export const formatPerformance = (set: CompletedSet) => isCardioSet(set) ? formatCardioSet(set) : formatSet(set);
 export const dayKey = (ts: number) => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 
 // ---------- selectors ----------
@@ -77,7 +106,7 @@ export function trainingSummary(workouts: CompletedWorkout[], from: number) {
   return { workouts: inRange.length, sets: inRange.reduce((t, w) => t + setCount(w), 0), durationSec: inRange.reduce((t, w) => t + w.durationSec, 0) };
 }
 
-export type PriorityLevel = "High" | "Medium" | "Low";
+export type WorkloadLevel = "High workload" | "Moderate workload" | "Low workload";
 export const priorityMuscles: Muscle[] = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Core"];
 
 /** Completed sets per muscle; the first listed muscle gets full credit, supporting muscles get half. */
@@ -86,6 +115,7 @@ export function trainingPriority(workouts: CompletedWorkout[], from: number) {
   for (const workout of workouts) {
     if (workout.startedAt < from) continue;
     for (const exercise of workout.exercises) {
+      if (exercise.tracking === "cardio" || exercise.sets.some(isCardioSet)) continue;
       exercise.muscles.forEach((muscle, index) => scores.set(muscle, (scores.get(muscle) ?? 0) + exercise.sets.length * (index === 0 ? 1 : 0.5)));
     }
   }
@@ -94,7 +124,7 @@ export function trainingPriority(workouts: CompletedWorkout[], from: number) {
     .map((muscle) => {
       const score = scores.get(muscle) ?? 0;
       const ratio = max ? score / max : 0;
-      const level: PriorityLevel = ratio >= 0.66 ? "High" : ratio >= 0.33 ? "Medium" : "Low";
+      const level: WorkloadLevel = ratio >= 0.66 ? "High workload" : ratio >= 0.33 ? "Moderate workload" : "Low workload";
       return { muscle, score, ratio, level };
     })
     .sort((a, b) => b.score - a.score);
@@ -114,6 +144,7 @@ export function personalRecords(workouts: CompletedWorkout[]) {
   const prsByWorkout = new Map<string, { exerciseId: string; name: string; set: CompletedSet }[]>();
   for (const workout of [...workouts].sort((a, b) => a.startedAt - b.startedAt)) {
     for (const exercise of workout.exercises) {
+      if (exercise.tracking === "cardio" || exercise.sets.some(isCardioSet)) continue;
       const top = exercise.sets.reduce<CompletedSet | undefined>((best, set) => setBeats(set, best) ? set : best, undefined);
       if (!top) continue;
       const bodyweight = exercise.sets.every((set) => set.weight === 0);
@@ -143,7 +174,7 @@ export function personalRecords(workouts: CompletedWorkout[]) {
 
 export function exerciseHistory(workouts: CompletedWorkout[], exerciseId: string) {
   return workouts
-    .flatMap((workout) => workout.exercises.filter((exercise) => exercise.exerciseId === exerciseId).map((exercise) => ({ workoutId: workout.id, at: workout.startedAt, name: exercise.name, sets: exercise.sets })))
+    .flatMap((workout) => workout.exercises.filter((exercise) => exercise.exerciseId === exerciseId).map((exercise) => ({ workoutId: workout.id, at: workout.startedAt, name: exercise.name, tracking: exercise.tracking ?? (exercise.sets.some(isCardioSet) ? "cardio" : "strength"), sets: exercise.sets })))
     .sort((a, b) => b.at - a.at);
 }
 
