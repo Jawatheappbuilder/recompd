@@ -16,8 +16,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const entryRoute = pathname === "/welcome" || pathname === "/create-account" || pathname === "/login" || pathname === "/forgot-password" || pathname.startsWith("/onboarding");
   useEffect(() => {
-    if (pathname === "/" && (!hasStoredUserPreferences() || !loadUserPreferences().onboardingComplete)) void navigate({ to: "/welcome", replace: true });
-  }, [navigate, pathname]);
+    if (!entryRoute && (!hasStoredUserPreferences() || !loadUserPreferences().onboardingComplete)) void navigate({ to: "/welcome", replace: true });
+  }, [entryRoute, navigate]);
   return (
     <div className="min-h-dvh bg-app-canvas">
       <div className="relative mx-auto min-h-dvh max-w-[430px] bg-background md:border-x md:border-border">
