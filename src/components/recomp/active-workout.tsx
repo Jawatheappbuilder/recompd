@@ -35,7 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { equipmentTypes, exercises, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
+import { equipmentTypes, exercises, isCardioExercise, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
 import { personalRecords, recordCompletedWorkout, toCompletedWorkout, useTrainingData } from "@/lib/training-data";
 import { ShareWorkoutButton } from "./share-workout";
@@ -268,17 +268,28 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
   const done = exercise.sessionSets.filter((set) => set.completed).length;
   return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/50 bg-primary/[0.04]", completed && "border-primary/20 bg-accent")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
     <button type="button" className="grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 text-left" onClick={onToggle}>
-      <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-primary")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
+      <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-primary")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
       <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!completed && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
-      {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
-      <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
-      <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
-      <div className="mt-2 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
-       <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
+      {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
+        {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
+        <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
+        <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
+        <div className="mt-2 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
+        <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
+      </>}
+      {isCardioExercise(exercise) && <div className="mt-2 flex justify-end"><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>}
     </div>}
   </Card>;
+}
+
+const cardioInput = "h-10 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary";
+function CardioFields({ exercise, set, onChange, onToggle }: { exercise: ActiveExercise; set: ActiveSet | undefined; onChange: (patch: Partial<ActiveSet>) => void; onToggle: () => void }) {
+  if (!set) return null;
+  const metrics = new Set(exercise.cardioMetrics ?? ["duration"]);
+  const field = (metric: string, label: string, key: keyof ActiveSet, mode: "numeric" | "decimal" = "decimal") => metrics.has(metric as never) ? <label className="min-w-0 text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">{label}</span><input inputMode={mode} value={String(set[key] ?? "")} onChange={(event) => onChange({ [key]: event.target.value })} className={cardioInput} /></label> : null;
+  return <div><div className="grid grid-cols-2 gap-2"><label className="min-w-0 text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">Duration (min)</span><input inputMode="decimal" value={set.durationSeconds ? Math.round(Number(set.durationSeconds) / 60) : ""} onChange={(event) => onChange({ durationSeconds: String((Number(event.target.value) || 0) * 60) })} className={cardioInput} /></label>{field("distance", "Distance (km)", "distanceKm")}{field("speed", "Speed (km/h)", "speedKph")}{field("pace", "Pace (/km)", "pace")}{field("incline", "Incline (%)", "incline")}{field("level", "Level", "level", "numeric")}{field("floors", "Floors", "floors", "numeric")}{field("steps", "Steps", "steps", "numeric")}{field("pace500m", "Pace /500m", "pace500m")}</div><Button variant={set.completed ? "primary" : "surface"} className="mt-3 w-full" onClick={onToggle}><Check />{set.completed ? "Cardio completed" : "Complete cardio"}</Button></div>;
 }
 
 function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
