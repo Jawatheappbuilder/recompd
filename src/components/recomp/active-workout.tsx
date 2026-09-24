@@ -110,13 +110,31 @@ export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutSta
     const nextExercises = workout.exercises.map((item) => item.key === exercise.key
       ? { ...item, sessionSets: item.sessionSets.map((row) => row.id === set.id ? { ...row, completed: nextCompleted } : row) }
       : item);
-    const completedExercise = nextExercises.find((item) => item.key === exercise.key)?.sessionSets.every((row) => row.completed) ?? false;
+    const updatedExercise = nextExercises.find((item) => item.key === exercise.key);
+    const completedExercise = updatedExercise?.sessionSets.every((row) => row.completed) ?? false;
     let currentKey = workout.currentKey;
-    if (completedExercise && workout.currentKey === exercise.key) {
-      currentKey = nextExercises.find((item) => !item.sessionSets.every((row) => row.completed))?.key ?? exercise.key;
+    let shouldRest = nextCompleted;
+    const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
+
+    if (nextCompleted && updatedExercise && partner && !partner.sessionSets.every((row) => row.completed)) {
+      const completedHere = updatedExercise.sessionSets.filter((row) => row.completed).length;
+      const completedThere = partner.sessionSets.filter((row) => row.completed).length;
+      if (completedThere < completedHere) {
+        currentKey = partner.key;
+        shouldRest = false;
+      } else if (!completedExercise) {
+        currentKey = partner.key;
+      }
+    }
+
+    if (completedExercise && currentKey === exercise.key) {
+      currentKey = partner && !partner.sessionSets.every((row) => row.completed)
+        ? partner.key
+        : nextExercises.find((item) => !item.sessionSets.every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
-    if (nextCompleted) setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true });
+    setExpandedUpcoming(null);
+    if (shouldRest) setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true });
   };
 
   const startExercise = (key: string) => {
@@ -245,7 +263,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void;
 }) {
   const done = exercise.sessionSets.filter((set) => set.completed).length;
-  return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/50 bg-elevated", completed && "border-primary/20 bg-accent")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
+  return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/50 bg-primary/[0.04]", completed && "border-primary/20 bg-accent")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
     <button type="button" className="grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 text-left" onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-primary")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
       <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!completed && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
@@ -255,7 +273,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
       <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
       <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
       <div className="mt-2 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
-      <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="min-h-9 text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
+       <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
     </div>}
   </Card>;
 }
@@ -274,7 +292,7 @@ function RestTimer({ seconds, onMinimize, onAdjust, onSkip }: { seconds: number;
   const stroke = 2 * Math.PI * 74;
   return <div role="dialog" aria-label="Rest timer" className="fixed inset-0 z-[60] mx-auto flex max-w-[430px] flex-col items-center justify-center bg-background/95 px-5 backdrop-blur-xl" onClick={onMinimize}>
     <button type="button" aria-label="Minimize rest timer" className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] grid size-11 place-items-center text-muted-foreground"><ChevronDown /></button>
-    <div className="relative size-48" onClick={(event) => event.stopPropagation()}><svg viewBox="0 0 168 168" className="size-full -rotate-90"><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={stroke} strokeDashoffset={stroke * (1 - Math.min(seconds / total, 1))}/></svg><div className="absolute inset-0 grid place-items-center text-center"><div><div className="text-[0.7rem] font-bold uppercase text-muted-foreground">Rest</div><div className="mt-1 text-5xl font-extrabold tabular-nums">{formatClock(seconds)}</div></div></div></div>
+    <div className="relative size-48" onClick={(event) => event.stopPropagation()}><svg viewBox="0 0 168 168" className="size-full -rotate-90"><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={stroke} strokeDashoffset={stroke * (1 - Math.min(seconds / total, 1))}/></svg><div className="absolute inset-x-0 top-12 text-center text-[0.7rem] font-bold uppercase text-muted-foreground">Rest</div><div className="absolute inset-0 grid place-items-center text-5xl font-extrabold tabular-nums">{formatClock(seconds)}</div></div>
     <div className="mt-7 flex items-center gap-3" onClick={(event) => event.stopPropagation()}><Button variant="surface" onClick={() => onAdjust(-15)}>−15 sec</Button><Button variant="surface" onClick={onSkip}>Skip</Button><Button variant="surface" onClick={() => onAdjust(15)}>+15 sec</Button></div>
   </div>;
 }
@@ -291,8 +309,8 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   return <>
     <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button><Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button>{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}</div></DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !exercise.supersetWith).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[45, 60, 90, 120].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds}s</Button>)}</div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !exercise.supersetWith && !exercise.sessionSets.every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[30, 45, 60, 90, 120, 150, 180].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds} sec</Button>)}</div></DrawerContent></Drawer>
     <ExercisePicker open={sheet.kind === "add"} onClose={onClose} onSelect={onAdd} />
   </>;
 }
@@ -307,11 +325,15 @@ function FilterRow<T extends string>({ items, value, onSelect }: { items: readon
 function ExerciseOption({ exercise, onSelect }: { exercise: Exercise; onSelect: (exercise: Exercise) => void }) { return <DrawerClose asChild><button type="button" className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-left last:border-0" onClick={() => onSelect(exercise)}><span className="min-w-0"><span className="block text-sm font-bold">{exercise.name}</span><span className="mt-1 block text-[0.7rem] text-muted-foreground">{exercise.muscle} · {exercise.equipment}</span></span><Plus className="size-4 text-primary"/></button></DrawerClose>; }
 
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
+  const performed = result.workout.exercises.map((exercise) => ({
+    exercise,
+    sets: exercise.sessionSets.filter((set) => set.completed),
+  })).filter(({ sets }) => sets.length > 0);
   const share = async () => {
-    const details = result.workout.exercises.map((exercise) => `${exercise.name}: ${exercise.sessionSets.filter((set) => set.completed).map((set) => `${set.weight || "BW"}kg × ${set.reps}`).join(", ")}`).join("\n");
+    const details = performed.map(({ exercise, sets }) => `${exercise.name}: ${sets.map((set) => exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`).join(", ")}`).join("\n");
     const text = `${result.workout.name}\n${formatDuration(result.duration)}\n\n${details}`;
     if (navigator.share) await navigator.share({ title: result.workout.name, text }); else await navigator.clipboard.writeText(text);
   };
-  return <div className="flex min-h-[calc(100dvh-8rem)] flex-col justify-center py-8"><CircleCheck className="size-11 text-primary"/><p className="mt-5 text-[0.7rem] font-bold uppercase text-primary">Workout complete</p><h1 className="mt-1 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1><div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises}/${result.workout.exercises.length}`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={`${Math.round(result.volume).toLocaleString()} kg`}/></div><Button variant="primary" size="xl" className="mt-5 w-full" onClick={() => void share()}><Share2/>Share workout</Button></div>;
+  return <div className="py-8"><CircleCheck className="size-11 text-primary"/><p className="mt-5 text-[0.7rem] font-bold uppercase text-primary">Workout complete</p><h1 className="mt-1 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1><div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={`${Math.round(result.volume).toLocaleString()} kg`}/></div>{performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}<Button variant="primary" size="xl" className="mt-5 w-full" onClick={() => void share()}><Share2/>Share workout</Button></div>;
 }
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
