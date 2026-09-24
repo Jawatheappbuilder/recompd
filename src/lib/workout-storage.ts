@@ -14,6 +14,8 @@ const read = <T,>(key: string): T[] => {
 
 export const loadCustomExercises = () => read<Exercise>(CUSTOM_KEY);
 export const saveCustomExercise = (exercise: Exercise) => localStorage.setItem(CUSTOM_KEY, JSON.stringify([...loadCustomExercises(), exercise]));
+export const updateCustomExercise = (exercise: Exercise) => localStorage.setItem(CUSTOM_KEY, JSON.stringify(loadCustomExercises().map((item) => item.id === exercise.id ? exercise : item)));
+export const deleteCustomExercise = (id: string) => localStorage.setItem(CUSTOM_KEY, JSON.stringify(loadCustomExercises().filter((item) => item.id !== id)));
 
 export const loadSavedWorkouts = () => read<SavedWorkout>(SAVED_KEY);
 export const saveWorkout = (workout: SavedWorkout) => {
