@@ -45,7 +45,7 @@ export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: numb
         ...(set.pace ? { pace: set.pace } : {}), ...(Number(set.incline) > 0 ? { incline: Number(set.incline) } : {}),
         ...(Number(set.level) > 0 ? { level: Number(set.level) } : {}), ...(Number(set.floors) > 0 ? { floors: Number(set.floors) } : {}),
         ...(Number(set.steps) > 0 ? { steps: Number(set.steps) } : {}), ...(set.pace500m ? { pace500m: set.pace500m } : {}),
-      } : { weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 })),
+      } : { weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }),
     }))
     .filter((exercise) => exercise.sets.length);
   return { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises };
