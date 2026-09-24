@@ -1,5 +1,5 @@
 import { exercises as exerciseLibrary, type CardioMetric, type Equipment, type Muscle } from "@/data/exercises";
-import { mutate, useCloudData } from "./cloud-data";
+import { getCloudData, mutate, useCloudData } from "./cloud-data";
 import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
 
 /*
