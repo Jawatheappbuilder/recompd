@@ -55,6 +55,8 @@ export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: 
   const workout = toCompletedWorkout(active, durationSec);
   if (!workout.exercises.length) return;
   mutate({ kind: "upsertWorkout", workout });
+  const scheduled = active.scheduledId ? getCloudData()?.scheduled.find((item) => item.id === active.scheduledId) : undefined;
+  if (scheduled) mutate({ kind: "upsertScheduled", workout: { ...scheduled, completedAt: Date.now(), completedWorkoutId: workout.id, updatedAt: Date.now() } });
 }
 export const updateWorkout = (workout: CompletedWorkout) => mutate({ kind: "upsertWorkout", workout });
 export const deleteWorkout = (id: string) => mutate({ kind: "deleteWorkout", id });
