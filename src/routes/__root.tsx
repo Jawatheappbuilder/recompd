@@ -109,6 +109,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function() { try { const stored = localStorage.getItem("recomp-user-preferences-v1"); const preferences = stored ? JSON.parse(stored) : null; const theme = preferences?.theme || "system"; const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches); if (isDark) document.documentElement.classList.add("dark"); else document.documentElement.classList.remove("dark"); } catch (e) {} })();` }} />
         <HeadContent />
       </head>
       <body>
