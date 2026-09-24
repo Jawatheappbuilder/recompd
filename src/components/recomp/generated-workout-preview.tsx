@@ -81,6 +81,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
   };
 
   const startWorkout = () => {
+    localStorage.removeItem("recomp-active-workout-v1");
     sessionStorage.setItem("recomp-active-workout", JSON.stringify(workout));
     void navigate({ to: "/workout" });
   };
