@@ -137,6 +137,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_workouts: {
+        Row: {
+          completed_at: string | null
+          completed_workout_id: string | null
+          created_at: string
+          exercises: Json
+          id: string
+          name: string
+          reminder_offset_minutes: number | null
+          scheduled_date: string
+          scheduled_time: string | null
+          source_saved_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_workout_id?: string | null
+          created_at?: string
+          exercises?: Json
+          id: string
+          name: string
+          reminder_offset_minutes?: number | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          source_saved_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_workout_id?: string | null
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name?: string
+          reminder_offset_minutes?: number | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          source_saved_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_exercises: {
         Row: {
           equipment: string
