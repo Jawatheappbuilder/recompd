@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { deleteWorkout, formatDuration, formatKg, formatLongDay, formatSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
+import { deleteWorkout, formatDuration, formatLongDay, formatSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 import { SubHeader } from "./progress-widgets";
 
 export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs: { exerciseId: string; set: CompletedSet }[] }) {
@@ -101,7 +101,6 @@ function WorkoutEditForm({ workout, onDone }: { workout: CompletedWorkout; onDon
         ))}
       </div>
       <Button variant="primary" size="lg" className="mt-4 w-full" onClick={save}>Save changes</Button>
-      <p className="sr-only">{formatKg(0)}</p>
     </>
   );
 }

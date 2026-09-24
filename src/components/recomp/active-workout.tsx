@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { equipmentTypes, exercises, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
+import { recordCompletedWorkout } from "@/lib/training-data";
 import { cn } from "@/lib/utils";
 
 type Sheet =
@@ -192,6 +193,7 @@ export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutSta
       volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed).reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
     };
     localStorage.setItem("recomp-last-workout", JSON.stringify(result));
+    recordCompletedWorkout(workout, elapsed);
     localStorage.removeItem("recomp-active-workout-v1");
     setFinished(result);
     setFinishOpen(false);
