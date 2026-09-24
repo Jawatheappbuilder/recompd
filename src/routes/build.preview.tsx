@@ -26,7 +26,7 @@ export const Route = createFileRoute("/build/preview")({
 function GeneratedPreviewPage() {
   const search = Route.useSearch();
   const allowed = new Set<string>(muscleGroups);
-  const muscles = search.muscles.split(",").filter((muscle): muscle is Muscle => allowed.has(muscle));
+  const muscles = search["muscles"].split(",").filter((muscle: string): muscle is Muscle => allowed.has(muscle));
   const selection: Muscle[] = muscles.length ? muscles : ["Chest", "Back"];
-  return <Screen><GeneratedWorkoutPreview key={`${selection.join("-")}-${search.count}`} muscles={selection} count={search.count} /></Screen>;
+  return <Screen><GeneratedWorkoutPreview key={`${selection.join("-")}-${search["count"]}`} muscles={selection} count={search["count"]} /></Screen>;
 }

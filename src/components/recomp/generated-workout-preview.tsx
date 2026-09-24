@@ -125,13 +125,13 @@ export function GeneratedWorkoutPreview({ muscles, count }: { muscles: Muscle[];
         open={sheet.kind === "replace"}
         exercise={sheet.kind === "replace" ? workout.find((item) => item.key === sheet.key) : undefined}
         workout={workout}
-        onOpenChange={(open) => !open && setSheet({ kind: "closed" })}
-        onSelect={(exercise) => sheet.kind === "replace" && replace(sheet.key, exercise)}
+        onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
+        onSelect={(exercise) => { if (sheet.kind === "replace") replace(sheet.key, exercise); }}
       />
       <RepDrawer
         open={sheet.kind === "reps"}
         value={sheet.kind === "reps" ? workout.find((item) => item.key === sheet.key)?.reps : undefined}
-        onOpenChange={(open) => !open && setSheet({ kind: "closed" })}
+        onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(reps) => {
           if (sheet.kind === "reps") update(sheet.key, { reps });
           setSheet({ kind: "closed" });
@@ -139,7 +139,7 @@ export function GeneratedWorkoutPreview({ muscles, count }: { muscles: Muscle[];
       />
       <ExerciseLibraryDrawer
         open={sheet.kind === "add"}
-        onOpenChange={(open) => !open && setSheet({ kind: "closed" })}
+        onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(exercise) => {
           setWorkout((current) => [...current, toWorkoutExercise(exercise)]);
           setSheet({ kind: "closed" });
@@ -197,7 +197,7 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onRemove
 
 function ReplaceDrawer({ open, exercise, workout, onOpenChange, onSelect }: {
   open: boolean;
-  exercise?: WorkoutExercise;
+  exercise: WorkoutExercise | undefined;
   workout: WorkoutExercise[];
   onOpenChange: (open: boolean) => void;
   onSelect: (exercise: Exercise) => void;
@@ -220,7 +220,7 @@ function ReplaceDrawer({ open, exercise, workout, onOpenChange, onSelect }: {
   );
 }
 
-function RepDrawer({ open, value, onOpenChange, onSelect }: { open: boolean; value?: string; onOpenChange: (open: boolean) => void; onSelect: (reps: string) => void }) {
+function RepDrawer({ open, value, onOpenChange, onSelect }: { open: boolean; value: string | undefined; onOpenChange: (open: boolean) => void; onSelect: (reps: string) => void }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover">
