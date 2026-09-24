@@ -28,6 +28,7 @@ const strength: RawStrength[] = [
   ["Machine Chest Press","Chest","Machine","C",["Triceps","Shoulders"]], ["Plate-Loaded Chest Press","Chest","Plate-loaded Machine","C",["Triceps","Shoulders"]], ["Incline Plate-Loaded Press","Chest","Plate-loaded Machine","C",["Shoulders","Triceps"]],
   ["Pin-Loaded Chest Press","Chest","Pin-loaded Machine","C",["Triceps"]], ["Smith Machine Bench Press","Chest","Smith Machine","C",["Triceps","Shoulders"]], ["Smith Machine Incline Press","Chest","Smith Machine","C",["Shoulders","Triceps"]],
   ["Push-Up","Chest","Bodyweight","C",["Triceps","Shoulders","Core"]], ["Deficit Push-Up","Chest","Bodyweight","C",["Triceps","Shoulders","Core"]], ["Chest Dip","Chest","Bodyweight","C",["Triceps","Shoulders"]],
+  ["Single-Arm Cable Chest Press","Chest","Cable","C",["Triceps","Shoulders"]],
   ["Cable Fly","Chest","Cable","I"], ["Low-to-High Cable Fly","Chest","Cable","I"], ["High-to-Low Cable Fly","Chest","Cable","I"], ["Pec Deck","Chest","Pin-loaded Machine","I"], ["Dumbbell Fly","Chest","Dumbbell","I"], ["Dumbbell Pullover","Chest","Dumbbell","C",["Back","Triceps"]],
   // Back
   ["Barbell Row","Back","Barbell","C",["Biceps","Shoulders","Core"]], ["Pendlay Row","Back","Barbell","C",["Biceps","Core"]], ["Underhand Barbell Row","Back","Barbell","C",["Biceps","Core"]], ["Meadows Row","Back","Barbell","C",["Biceps","Core"]],
@@ -35,16 +36,19 @@ const strength: RawStrength[] = [
   ["Pull-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Chin-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Neutral-Grip Pull-Up","Back","Bodyweight","C",["Biceps","Core"]], ["Inverted Row","Back","Bodyweight","C",["Biceps","Core"]],
   ["Lat Pulldown","Back","Cable","C",["Biceps"]], ["Neutral-Grip Lat Pulldown","Back","Cable","C",["Biceps"]], ["Single-Arm Lat Pulldown","Back","Cable","C",["Biceps"]], ["Seated Cable Row","Back","Cable","C",["Biceps","Shoulders"]], ["Wide Cable Row","Back","Cable","C",["Biceps","Shoulders"]], ["Single-Arm Cable Row","Back","Cable","C",["Biceps"]], ["Straight-Arm Pulldown","Back","Cable","I",["Triceps"]],
   ["Chest-Supported Row","Back","Machine","C",["Biceps","Shoulders"]], ["Machine Row","Back","Machine","C",["Biceps"]], ["Plate-Loaded High Row","Back","Plate-loaded Machine","C",["Biceps","Shoulders"]], ["Plate-Loaded Low Row","Back","Plate-loaded Machine","C",["Biceps"]], ["Pin-Loaded Pullover","Back","Pin-loaded Machine","I"], ["Deadlift","Back","Barbell","C",["Hamstrings","Glutes","Core"]], ["Rack Pull","Back","Barbell","C",["Glutes","Hamstrings"]],
+  ["T-Bar Row","Back","Plate-loaded Machine","C",["Biceps","Shoulders"]],
   // Shoulders
   ["Overhead Press","Shoulders","Barbell","C",["Triceps","Core"]], ["Push Press","Shoulders","Barbell","C",["Triceps","Quads","Glutes","Core"]],
   ["Seated Dumbbell Press","Shoulders","Dumbbell","C",["Triceps"]], ["Standing Dumbbell Press","Shoulders","Dumbbell","C",["Triceps","Core"]], ["Arnold Press","Shoulders","Dumbbell","C",["Triceps"]],
   ["Machine Shoulder Press","Shoulders","Machine","C",["Triceps"]], ["Plate-Loaded Shoulder Press","Shoulders","Plate-loaded Machine","C",["Triceps"]], ["Pin-Loaded Shoulder Press","Shoulders","Pin-loaded Machine","C",["Triceps"]], ["Smith Machine Shoulder Press","Shoulders","Smith Machine","C",["Triceps"]],
   ["Lateral Raise","Shoulders","Dumbbell","I"], ["Lean-Away Lateral Raise","Shoulders","Dumbbell","I"], ["Cable Lateral Raise","Shoulders","Cable","I"], ["Behind-the-Back Cable Lateral Raise","Shoulders","Cable","I"], ["Machine Lateral Raise","Shoulders","Pin-loaded Machine","I"],
   ["Rear Delt Fly","Shoulders","Machine","I",["Back"]], ["Cable Rear Delt Fly","Shoulders","Cable","I",["Back"]], ["Face Pull","Shoulders","Cable","I",["Back"]], ["Dumbbell Front Raise","Shoulders","Dumbbell","I"], ["Cable Front Raise","Shoulders","Cable","I"], ["Handstand Push-Up","Shoulders","Bodyweight","C",["Triceps","Core"]],
+  ["Landmine Press","Shoulders","Barbell","C",["Chest","Triceps","Core"]],
   // Biceps
   ["Barbell Curl","Biceps","Barbell","I"], ["EZ-Bar Curl","Biceps","Barbell","I"], ["Reverse Barbell Curl","Biceps","Barbell","I"],
   ["Dumbbell Curl","Biceps","Dumbbell","I"], ["Alternating Dumbbell Curl","Biceps","Dumbbell","I"], ["Hammer Curl","Biceps","Dumbbell","I"], ["Incline Dumbbell Curl","Biceps","Dumbbell","I"], ["Concentration Curl","Biceps","Dumbbell","I"], ["Spider Curl","Biceps","Dumbbell","I"],
   ["Cable Curl","Biceps","Cable","I"], ["Rope Hammer Curl","Biceps","Cable","I"], ["Bayesian Cable Curl","Biceps","Cable","I"], ["High Cable Curl","Biceps","Cable","I"], ["Single-Arm Cable Curl","Biceps","Cable","I"],
+  ["Cross-Body Hammer Curl","Biceps","Dumbbell","I"],
   ["Preacher Curl","Biceps","Machine","I"], ["Plate-Loaded Preacher Curl","Biceps","Plate-loaded Machine","I"], ["Pin-Loaded Biceps Curl","Biceps","Pin-loaded Machine","I"], ["Machine Preacher Curl","Biceps","Machine","I"],
   // Triceps
   ["Close-Grip Bench Press","Triceps","Barbell","C",["Chest","Shoulders"]], ["JM Press","Triceps","Barbell","C",["Chest"]], ["Skull Crusher","Triceps","Barbell","I"], ["Barbell Overhead Extension","Triceps","Barbell","I"],
@@ -52,18 +56,21 @@ const strength: RawStrength[] = [
   ["Rope Pushdown","Triceps","Cable","I"], ["Straight-Bar Pushdown","Triceps","Cable","I"], ["Single-Arm Cable Pushdown","Triceps","Cable","I"], ["Reverse-Grip Pushdown","Triceps","Cable","I"], ["Overhead Cable Extension","Triceps","Cable","I"], ["Single-Arm Overhead Cable Extension","Triceps","Cable","I"], ["Cable Cross-Body Extension","Triceps","Cable","I"],
   ["Dip","Triceps","Bodyweight","C",["Chest","Shoulders"]], ["Bench Dip","Triceps","Bodyweight","C",["Chest","Shoulders"]], ["Diamond Push-Up","Triceps","Bodyweight","C",["Chest","Shoulders","Core"]],
   ["Machine Triceps Dip","Triceps","Pin-loaded Machine","C",["Chest"]], ["Plate-Loaded Dip Press","Triceps","Plate-loaded Machine","C",["Chest"]], ["Machine Triceps Extension","Triceps","Pin-loaded Machine","I"],
+  ["Cable Skull Crusher","Triceps","Cable","I"],
   // Quads
   ["Back Squat","Quads","Barbell","C",["Glutes","Hamstrings","Core"]], ["Front Squat","Quads","Barbell","C",["Glutes","Core"]], ["High-Bar Squat","Quads","Barbell","C",["Glutes","Core"]],
   ["Goblet Squat","Quads","Dumbbell","C",["Glutes","Core"]], ["Bulgarian Split Squat","Quads","Dumbbell","C",["Glutes","Hamstrings"]], ["Dumbbell Step-Up","Quads","Dumbbell","C",["Glutes"]], ["Dumbbell Reverse Lunge","Quads","Dumbbell","C",["Glutes"]],
   ["Smith Machine Squat","Quads","Smith Machine","C",["Glutes"]], ["Smith Machine Front Squat","Quads","Smith Machine","C",["Glutes"]], ["Smith Machine Split Squat","Quads","Smith Machine","C",["Glutes"]],
   ["Leg Press","Quads","Plate-loaded Machine","C",["Glutes","Hamstrings"]], ["Single-Leg Press","Quads","Plate-loaded Machine","C",["Glutes"]], ["Hack Squat","Quads","Plate-loaded Machine","C",["Glutes"]], ["Pendulum Squat","Quads","Plate-loaded Machine","C",["Glutes"]], ["Belt Squat","Quads","Plate-loaded Machine","C",["Glutes"]],
   ["Leg Extension","Quads","Pin-loaded Machine","I"], ["Single-Leg Extension","Quads","Pin-loaded Machine","I"], ["Sissy Squat","Quads","Bodyweight","I"], ["Walking Lunge","Quads","Dumbbell","C",["Glutes","Hamstrings"]],
+  ["Dumbbell Front-Foot Elevated Split Squat","Quads","Dumbbell","C",["Glutes"]],
   // Hamstrings
   ["Romanian Deadlift","Hamstrings","Barbell","C",["Glutes","Back","Core"]], ["Stiff-Leg Deadlift","Hamstrings","Barbell","C",["Glutes","Back"]], ["Good Morning","Hamstrings","Barbell","C",["Glutes","Back","Core"]],
   ["Dumbbell Romanian Deadlift","Hamstrings","Dumbbell","C",["Glutes","Back"]], ["Single-Leg Romanian Deadlift","Hamstrings","Dumbbell","C",["Glutes","Core"]],
   ["Lying Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Seated Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Standing Single-Leg Curl","Hamstrings","Pin-loaded Machine","I"], ["Plate-Loaded Leg Curl","Hamstrings","Plate-loaded Machine","I"],
   ["Nordic Curl","Hamstrings","Bodyweight","I",["Glutes"]], ["Sliding Leg Curl","Hamstrings","Bodyweight","I",["Glutes","Core"]], ["Swiss Ball Leg Curl","Hamstrings","Bodyweight","I",["Glutes","Core"]], ["Glute-Ham Raise","Hamstrings","Bodyweight","C",["Glutes","Back"]],
   ["Cable Pull-Through","Hamstrings","Cable","C",["Glutes"]], ["Cable Romanian Deadlift","Hamstrings","Cable","C",["Glutes"]], ["Smith Machine Romanian Deadlift","Hamstrings","Smith Machine","C",["Glutes","Back"]],
+  ["Dumbbell Good Morning","Hamstrings","Dumbbell","C",["Glutes","Back"]],
   // Glutes
   ["Hip Thrust","Glutes","Barbell","C",["Hamstrings","Quads"]], ["Barbell Glute Bridge","Glutes","Barbell","C",["Hamstrings"]], ["Kas Glute Bridge","Glutes","Barbell","I",["Hamstrings"]],
   ["Dumbbell Hip Thrust","Glutes","Dumbbell","C",["Hamstrings"]], ["Walking Lunge","Glutes","Dumbbell","C",["Quads","Hamstrings"]], ["Dumbbell Curtsy Lunge","Glutes","Dumbbell","C",["Quads"]],
@@ -80,6 +87,7 @@ const strength: RawStrength[] = [
   ["Cable Crunch","Core","Cable","I"], ["Kneeling Cable Crunch","Core","Cable","I"], ["Cable Wood Chop","Core","Cable","C",["Shoulders"]], ["Pallof Press","Core","Cable","I"], ["Cable Side Bend","Core","Cable","I"],
   ["Hanging Leg Raise","Core","Bodyweight","I"], ["Hanging Knee Raise","Core","Bodyweight","I"], ["Captain's Chair Leg Raise","Core","Bodyweight","I"], ["Ab Wheel Rollout","Core","Bodyweight","C",["Shoulders"]], ["Plank","Core","Bodyweight","I"], ["Side Plank","Core","Bodyweight","I"], ["Dead Bug","Core","Bodyweight","I"], ["Bird Dog","Core","Bodyweight","I"], ["Reverse Crunch","Core","Bodyweight","I"], ["Bicycle Crunch","Core","Bodyweight","I"], ["V-Up","Core","Bodyweight","I"], ["Mountain Climber","Core","Bodyweight","C",["Shoulders"]],
   ["Weighted Crunch","Core","Dumbbell","I"], ["Dumbbell Side Bend","Core","Dumbbell","I"], ["Decline Sit-Up","Core","Bodyweight","I"], ["Rotary Torso Machine","Core","Pin-loaded Machine","I"],
+  ["Suitcase Carry","Core","Dumbbell","C",["Shoulders"]],
 ];
 
 type RawCardio = [string, CardioMetric[]];
