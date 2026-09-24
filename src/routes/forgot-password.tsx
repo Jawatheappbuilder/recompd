@@ -1,0 +1,7 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Mail } from "lucide-react";
+import { OnboardingHeader, OnboardingScreen } from "@/components/recomp/onboarding-ui";
+import { Button } from "@/components/ui/button";
+
+export const Route = createFileRoute("/forgot-password")({ head: () => ({ meta: [{ title: "Reset Password — RECOMP'D" }, { name: "description", content: "Password reset information for RECOMP'D." }, { property: "og:title", content: "Reset Password — RECOMP'D" }, { property: "og:description", content: "Password reset information for RECOMP'D." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ForgotPasswordPage });
+function ForgotPasswordPage() { return <OnboardingScreen><OnboardingHeader title="Reset password" subtitle="Password reset will be available when secure accounts are connected." backTo="/login" /><div className="grid flex-1 place-items-center"><div className="text-center"><div className="mx-auto grid size-14 place-items-center rounded-xl border border-border bg-card text-primary"><Mail /></div><p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">No reset email has been sent. Your training data remains on this device.</p></div></div><Button asChild variant="surface" size="xl" className="w-full"><Link to="/login">Back to log in</Link></Button></OnboardingScreen>; }

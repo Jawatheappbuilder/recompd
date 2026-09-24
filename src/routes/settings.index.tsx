@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CircleUserRound, Cloud, Dumbbell, FileText, HelpCircle, Info, LockKeyhole, Mail, Palette, Shield, SlidersHorizontal } from "lucide-react";
+import { CircleUserRound, Cloud, Dumbbell, FileText, Info, Mail, Palette, RefreshCcw, Shield, SlidersHorizontal } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Screen } from "@/components/recomp/core";
 import { SettingsHeader, SettingsLink, SettingsRow, SettingsSection } from "@/components/recomp/settings-ui";
 import { useUserPreferences } from "@/lib/user-preferences";
@@ -10,7 +11,8 @@ export const Route = createFileRoute("/settings/")({
 });
 
 function SettingsPage() {
-  const [preferences] = useUserPreferences();
+  const [preferences, setPreferences] = useUserPreferences();
+  const navigate = useNavigate();
   const theme = preferences.theme === "system" ? "System" : preferences.theme === "dark" ? "Dark" : "Light";
   return <Screen><SettingsHeader title="Settings" /><div className="space-y-5">
     <SettingsSection title="Profile"><SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} /></SettingsSection>
@@ -19,6 +21,7 @@ function SettingsPage() {
     <SettingsSection title="Appearance"><SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={theme} /></SettingsSection>
     <SettingsSection title="Account"><SettingsLink to="/settings/account" icon={CircleUserRound} label="Account" value="On this phone" /></SettingsSection>
     <SettingsSection title="Data"><SettingsRow icon={Cloud} label="Export data" value="Coming later" disabled /></SettingsSection>
+    <SettingsSection title="Preview"><SettingsRow icon={RefreshCcw} label="Restart onboarding" onClick={() => { setPreferences({ ...preferences, onboardingComplete: false }); void navigate({ to: "/welcome" }); }} /></SettingsSection>
     <SettingsSection title="About & support">
       <SettingsRow icon={Info} label="About RECOMP'D" value="Version 0.1.0" />
       <SettingsRow icon={Shield} label="Privacy Policy" value="Coming later" disabled />

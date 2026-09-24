@@ -1,7 +1,8 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Dumbbell, Hammer, House } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { hasStoredUserPreferences, loadUserPreferences } from "@/lib/user-preferences";
 
 const destinations = [
   { label: "Home", to: "/", icon: House },
@@ -11,11 +12,17 @@ const destinations = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const navigate = useNavigate();
+  const entryRoute = pathname === "/welcome" || pathname === "/create-account" || pathname === "/login" || pathname === "/forgot-password" || pathname.startsWith("/onboarding");
+  useEffect(() => {
+    if (pathname === "/" && (!hasStoredUserPreferences() || !loadUserPreferences().onboardingComplete)) void navigate({ to: "/welcome", replace: true });
+  }, [navigate, pathname]);
   return (
     <div className="min-h-dvh bg-app-canvas">
       <div className="relative mx-auto min-h-dvh max-w-[430px] bg-background md:border-x md:border-border">
-        <main className="min-h-dvh pb-[calc(5.25rem+env(safe-area-inset-bottom))]">{children}</main>
-        <BottomNavigation />
+        <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}>{children}</main>
+        {!entryRoute && <BottomNavigation />}
       </div>
     </div>
   );
