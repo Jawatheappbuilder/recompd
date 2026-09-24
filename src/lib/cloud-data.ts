@@ -12,7 +12,9 @@ import type { BodyweightEntry, CompletedExercise, CompletedWorkout } from "./tra
  */
 
 export type SavedWorkout = { id: string; name: string; exercises: WorkoutExercise[]; createdAt: number };
-export type CloudData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[]; saved: SavedWorkout[]; custom: Exercise[] };
+/** A planned instance of a workout on a date. `time` is "HH:MM" or undefined. `reminderOffsetMinutes` is reserved for native reminders. */
+export type ScheduledWorkout = { id: string; name: string; date: string; time?: string; exercises: WorkoutExercise[]; sourceSavedId?: string; reminderOffsetMinutes?: number; completedAt?: number; completedWorkoutId?: string; createdAt: number; updatedAt: number };
+export type CloudData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[]; saved: SavedWorkout[]; custom: Exercise[]; scheduled: ScheduledWorkout[] };
 
 type Op =
   | { kind: "upsertWorkout"; workout: CompletedWorkout }
@@ -22,7 +24,9 @@ type Op =
   | { kind: "upsertSaved"; workout: SavedWorkout }
   | { kind: "deleteSaved"; id: string }
   | { kind: "upsertCustom"; exercise: Exercise }
-  | { kind: "deleteCustom"; id: string };
+  | { kind: "deleteCustom"; id: string }
+  | { kind: "upsertScheduled"; workout: ScheduledWorkout }
+  | { kind: "deleteScheduled"; id: string };
 
 let userId: string | null = null;
 let data: CloudData | null = null;
@@ -39,6 +43,7 @@ const sortData = (d: CloudData): CloudData => ({
   bodyweight: [...d.bodyweight].sort((a, b) => a.loggedAt - b.loggedAt),
   saved: [...d.saved].sort((a, b) => b.createdAt - a.createdAt),
   custom: d.custom,
+  scheduled: [...(d.scheduled ?? [])].sort((a, b) => `${a.date}${a.time ?? ""}`.localeCompare(`${b.date}${b.time ?? ""}`)),
 });
 
 function commit(next: CloudData) {
@@ -54,14 +59,15 @@ const toCustom = (row: { id: string; name: string; muscles: string[]; equipment:
 };
 
 async function fetchAll(): Promise<CloudData> {
-  const [w, e, b, s, c] = await Promise.all([
+  const [w, e, b, s, c, sc] = await Promise.all([
     supabase.from("workouts").select("*"),
     supabase.from("workout_exercises").select("*").order("position"),
     supabase.from("bodyweight_entries").select("*"),
     supabase.from("saved_workouts").select("*"),
     supabase.from("custom_exercises").select("*").order("created_at"),
+    supabase.from("scheduled_workouts").select("*"),
   ]);
-  const error = w.error ?? e.error ?? b.error ?? s.error ?? c.error;
+  const error = w.error ?? e.error ?? b.error ?? s.error ?? c.error ?? sc.error;
   if (error) throw error;
   const byWorkout = new Map<string, CompletedExercise[]>();
   for (const row of e.data ?? []) {
@@ -76,6 +82,13 @@ async function fetchAll(): Promise<CloudData> {
     bodyweight: (b.data ?? []).map((row) => ({ id: row.id, kg: Number(row.kg), loggedAt: Date.parse(row.logged_at) })),
     saved: (s.data ?? []).map((row) => ({ id: row.id, name: row.name, exercises: row.exercises as unknown as WorkoutExercise[], createdAt: Date.parse(row.created_at) })),
     custom: (c.data ?? []).map(toCustom),
+    scheduled: (sc.data ?? []).map((row) => ({
+      id: row.id, name: row.name, date: row.scheduled_date, ...(row.scheduled_time ? { time: row.scheduled_time.slice(0, 5) } : {}),
+      exercises: row.exercises as unknown as WorkoutExercise[], ...(row.source_saved_id ? { sourceSavedId: row.source_saved_id } : {}),
+      ...(row.reminder_offset_minutes != null ? { reminderOffsetMinutes: row.reminder_offset_minutes } : {}),
+      ...(row.completed_at ? { completedAt: Date.parse(row.completed_at) } : {}), ...(row.completed_workout_id ? { completedWorkoutId: row.completed_workout_id } : {}),
+      createdAt: Date.parse(row.created_at), updatedAt: Date.parse(row.updated_at),
+    })),
   };
 }
 
@@ -99,6 +112,12 @@ async function run(op: Op) {
     case "deleteSaved": return check(await supabase.from("saved_workouts").delete().eq("id", op.id));
     case "upsertCustom": { const ex = op.exercise; return check(await supabase.from("custom_exercises").upsert({ user_id: userId!, id: ex.id, name: ex.name.slice(0, 120), muscles: ex.muscles?.length ? ex.muscles : [ex.muscle], equipment: ex.equipment })); }
     case "deleteCustom": return check(await supabase.from("custom_exercises").delete().eq("id", op.id));
+    case "upsertScheduled": { const sw = op.workout; return check(await supabase.from("scheduled_workouts").upsert({
+      user_id: userId!, id: sw.id, name: sw.name.slice(0, 120) || "Workout", scheduled_date: sw.date, scheduled_time: sw.time ?? null, exercises: sw.exercises as unknown as Json,
+      source_saved_id: sw.sourceSavedId ?? null, reminder_offset_minutes: sw.reminderOffsetMinutes ?? null,
+      completed_at: sw.completedAt ? new Date(sw.completedAt).toISOString() : null, completed_workout_id: sw.completedWorkoutId ?? null, created_at: new Date(sw.createdAt).toISOString(),
+    })); }
+    case "deleteScheduled": return check(await supabase.from("scheduled_workouts").delete().eq("id", op.id));
   }
 }
 
@@ -131,7 +150,7 @@ if (typeof window !== "undefined") {
 
 // ---------- lifecycle (called by auth) ----------
 export async function loadCloudData(id: string) {
-  if (userId !== id) { userId = id; data = readJson<CloudData>(snapshotKey(id)); notify(); }
+  if (userId !== id) { userId = id; const snap = readJson<CloudData>(snapshotKey(id)); data = snap ? { ...snap, scheduled: snap.scheduled ?? [] } : null; notify(); }
   await flush();
   try {
     const fresh = await fetchAll();
@@ -141,7 +160,7 @@ export async function loadCloudData(id: string) {
     for (const op of readQueue()) merged = apply(merged, op);
     commit(merged);
   } catch {
-    if (!data) commit({ workouts: [], bodyweight: [], saved: [], custom: [] });
+    if (!data) commit({ workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [] });
   }
 }
 
@@ -160,6 +179,8 @@ function apply(d: CloudData, op: Op): CloudData {
     case "deleteSaved": return { ...d, saved: d.saved.filter((s) => s.id !== op.id) };
     case "upsertCustom": return { ...d, custom: d.custom.some((c) => c.id === op.exercise.id) ? d.custom.map((c) => c.id === op.exercise.id ? op.exercise : c) : [...d.custom, op.exercise] };
     case "deleteCustom": return { ...d, custom: d.custom.filter((c) => c.id !== op.id) };
+    case "upsertScheduled": return { ...d, scheduled: [op.workout, ...(d.scheduled ?? []).filter((s) => s.id !== op.workout.id)] };
+    case "deleteScheduled": return { ...d, scheduled: (d.scheduled ?? []).filter((s) => s.id !== op.id) };
   }
 }
 

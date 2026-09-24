@@ -15,6 +15,13 @@
       "when": 1790253405145,
       "tag": "0001_fitness_data",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790287625689,
+      "tag": "0002_scheduled_workouts",
+      "breakpoints": true
     }
   ]
 }
