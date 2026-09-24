@@ -7,7 +7,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { SectionHeading } from "@/components/recomp/core";
 import {
   dayKey, formatDay, formatDuration, formatKg, formatLongDay, formatSet, setCount,
-  type CompletedWorkout, type ExerciseRecord, type Period, type PriorityLevel,
+  type CompletedWorkout, type ExerciseRecord, type Period, type WorkloadLevel,
 } from "@/lib/training-data";
 import { cn } from "@/lib/utils";
 
@@ -56,18 +56,18 @@ function Stat({ value, label, accent }: { value: string; label: string; accent?:
   return <div className="px-3 first:pl-0"><div className={cn("font-display whitespace-nowrap text-[1.75rem] font-extrabold leading-none tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-1 text-[0.7rem] font-medium text-muted-foreground">{label}</div></div>;
 }
 
-const levelStyle: Record<PriorityLevel, { bar: string; text: string }> = {
-  High: { bar: "bg-primary", text: "text-primary" },
-  Medium: { bar: "bg-soft", text: "text-foreground" },
-  Low: { bar: "bg-soft/40", text: "text-muted-foreground" },
+const levelStyle: Record<WorkloadLevel, { bar: string; text: string }> = {
+  "High workload": { bar: "bg-primary", text: "text-primary" },
+  "Moderate workload": { bar: "bg-soft", text: "text-foreground" },
+  "Low workload": { bar: "bg-soft/40", text: "text-muted-foreground" },
 };
 
-export function TrainingPriorityBars({ items }: { items: { muscle: string; ratio: number; level: PriorityLevel; score: number }[] }) {
+export function TrainingPriorityBars({ items }: { items: { muscle: string; ratio: number; level: WorkloadLevel; score: number }[] }) {
   if (!items.some((item) => item.score > 0)) return <Card className="px-4 py-2"><InlineEmpty>No training in this period</InlineEmpty></Card>;
   return (
     <Card className="space-y-1.5 p-4">
       {items.map((item) => (
-        <div key={item.muscle} className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3">
+        <div key={item.muscle} className="grid grid-cols-[5.5rem_minmax(0,1fr)_7.25rem] items-center gap-2">
           <span className="text-xs font-bold">{item.muscle}</span>
           <div className="h-1.5 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-500", levelStyle[item.level].bar)} style={{ width: `${Math.max(item.ratio * 100, item.score ? 4 : 0)}%` }} /></div>
           <span className={cn("text-right text-[0.68rem] font-bold", levelStyle[item.level].text)}>{item.level}</span>

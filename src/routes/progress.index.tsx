@@ -32,7 +32,7 @@ function ProgressPage() {
           {data.workouts.length ? (
             <>
               <TrainingSummary label={periodLabel[period]} workouts={summary.workouts} sets={summary.sets} durationSec={summary.durationSec} />
-              <section><SectionHeading>Training priority</SectionHeading><TrainingPriorityBars items={priority} /></section>
+              <section><SectionHeading>Muscle workload · {periodLabel[period]}</SectionHeading><TrainingPriorityBars items={priority} /></section>
               <section>
                 <SectionHeading action={<Link to="/progress/history" className="flex items-center gap-0.5 text-xs font-bold text-primary">History<ChevronRight className="size-3.5" /></Link>}>Training calendar</SectionHeading>
                 <TrainingCalendar workouts={data.workouts} />

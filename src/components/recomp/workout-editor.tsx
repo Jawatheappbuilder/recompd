@@ -231,7 +231,7 @@ function ReplaceDrawer({ open, exercise, workout, library, onOpenChange, onSelec
 }) {
   const alternatives = useMemo(() => {
     if (!exercise) return [];
-    const unused = library.filter((item) => !workout.some((current) => current.id === item.id));
+    const unused = library.filter((item) => isCardioExercise(item) === isCardioExercise(exercise) && !workout.some((current) => current.id === item.id));
     return [...unused.filter((item) => matchesMuscle(item, exercise.muscle)), ...unused.filter((item) => !matchesMuscle(item, exercise.muscle))].slice(0, 8);
   }, [exercise, workout, library]);
   return (
