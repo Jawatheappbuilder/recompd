@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarPlus, Dumbbell } from "lucide-react";
+import { CalendarPlus, Dumbbell, Hammer, Sparkles } from "lucide-react";
+import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, Header, Screen } from "@/components/recomp/core";
 import { BodyweightSummary, TrainingPriority, WeeklyTraining, WorkoutSummary } from "@/components/recomp/training-widgets";
@@ -17,5 +18,6 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  return <Screen><Header/><div className="mb-4"><p className="text-sm font-medium text-muted-foreground">Hey, Ashley</p><h1 className="mt-0.5 text-2xl font-extrabold">Ready to train?</h1></div><Card className="workout-action mb-5 overflow-hidden p-4"><div className="mb-5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Next session</div><div className="mt-1 text-xl font-extrabold">Upper Body</div></div><div className="grid size-10 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-5"/></div></div><Button asChild variant="primary" size="xl" className="w-full"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-2 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></Card><div className="space-y-5"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
+  const planned = plannedWorkout;
+  return <Screen><Header/><div className="mb-4"><p className="text-sm font-medium text-muted-foreground">Hey, Ashley</p><h1 className="mt-0.5 text-2xl font-extrabold">Ready to train?</h1></div><Card className="workout-action mb-4 overflow-hidden p-3.5"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card><div className="space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
 }

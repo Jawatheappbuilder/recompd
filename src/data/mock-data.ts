@@ -1,3 +1,6 @@
+// Set to null to show the "Start a workout" state on Home.
+export const plannedWorkout: { name: string } | null = null;
+
 export const weekDays = [
   { label: "M", state: "complete" },
   { label: "T", state: "complete" },

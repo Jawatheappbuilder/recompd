@@ -15,11 +15,11 @@ export function WeekTracker() {
 }
 
 export function WeeklyTraining() {
-  return <section><SectionHeading>This week</SectionHeading><Card className="p-4"><div className="flex items-center gap-4"><ProgressRing/><div className="min-w-0 flex-1"><WeekTracker /></div></div><div className="mt-4 grid grid-cols-3 border-t border-border pt-3"><Metric value="3" label="Completed" accent/><Metric value="42" label="Total sets"/><Metric value="2h 38m" label="Training time"/></div></Card></section>;
+  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="flex items-center gap-4"><ProgressRing size={76}/><div className="min-w-0 flex-1"><WeekTracker /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><Metric value="3" label="Completed" accent/><Metric value="42" label="Total sets"/><Metric value="2h 38m" label="Training time"/></div></Card></section>;
 }
 
 export function TrainingPriority({ compact = false }: { compact?: boolean }) {
-  return <section><SectionHeading>Training priority</SectionHeading><Card className="space-y-3.5 p-4">{priorities.slice(0, compact ? 3 : undefined).map((item) => <div key={item.name}><div className="mb-1.5 flex items-center justify-between text-xs"><span className="font-semibold">{item.name}</span><span className={cn("font-bold", item.level === "High" ? "text-primary" : "text-muted-foreground")}>{item.level}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full", item.level === "Low" ? "bg-muted-foreground" : "bg-primary")} style={{ width: `${item.value}%` }} /></div></div>)}</Card></section>;
+  return <section><SectionHeading>Training priority</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{priorities.slice(0, compact ? 3 : undefined).map((item) => <div key={item.name}><div className="mb-1 flex items-center justify-between text-xs"><span className="font-semibold">{item.name}</span><span className={cn("font-bold", item.level === "High" ? "text-primary" : "text-muted-foreground")}>{item.level}</span></div><div className="h-1 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full", item.level === "Low" ? "bg-muted-foreground" : "bg-primary")} style={{ width: `${item.value}%` }} /></div></div>)}</Card></section>;
 }
 
 export function WorkoutSummary() {
