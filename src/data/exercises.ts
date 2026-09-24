@@ -31,7 +31,14 @@ export type WorkoutExercise = Exercise & { key: string; sets: number; reps: stri
 let seq = 0;
 export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12" });
 
-const shuffle = <T,>(a: T[], random: () => number = Math.random) => [...a].sort(() => random() - 0.5);
+const shuffle = <T,>(a: T[], random: () => number = Math.random) => {
+  const result = [...a];
+  for (let index = result.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex]!, result[index]!];
+  }
+  return result;
+};
 
 function seededRandom(seed: number) {
   let state = seed || 1;

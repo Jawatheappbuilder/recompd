@@ -12,6 +12,7 @@ const previewSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/generated-workout")({
+  ssr: false,
   validateSearch: zodValidator(previewSearchSchema),
   head: () => ({ meta: [
     { title: "Generated Workout — RECOMP'D" },
