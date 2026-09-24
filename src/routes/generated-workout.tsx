@@ -10,7 +10,7 @@ const previewSearchSchema = z.object({
   count: fallback(z.coerce.number().int().min(1).max(12), 6).default(6),
 });
 
-export const Route = createFileRoute("/build/preview")({
+export const Route = createFileRoute("/generated-workout")({
   validateSearch: zodValidator(previewSearchSchema),
   head: () => ({ meta: [
     { title: "Generated Workout — RECOMP'D" },
