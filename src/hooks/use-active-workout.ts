@@ -29,11 +29,13 @@ export type ActiveWorkoutState = {
 
 const repsFromTarget = (target: string) => target.match(/\d+/)?.[0] ?? "10";
 
-export function createActiveWorkout(exercises: WorkoutExercise[]): ActiveWorkoutState | null {
+export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[] };
+
+export function createActiveWorkout(exercises: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
   const first = exercises[0];
   if (!first) return null;
   const muscles = [...new Set(exercises.map((exercise) => exercise.muscle))];
-  const name = muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout";
+  const name = customName?.trim() || (muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout");
   return {
     version: 1,
     id: `workout-${Date.now()}`,
@@ -42,7 +44,7 @@ export function createActiveWorkout(exercises: WorkoutExercise[]): ActiveWorkout
     currentKey: first.key,
     exercises: exercises.map((exercise) => ({
       ...exercise,
-      restSeconds: exercise.type === "Compound" ? 120 : 90,
+      restSeconds: exercise.restSeconds ?? (exercise.type === "Compound" ? 120 : 90),
       sessionSets: Array.from({ length: exercise.sets }, (_, index) => ({
         id: `${exercise.key}-set-${index}-${Date.now()}`,
         weight: "",
@@ -70,7 +72,8 @@ export function useActiveWorkout() {
       } else {
         const legacy = sessionStorage.getItem(LEGACY_WORKOUT_KEY);
         if (legacy) {
-          const created = createActiveWorkout(JSON.parse(legacy) as WorkoutExercise[]);
+          const parsed = JSON.parse(legacy) as WorkoutExercise[] | WorkoutHandoff;
+          const created = Array.isArray(parsed) ? createActiveWorkout(parsed) : createActiveWorkout(parsed.exercises, parsed.name);
           if (created) {
             localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(created));
             sessionStorage.removeItem(LEGACY_WORKOUT_KEY);

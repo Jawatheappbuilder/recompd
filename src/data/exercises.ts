@@ -1,8 +1,9 @@
 export const muscleGroups = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Core"] as const;
 export type Muscle = (typeof muscleGroups)[number];
-export const equipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight"] as const;
+export const equipmentTypes = ["Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight", "Smith Machine"] as const;
 export type Equipment = (typeof equipmentTypes)[number];
-export type Exercise = { id: string; name: string; muscle: Muscle; equipment: Equipment; type: "Compound" | "Isolation" };
+export type Exercise = { id: string; name: string; muscle: Muscle; equipment: Equipment; type: "Compound" | "Isolation"; muscles?: Muscle[]; custom?: boolean };
+export const muscleLabel = (e: Pick<Exercise, "muscle" | "muscles">) => (e.muscles?.length ? e.muscles : [e.muscle]).join(" + ");
 
 export const quickSelects: { label: string; muscles: Muscle[] }[] = [
   { label: "Upper", muscles: ["Chest", "Back", "Shoulders", "Biceps", "Triceps"] },
@@ -22,12 +23,19 @@ const raw: [string, Muscle, Equipment, "C" | "I"][] = [
   ["Romanian Deadlift", "Hamstrings", "Barbell", "C"], ["Lying Leg Curl", "Hamstrings", "Machine", "I"], ["Seated Leg Curl", "Hamstrings", "Machine", "I"],
   ["Hip Thrust", "Glutes", "Barbell", "C"], ["Walking Lunge", "Glutes", "Dumbbell", "C"], ["Cable Kickback", "Glutes", "Cable", "I"],
   ["Standing Calf Raise", "Calves", "Machine", "I"], ["Seated Calf Raise", "Calves", "Machine", "I"],
+  ["Smith Machine Bench Press", "Chest", "Smith Machine", "C"], ["Dumbbell Bench Press", "Chest", "Dumbbell", "C"], ["Incline Barbell Press", "Chest", "Barbell", "C"], ["Dumbbell Fly", "Chest", "Dumbbell", "I"],
+  ["Seated Cable Row", "Back", "Cable", "C"], ["Single-Arm Dumbbell Row", "Back", "Dumbbell", "C"], ["Deadlift", "Back", "Barbell", "C"], ["Machine Row", "Back", "Machine", "C"],
+  ["Smith Machine Shoulder Press", "Shoulders", "Smith Machine", "C"], ["Machine Shoulder Press", "Shoulders", "Machine", "C"], ["Face Pull", "Shoulders", "Cable", "I"],
+  ["Hammer Curl", "Biceps", "Dumbbell", "I"], ["Preacher Curl", "Biceps", "Machine", "I"], ["Skull Crusher", "Triceps", "Barbell", "I"], ["Dumbbell Overhead Extension", "Triceps", "Dumbbell", "I"],
+  ["Smith Machine Squat", "Quads", "Smith Machine", "C"], ["Hack Squat", "Quads", "Machine", "C"], ["Goblet Squat", "Quads", "Dumbbell", "C"],
+  ["Dumbbell Romanian Deadlift", "Hamstrings", "Dumbbell", "C"], ["Nordic Curl", "Hamstrings", "Bodyweight", "I"], ["Glute Bridge", "Glutes", "Bodyweight", "I"], ["Hip Abduction", "Glutes", "Machine", "I"],
+  ["Smith Machine Calf Raise", "Calves", "Smith Machine", "I"], ["Single-Leg Calf Raise", "Calves", "Bodyweight", "I"],
   ["Hanging Leg Raise", "Core", "Bodyweight", "I"], ["Cable Crunch", "Core", "Cable", "I"], ["Plank", "Core", "Bodyweight", "I"], ["Ab Wheel Rollout", "Core", "Bodyweight", "C"],
 ];
 
 export const exercises: Exercise[] = raw.map(([name, muscle, equipment, t]) => ({ id: name.toLowerCase().replace(/[^a-z]+/g, "-"), name, muscle, equipment, type: t === "C" ? "Compound" : "Isolation" }));
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string };
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number };
 let seq = 0;
 export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12" });
 
