@@ -123,7 +123,7 @@ export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutSta
         currentKey = partner.key;
         shouldRest = false;
       } else if (!completedExercise) {
-        currentKey = updatedExercise.key;
+        currentKey = partner.key;
       }
     }
 
