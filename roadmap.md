@@ -8,3 +8,5 @@
 - [x] Build the mock-data Progress overview
 - [x] Validate mobile and desktop layouts, navigation, overflow, and runtime health
 - [ ] Build and validate the generated workout preview flow
+
+- [ ] Build and validate the Active Workout experience
