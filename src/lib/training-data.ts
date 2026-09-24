@@ -14,7 +14,7 @@ export type CompletedWorkout = { id: string; name: string; startedAt: number; du
 export type BodyweightEntry = { id: string; kg: number; loggedAt: number };
 export type TrainingData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[] };
 
-const WORKOUTS_KEY = "recomp-workout-history-v1";
+const WORKOUTS_KEY = "recomp-workout-history-v2";
 const BODYWEIGHT_KEY = "recomp-bodyweight-v1";
 const DAY = 86_400_000;
 
@@ -77,7 +77,8 @@ export function formatDuration(seconds: number) {
   const h = Math.floor(minutes / 60); const m = minutes % 60;
   return m ? `${h}h ${m}m` : `${h}h`;
 }
-export const formatDay = (ts: number) => new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const formatDay = (ts: number) => { const d = new Date(ts); return `${d.getDate()} ${months[d.getMonth()]}`; };
 export const formatLongDay = (ts: number) => new Date(ts).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
 export const formatTime = (ts: number) => new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 export const formatKg = (kg: number) => `${Number.isInteger(kg) ? kg : kg.toFixed(1).replace(/\.0$/, "")} kg`;
@@ -180,7 +181,7 @@ export function bodyweightChange(entries: BodyweightEntry[], from: number) {
 const templates: { name: string; items: [string, number, number, number][] }[] = [
   { name: "Upper Body", items: [["bench-press", 70, 8, 4], ["lat-pulldown", 50, 10, 3], ["seated-dumbbell-press", 24, 8, 3], ["seated-cable-row", 55, 10, 3], ["cable-fly", 15, 12, 3], ["rope-pushdown", 20, 12, 2]] },
   { name: "Lower Body", items: [["back-squat", 110, 6, 4], ["romanian-deadlift", 90, 8, 3], ["leg-press", 180, 10, 3], ["lying-leg-curl", 40, 12, 3], ["standing-calf-raise", 60, 12, 3]] },
-  { name: "Push", items: [["bench-press", 72.5, 8, 4], ["incline-dumbbell-press", 28, 10, 3], ["overhead-press", 45, 8, 3], ["lateral-raise", 10, 15, 3], ["dip", 0, 10, 3]] },
+  { name: "Push", items: [["incline-barbell-press", 60, 8, 4], ["incline-dumbbell-press", 28, 10, 3], ["overhead-press", 45, 8, 3], ["lateral-raise", 10, 15, 3], ["dip", 0, 10, 3]] },
   { name: "Pull", items: [["pull-up", 0, 8, 4], ["barbell-row", 70, 8, 3], ["chest-supported-row", 50, 10, 3], ["barbell-curl", 30, 10, 3], ["hanging-leg-raise", 0, 12, 3]] },
 ];
 
