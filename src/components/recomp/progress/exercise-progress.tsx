@@ -2,26 +2,30 @@ import { useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/recomp/core";
-import { estimate1RM, exerciseHistory, formatDay, formatSet, type CompletedWorkout } from "@/lib/training-data";
+import { estimate1RM, exerciseHistory, formatDay, formatPerformance, type CompletedWorkout } from "@/lib/training-data";
 import { cn } from "@/lib/utils";
 
-type Metric = "Weight" | "e1RM" | "Volume" | "Reps";
+type Metric = "Weight" | "e1RM" | "Volume" | "Reps" | "Duration" | "Distance";
 
 export function ExerciseProgress({ workouts, exerciseId }: { workouts: CompletedWorkout[]; exerciseId: string }) {
   const history = useMemo(() => exerciseHistory(workouts, exerciseId), [workouts, exerciseId]);
+  const cardio = history.some((session) => session.tracking === "cardio");
   const weighted = history.some((session) => session.sets.some((set) => set.weight > 0));
-  const metrics: Metric[] = weighted ? ["Weight", "e1RM", "Volume"] : ["Reps"];
+  const hasDistance = history.some((session) => session.sets.some((set) => (set.distanceKm ?? 0) > 0));
+  const metrics: Metric[] = cardio ? ["Duration", ...(hasDistance ? ["Distance" as const] : [])] : weighted ? ["Weight", "e1RM", "Volume"] : ["Reps"];
   const [metric, setMetric] = useState<Metric>(metrics[0]!);
   const active = metrics.includes(metric) ? metric : metrics[0]!;
 
   const data = [...history].reverse().map((session) => ({
     x: session.at,
-    value: active === "Weight" ? Math.max(...session.sets.map((set) => set.weight))
+    value: active === "Duration" ? Math.max(...session.sets.map((set) => (set.durationSeconds ?? 0) / 60))
+      : active === "Distance" ? Math.max(...session.sets.map((set) => set.distanceKm ?? 0))
+      : active === "Weight" ? Math.max(...session.sets.map((set) => set.weight))
       : active === "e1RM" ? Math.round(Math.max(...session.sets.map(estimate1RM)) * 10) / 10
       : active === "Volume" ? session.sets.reduce((sum, set) => sum + set.weight * set.reps, 0)
       : Math.max(...session.sets.map((set) => set.reps)),
   })).filter((point) => point.value > 0);
-  const unit = active === "Reps" ? "reps" : "kg";
+  const unit = active === "Reps" ? "reps" : active === "Duration" ? "min" : active === "Distance" ? "km" : "kg";
 
   return (
     <div className="space-y-5">
@@ -55,7 +59,7 @@ export function ExerciseProgress({ workouts, exerciseId }: { workouts: Completed
           {history.slice(0, 8).map((session) => (
             <div key={session.workoutId} className="grid grid-cols-[4rem_minmax(0,1fr)] gap-3 py-3">
               <span className="text-xs font-bold text-muted-foreground">{formatDay(session.at)}</span>
-              <div className="space-y-0.5 text-sm font-semibold tabular-nums">{session.sets.map((set, index) => <div key={index}>{formatSet(set)}</div>)}</div>
+              <div className="space-y-0.5 text-sm font-semibold tabular-nums">{session.sets.map((set, index) => <div key={index}>{formatPerformance(set)}</div>)}</div>
             </div>
           ))}
           {!history.length && <p className="py-4 text-sm text-muted-foreground">No sessions recorded</p>}

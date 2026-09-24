@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { deleteWorkout, formatDuration, formatLongDay, formatSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
+import { deleteWorkout, formatDuration, formatLongDay, formatPerformance, formatSet, isCardioSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 import { ShareWorkoutButton } from "../share-workout";
 import { SubHeader } from "./progress-widgets";
 
@@ -31,11 +31,11 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           return (
             <Card key={exercise.key} className="p-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><h2 className="text-sm font-extrabold leading-snug">{exercise.name}</h2><p className="mt-0.5 text-[0.7rem] text-muted-foreground">{exercise.muscles.join(" + ")} · {exercise.equipment}</p></div>
+                <div className="min-w-0"><h2 className="text-sm font-extrabold leading-snug">{exercise.name}</h2><p className="mt-0.5 text-[0.7rem] text-muted-foreground">{exercise.tracking === "cardio" ? "Cardio" : exercise.muscles.join(" + ")} · {exercise.equipment}</p></div>
                 {pr && <span className="flex shrink-0 items-center gap-1 text-[0.68rem] font-bold text-primary"><Trophy className="size-3.5" />PR {formatSet(pr.set)}</span>}
               </div>
               <div className="mt-2 grid gap-1">
-                {exercise.sets.map((set, index) => <div key={index} className="grid grid-cols-[1.5rem_minmax(0,1fr)] text-sm tabular-nums"><span className="text-muted-foreground">{index + 1}</span><span className="font-semibold">{formatSet(set)}</span></div>)}
+                {exercise.sets.map((set, index) => <div key={index} className="grid grid-cols-[1.5rem_minmax(0,1fr)] text-sm tabular-nums"><span className="text-muted-foreground">{exercise.tracking === "cardio" ? "" : index + 1}</span><span className="font-semibold">{formatPerformance(set)}</span></div>)}
               </div>
             </Card>
           );
@@ -89,7 +89,7 @@ function WorkoutEditForm({ workout, onDone }: { workout: CompletedWorkout; onDon
               <h2 className="text-sm font-extrabold leading-snug">{exercise.name}</h2>
               <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-9 text-muted-foreground" aria-label={`Remove ${exercise.name}`} onClick={() => setDraft((current) => ({ ...current, exercises: current.exercises.filter((item) => item.key !== exercise.key) }))}><Trash2 /></Button>
             </div>
-            <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-center gap-2 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground"><span /><span className="text-center">kg</span><span className="text-center">Reps</span><span /></div>
+            {exercise.tracking === "cardio" || exercise.sets.some(isCardioSet) ? exercise.sets.map((set, index) => <CardioEditFields key={index} exerciseName={exercise.name} set={set} onChange={(patch) => updateSet(exercise.key, index, patch)} />) : <><div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-center gap-2 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground"><span /><span className="text-center">kg</span><span className="text-center">Reps</span><span /></div>
             {exercise.sets.map((set, index) => (
               <div key={index} className="mt-1.5 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-center gap-2">
                 <span className="text-xs font-bold text-muted-foreground">{index + 1}</span>
@@ -98,11 +98,16 @@ function WorkoutEditForm({ workout, onDone }: { workout: CompletedWorkout; onDon
                 <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Remove set ${index + 1}`} onClick={() => editSets(exercise.key, (sets) => sets.filter((_, i) => i !== index))}><X /></Button>
               </div>
             ))}
-            <Button variant="ghost" size="sm" className="mt-1.5 px-1 text-muted-foreground" onClick={() => editSets(exercise.key, (sets) => [...sets, { ...(sets.at(-1) ?? { weight: 0, reps: 8 }) }])}><Plus />Add set</Button>
+            <Button variant="ghost" size="sm" className="mt-1.5 px-1 text-muted-foreground" onClick={() => editSets(exercise.key, (sets) => [...sets, { ...(sets.at(-1) ?? { weight: 0, reps: 8 }) }])}><Plus />Add set</Button></>}
           </Card>
         ))}
       </div>
       <Button variant="primary" size="lg" className="mt-4 w-full" onClick={save}>Save changes</Button>
     </>
   );
+}
+
+function CardioEditFields({ exerciseName, set, onChange }: { exerciseName: string; set: CompletedSet; onChange: (patch: Partial<CompletedSet>) => void }) {
+  const field = (label: string, key: keyof CompletedSet, value: string | number | undefined) => value === undefined ? null : <label className="min-w-0 text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">{label}</span><input aria-label={`${exerciseName} ${label}`} inputMode="decimal" value={value} onChange={(event) => onChange({ [key]: key === "pace" || key === "pace500m" ? event.target.value : Number(event.target.value) || 0 })} className={numberInput} /></label>;
+  return <div className="grid grid-cols-2 gap-2"><label className="min-w-0 text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">Duration (min)</span><input aria-label={`${exerciseName} duration`} inputMode="decimal" value={set.durationSeconds ? Math.round(set.durationSeconds / 60) : ""} onChange={(event) => onChange({ durationSeconds: (Number(event.target.value) || 0) * 60 })} className={numberInput} /></label>{field("Distance (km)", "distanceKm", set.distanceKm)}{field("Speed (km/h)", "speedKph", set.speedKph)}{field("Pace (/km)", "pace", set.pace)}{field("Incline (%)", "incline", set.incline)}{field("Level", "level", set.level)}{field("Floors", "floors", set.floors)}{field("Steps", "steps", set.steps)}{field("Pace /500m", "pace500m", set.pace500m)}</div>;
 }

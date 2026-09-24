@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { formatDuration, formatKg, formatLongDay, formatSet, setCount, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
+import { formatDuration, formatKg, formatLongDay, formatPerformance, isCardioSet, setCount, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 
 type Pr = { exerciseId: string; set: CompletedSet };
 
@@ -13,6 +13,7 @@ const setLabel = (set: CompletedSet) => set.weight > 0 ? `${formatKg(set.weight)
 
 /** Condenses consecutive identical sets: "80 kg × 8 × 3 sets". */
 export function condensedSets(sets: CompletedSet[]) {
+  if (sets.some(isCardioSet)) return sets.map(formatPerformance);
   const groups: { set: CompletedSet; count: number }[] = [];
   for (const set of sets) {
     const last = groups[groups.length - 1];
@@ -23,7 +24,7 @@ export function condensedSets(sets: CompletedSet[]) {
 }
 
 export function workoutShareText(workout: CompletedWorkout) {
-  const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map(formatSet).join(", ")}`).join("\n");
+  const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map(formatPerformance).join(", ")}`).join("\n");
   return `${workout.name}\n${formatDuration(workout.durationSec)}\n\n${details}\n\nTracked with RECOMP'D`;
 }
 
