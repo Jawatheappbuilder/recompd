@@ -25,6 +25,6 @@
 - [x] Validate account persistence, compatibility, and mobile layouts
 
 ## Two Small Corrections
-- [ ] Fix cardio input overlap across 360–430px mobile widths
-- [ ] Alphabetise exercise-selection lists without changing workout order
-- [ ] Validate mobile layout and exercise picker ordering
+- [x] Fix cardio input overlap across 360–430px mobile widths
+- [x] Alphabetise exercise-selection lists without changing workout order
+- [x] Validate mobile layout and exercise picker ordering
