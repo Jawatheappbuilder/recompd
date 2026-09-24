@@ -32,7 +32,8 @@ import {
   type Muscle,
   type WorkoutExercise,
 } from "@/data/exercises";
-import { loadCustomExercises, saveCustomExercise } from "@/lib/workout-storage";
+import { saveCustomExercise, useCustomExercises } from "@/lib/workout-storage";
+import { newId } from "@/lib/cloud-data";
 import { cn } from "@/lib/utils";
 
 const repRanges = ["4–6", "6–8", "8–10", "10–12", "12–15", "15–20"];
@@ -42,10 +43,9 @@ type SheetState = { kind: "closed" } | { kind: "superset"; key: string } | { kin
 const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || !!exercise.muscles?.includes(muscle);
 
 function useLibrary() {
-  const [custom, setCustom] = useState<Exercise[]>([]);
-  useEffect(() => setCustom(loadCustomExercises()), []);
+  const custom = useCustomExercises();
   const all = useMemo(() => [...custom, ...libraryExercises], [custom]);
-  const addCustom = (exercise: Exercise) => { saveCustomExercise(exercise); setCustom((current) => [...current, exercise]); };
+  const addCustom = (exercise: Exercise) => saveCustomExercise(exercise);
   return { all, addCustom };
 }
 
@@ -315,7 +315,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
   const createCustom = () => {
     const first = customMuscles[0];
     if (!name.trim() || !first) return;
-    const exercise: Exercise = { id: `custom-${Date.now()}`, name: name.trim(), muscle: first, muscles: customMuscles, equipment: customEquipment, type: customMuscles.length > 1 ? "Compound" : "Isolation", custom: true };
+    const exercise: Exercise = { id: `custom-${newId()}`, name: name.trim(), muscle: first, muscles: customMuscles, equipment: customEquipment, type: customMuscles.length > 1 ? "Compound" : "Isolation", custom: true };
     onCreateCustom(exercise);
     onAdd([...picked, exercise]);
     setName(""); setCustomMuscles([]);

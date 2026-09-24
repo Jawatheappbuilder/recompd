@@ -38,7 +38,7 @@ export function createActiveWorkout(exercises: WorkoutExercise[], customName?: s
   const name = customName?.trim() || (muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout");
   return {
     version: 1,
-    id: `workout-${Date.now()}`,
+    id: `workout-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now()}`,
     name,
     startedAt: Date.now(),
     currentKey: first.key,

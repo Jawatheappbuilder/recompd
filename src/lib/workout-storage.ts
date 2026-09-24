@@ -1,28 +1,21 @@
 import type { Exercise, WorkoutExercise } from "@/data/exercises";
 import { ACTIVE_WORKOUT_KEY, type WorkoutHandoff } from "@/hooks/use-active-workout";
 
-// Local storage for now; shapes mirror future cloud tables (custom_exercises, saved_workouts).
-const CUSTOM_KEY = "recomp-custom-exercises-v1";
-const SAVED_KEY = "recomp-saved-workouts-v1";
+import { getCloudData, mutate, useCloudData, type SavedWorkout } from "./cloud-data";
 
-export type SavedWorkout = { id: string; name: string; exercises: WorkoutExercise[]; createdAt: number };
+export type { SavedWorkout };
 
-const read = <T,>(key: string): T[] => {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(key) ?? "[]") as T[]; } catch { return []; }
-};
+// Account-backed custom exercises and saved workouts.
+export const loadCustomExercises = () => getCloudData()?.custom ?? [];
+export const useCustomExercises = () => useCloudData()?.custom ?? [];
+export const saveCustomExercise = (exercise: Exercise) => mutate({ kind: "upsertCustom", exercise });
+export const updateCustomExercise = (exercise: Exercise) => mutate({ kind: "upsertCustom", exercise });
+export const deleteCustomExercise = (id: string) => mutate({ kind: "deleteCustom", id });
 
-export const loadCustomExercises = () => read<Exercise>(CUSTOM_KEY);
-export const saveCustomExercise = (exercise: Exercise) => localStorage.setItem(CUSTOM_KEY, JSON.stringify([...loadCustomExercises(), exercise]));
-export const updateCustomExercise = (exercise: Exercise) => localStorage.setItem(CUSTOM_KEY, JSON.stringify(loadCustomExercises().map((item) => item.id === exercise.id ? exercise : item)));
-export const deleteCustomExercise = (id: string) => localStorage.setItem(CUSTOM_KEY, JSON.stringify(loadCustomExercises().filter((item) => item.id !== id)));
-
-export const loadSavedWorkouts = () => read<SavedWorkout>(SAVED_KEY);
-export const saveWorkout = (workout: SavedWorkout) => {
-  const others = loadSavedWorkouts().filter((item) => item.id !== workout.id);
-  localStorage.setItem(SAVED_KEY, JSON.stringify([workout, ...others]));
-};
-export const deleteSavedWorkout = (id: string) => localStorage.setItem(SAVED_KEY, JSON.stringify(loadSavedWorkouts().filter((item) => item.id !== id)));
+export const loadSavedWorkouts = () => getCloudData()?.saved ?? [];
+export const useSavedWorkouts = () => useCloudData()?.saved ?? [];
+export const saveWorkout = (workout: SavedWorkout) => mutate({ kind: "upsertSaved", workout });
+export const deleteSavedWorkout = (id: string) => mutate({ kind: "deleteSaved", id });
 
 export const defaultWorkoutName = (exercises: WorkoutExercise[]) => {
   const muscles = [...new Set(exercises.flatMap((exercise) => exercise.muscles?.length ? exercise.muscles : [exercise.muscle]))];

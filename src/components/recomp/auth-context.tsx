@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearCloudData, loadCloudData } from "@/lib/cloud-data";
 import { fetchOrCreateProfile, saveProfile } from "@/lib/profile";
 import { clearUserPreferences, loadUserPreferences, saveUserPreferences, setPreferencesCloudUser, type UserPreferences } from "@/lib/user-preferences";
 
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const preferences = await fetchOrCreateProfile(nextUser.id, String(nextUser.user_metadata?.["name"] ?? ""));
       setPreferencesCloudUser(nextUser.id);
       saveUserPreferences(preferences);
+      void loadCloudData(nextUser.id);
       setOnboardingComplete(preferences.onboardingComplete);
       loadedFor.current = nextUser.id;
       setStatus("signedIn");
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadedFor.current = null;
         setPreferencesCloudUser(null);
         clearUserPreferences();
+        clearCloudData();
         setOnboardingComplete(false);
         setStatus("signedOut");
         return;

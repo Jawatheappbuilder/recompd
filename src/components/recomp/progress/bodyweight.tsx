@@ -72,7 +72,7 @@ export function LogWeightSheet({ open, onOpenChange, entry }: { open: boolean; o
   const valid = value > 20 && value < 400;
   const save = () => {
     if (!valid) return;
-    saveBodyweight({ id: entry?.id ?? `bw-${Date.now()}`, kg: Math.round(value * 10) / 10, loggedAt: when ? new Date(when).getTime() : Date.now() });
+    saveBodyweight({ id: entry?.id ?? `bw-${crypto.randomUUID()}`, kg: Math.round(value * 10) / 10, loggedAt: when ? new Date(when).getTime() : Date.now() });
     onOpenChange(false);
   };
   return (

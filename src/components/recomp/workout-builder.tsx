@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
-import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, loadSavedWorkouts, saveWorkout, type SavedWorkout } from "@/lib/workout-storage";
+import { newId } from "@/lib/cloud-data";
+import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 
@@ -56,15 +57,14 @@ function ManualMode() {
   const [name, setName] = useState("");
   const [workout, setWorkout] = useState<WorkoutExercise[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [saved, setSaved] = useState<SavedWorkout[]>([]);
+  const saved = useSavedWorkouts();
   const [savedId, setSavedId] = useState<string | null>(null);
-  useEffect(() => setSaved(loadSavedWorkouts()), []);
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const start = () => { handOffWorkout({ name: finalName, exercises: workout }); void navigate({ to: "/workout" }); };
   const save = () => {
-    const entry = { id: savedId ?? `saved-${Date.now()}`, name: finalName, exercises: workout, createdAt: Date.now() };
-    saveWorkout(entry); setSavedId(entry.id); setSaved(loadSavedWorkouts()); toast.success("Workout saved");
+    const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
+    saveWorkout(entry); setSavedId(entry.id); toast.success("Workout saved");
   };
   const load = (item: SavedWorkout) => { setName(item.name); setWorkout(item.exercises.map((exercise) => ({ ...exercise }))); setSavedId(item.id); };
 
@@ -84,7 +84,7 @@ function ManualMode() {
       <SectionHeading>Saved</SectionHeading>
       <Card className="divide-y divide-border px-3">{saved.map((item) => <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <button type="button" onClick={() => load(item)} className="min-h-14 min-w-0 py-2 text-left"><span className="block text-sm font-bold leading-snug">{item.name}</span><span className="mt-0.5 block text-[0.7rem] text-muted-foreground">{item.exercises.length} exercises</span></button>
-        <button type="button" aria-label={`Delete ${item.name}`} onClick={() => { deleteSavedWorkout(item.id); setSaved(loadSavedWorkouts()); if (savedId === item.id) setSavedId(null); }} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-accent"><Trash2 className="size-4" /></button>
+        <button type="button" aria-label={`Delete ${item.name}`} onClick={() => { deleteSavedWorkout(item.id); if (savedId === item.id) setSavedId(null); }} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-accent"><Trash2 className="size-4" /></button>
       </div>)}</Card>
     </section>}
   </>;
