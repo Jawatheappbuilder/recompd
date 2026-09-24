@@ -65,7 +65,7 @@ const previousPerformance: Partial<Record<string, string>> = {
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 const formatDuration = (seconds: number) => seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 
-export function ActiveWorkout({ workout, onChange, onClear }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onClear: () => void }) {
+export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void }) {
   const [now, setNow] = useState(Date.now());
   const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
@@ -145,13 +145,21 @@ export function ActiveWorkout({ workout, onChange, onClear }: { workout: ActiveW
 
   const removeSuperset = (key: string) => {
     const partner = workout.exercises.find((exercise) => exercise.key === key)?.supersetWith;
-    onChange({ ...workout, exercises: workout.exercises.map((exercise) => exercise.key === key || exercise.key === partner ? { ...exercise, supersetWith: undefined } : exercise) });
+    onChange({ ...workout, exercises: workout.exercises.map((exercise) => {
+      if (exercise.key !== key && exercise.key !== partner) return exercise;
+      const { supersetWith: _supersetWith, ...unpaired } = exercise;
+      return unpaired;
+    }) });
     setSheet({ kind: "closed" });
   };
 
   const removeExercise = () => {
     if (!removeKey) return;
-    const remaining = workout.exercises.filter((exercise) => exercise.key !== removeKey).map((exercise) => exercise.supersetWith === removeKey ? { ...exercise, supersetWith: undefined } : exercise);
+    const remaining = workout.exercises.filter((exercise) => exercise.key !== removeKey).map((exercise) => {
+      if (exercise.supersetWith !== removeKey) return exercise;
+      const { supersetWith: _supersetWith, ...unpaired } = exercise;
+      return unpaired;
+    });
     const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
     onChange({ ...workout, currentKey, exercises: remaining });
     setRemoveKey(null);
@@ -166,9 +174,9 @@ export function ActiveWorkout({ workout, onChange, onClear }: { workout: ActiveW
       volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed).reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
     };
     localStorage.setItem("recomp-last-workout", JSON.stringify(result));
+    localStorage.removeItem("recomp-active-workout-v1");
     setFinished(result);
     setFinishOpen(false);
-    onClear();
   };
 
   if (finished) return <WorkoutSummary result={finished} />;
@@ -203,7 +211,7 @@ export function ActiveWorkout({ workout, onChange, onClear }: { workout: ActiveW
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onReplace={replaceExercise} onPair={pairSuperset} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
+      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onReplace={replaceExercise} onPair={pairSuperset} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
         if (active) onChange({ ...workout, exercises: [...workout.exercises, active] });
@@ -275,13 +283,13 @@ function MinimizedRestTimer({ seconds, onExpand, onAdjust, onSkip }: { seconds: 
   return <div className="sticky top-[5.7rem] z-10 mt-2 flex h-12 items-center rounded-xl border border-primary/30 bg-elevated px-2 shadow-sm"><button type="button" className="flex min-w-0 flex-1 items-center gap-2 px-1 text-left" onClick={onExpand}><Clock3 className="size-4 text-primary" /><span className="text-xs font-bold">Rest</span><span className="text-sm font-extrabold tabular-nums text-primary">{formatClock(seconds)}</span></button><button type="button" onClick={() => onAdjust(-15)} className="grid size-9 place-items-center text-muted-foreground" aria-label="Subtract 15 seconds"><Minus className="size-4" /></button><button type="button" onClick={() => onAdjust(15)} className="grid size-9 place-items-center text-muted-foreground" aria-label="Add 15 seconds"><Plus className="size-4" /></button><button type="button" onClick={onSkip} className="grid size-9 place-items-center text-muted-foreground" aria-label="End rest"><X className="size-4" /></button></div>;
 }
 
-function ExerciseActionsSheet({ sheet, workout, onClose, onReplace, onPair, onRemovePair, onRemove, onRest, onAdd }: { sheet: Sheet; workout: ActiveWorkoutState; onClose: () => void; onReplace: (key: string, exercise: Exercise) => void; onPair: (key: string, partner: string) => void; onRemovePair: (key: string) => void; onRemove: (key: string) => void; onRest: (key: string, seconds: number) => void; onAdd: (exercise: Exercise) => void }) {
+function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSuperset, onReplace, onPair, onRemovePair, onRemove, onRest, onAdd }: { sheet: Sheet; workout: ActiveWorkoutState; onClose: () => void; onShowReplace: (key: string) => void; onShowSuperset: (key: string) => void; onReplace: (key: string, exercise: Exercise) => void; onPair: (key: string, partner: string) => void; onRemovePair: (key: string) => void; onRemove: (key: string) => void; onRest: (key: string, seconds: number) => void; onAdd: (exercise: Exercise) => void }) {
   const key = "key" in sheet ? sheet.key : undefined;
   const current = workout.exercises.find((exercise) => exercise.key === key);
   const used = new Set(workout.exercises.map((exercise) => exercise.id));
   const alternatives = current ? [...exercises.filter((exercise) => exercise.muscle === current.muscle && !used.has(exercise.id)), ...exercises.filter((exercise) => exercise.muscle !== current.muscle && !used.has(exercise.id))].slice(0, 10) : [];
   return <>
-    <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onClose()} asChild><span onClick={() => { if (key) setTimeout(() => {}, 0); }}><Shuffle />Replace exercise</span></Button><Button variant="ghost" className="w-full justify-start" onClick={() => {}}><Link2 />Superset</Button>{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button><Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button>{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}</div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !exercise.supersetWith).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[45, 60, 90, 120].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds}s</Button>)}</div></DrawerContent></Drawer>

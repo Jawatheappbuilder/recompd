@@ -13,7 +13,7 @@ export const Route = createFileRoute("/workout")({
 });
 function WorkoutPage() {
   const { workout, setWorkout, hydrated } = useActiveWorkout();
-  if (!hydrated) return <Screen />;
+  if (!hydrated) return <Screen>{null}</Screen>;
   if (!workout) return <Screen><Header/><EmptyWorkout/></Screen>;
-  return <Screen className="pt-0"><ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} onClear={() => setWorkout(null)} /></Screen>;
+  return <Screen className="pt-0"><ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} /></Screen>;
 }
