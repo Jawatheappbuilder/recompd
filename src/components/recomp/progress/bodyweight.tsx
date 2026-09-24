@@ -84,7 +84,7 @@ export function LogWeightSheet({ open, onOpenChange, entry }: { open: boolean; o
             <input autoFocus aria-label="Weight in kg" inputMode="decimal" enterKeyHint="done" value={kg} onChange={(event) => setKg(event.target.value)} placeholder="0.0" className="w-full bg-transparent font-display text-3xl font-extrabold tabular-nums outline-none placeholder:text-muted-foreground/50" />
             <span className="text-sm font-bold text-muted-foreground">kg</span>
           </label>
-          <input type="datetime-local" aria-label="Date and time" value={when} onChange={(event) => setWhen(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm text-foreground outline-none [color-scheme:dark] focus:border-primary" />
+          <input type="datetime-local" aria-label="Date and time" value={when} onChange={(event) => setWhen(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm text-foreground outline-none [color-scheme:light] focus:border-primary dark:[color-scheme:dark]" />
           <Button type="submit" variant="primary" size="lg" className="w-full" disabled={!valid}>Save</Button>
         </form>
       </DrawerContent>

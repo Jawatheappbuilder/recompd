@@ -22,6 +22,14 @@ export type UserPreferences = {
 
 const PREFERENCES_KEY = "recomp-user-preferences-v1";
 
+export function applyThemePreference(theme: ThemePreference) {
+  if (typeof document === "undefined") return;
+  const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.classList.toggle("light", !dark);
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
+}
+
 export const defaultUserPreferences: UserPreferences = {
   version: 1,
   name: "Ashley",
@@ -54,11 +62,13 @@ export function loadUserPreferences(): UserPreferences {
 
 export function saveUserPreferences(preferences: UserPreferences) {
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+  applyThemePreference(preferences.theme);
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: preferences }));
 }
 
 export function clearUserPreferences() {
   localStorage.removeItem(PREFERENCES_KEY);
+  applyThemePreference(defaultUserPreferences.theme);
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: defaultUserPreferences }));
 }
 

@@ -15,7 +15,7 @@ import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingProvider } from "@/components/recomp/onboarding-context";
 import { AuthProvider } from "@/components/recomp/auth-context";
-import { useUserPreferences } from "@/lib/user-preferences";
+import { applyThemePreference, loadUserPreferences } from "@/lib/user-preferences";
 
 function NotFoundComponent() {
   return (
@@ -108,9 +108,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function() { try { const stored = localStorage.getItem("recomp-user-preferences-v1"); const preferences = stored ? JSON.parse(stored) : null; const theme = preferences?.theme || "system"; const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches); if (isDark) document.documentElement.classList.add("dark"); else document.documentElement.classList.remove("dark"); } catch (e) {} })();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem("recomp-user-preferences-v1"),p=s?JSON.parse(s):null,t=p&&p.theme||"system",d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches),e=document.documentElement;e.classList.toggle("dark",d);e.classList.toggle("light",!d);e.style.colorScheme=d?"dark":"light"}catch(e){}})();` }} />
         <HeadContent />
       </head>
       <body>
@@ -122,30 +122,15 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function ThemeHandler() {
-  const [preferences] = useUserPreferences();
-  
   useEffect(() => {
-    const applyTheme = () => {
-      const theme = preferences.theme;
-      const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-      
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-
-    applyTheme();
-
-    if (preferences.theme === "system") {
-      const media = window.matchMedia("(prefers-color-scheme: dark)");
-      const listener = () => applyTheme();
-      media.addEventListener("change", listener);
-      return () => media.removeEventListener("change", listener);
-    }
-  }, [preferences.theme]);
-
+    const apply = () => applyThemePreference(loadUserPreferences().theme);
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    apply();
+    media.addEventListener("change", apply);
+    window.addEventListener("recomp-preferences-changed", apply);
+    window.addEventListener("storage", apply);
+    return () => { media.removeEventListener("change", apply); window.removeEventListener("recomp-preferences-changed", apply); window.removeEventListener("storage", apply); };
+  }, []);
   return null;
 }
 
