@@ -19,7 +19,7 @@ export function OnboardingProgress({ current }: { current: 1 | 2 }) {
   return <div aria-label={`Onboarding progress: ${current} of 2`} className="flex gap-1.5">{[1, 2].map((step) => <span key={step} className={cn("h-1.5 w-8 rounded-full bg-border", step <= current && "bg-primary")} />)}</div>;
 }
 
-export function FormField({ label, error, password, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; password?: boolean }) {
+export function FormField({ label, error, password, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string | undefined; password?: boolean | undefined }) {
   const [visible, setVisible] = useState(false);
   const id = props.id ?? label.toLowerCase().replaceAll(" ", "-");
   return <div className="space-y-2"><Label htmlFor={id} className="text-xs font-bold text-muted-foreground">{label}</Label><div className="relative"><Input {...props} id={id} type={password ? visible ? "text" : "password" : props.type} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className={cn("h-12 rounded-xl bg-secondary pr-11 text-foreground focus-visible:ring-2", error && "border-destructive", className)} />{password && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 size-12 text-muted-foreground" aria-label={visible ? "Hide password" : "Show password"} onClick={() => setVisible((value) => !value)}>{visible ? <EyeOff /> : <Eye />}</Button>}</div>{error && <p id={`${id}-error`} className="text-xs font-semibold text-destructive">{error}</p>}</div>;

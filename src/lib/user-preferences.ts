@@ -43,7 +43,7 @@ export function hasStoredUserPreferences() {
 export function loadUserPreferences(): UserPreferences {
   if (typeof window === "undefined") return defaultUserPreferences;
   try {
-    const stored = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? "null") as (Partial<UserPreferences> & { gender?: string }) | null;
+    const stored = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? "null") as (Omit<Partial<UserPreferences>, "gender"> & { gender?: string }) | null;
     if (!stored) return defaultUserPreferences;
     const gender = stored.gender === "Man" ? "Male" : stored.gender === "Woman" ? "Female" : stored.gender === "Non-binary" ? "Prefer not to say" : stored.gender;
     return { ...defaultUserPreferences, ...stored, gender: (gender ?? "") as Gender, onboardingComplete: stored.onboardingComplete ?? true, version: 1 };
