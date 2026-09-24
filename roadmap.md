@@ -30,6 +30,6 @@
 - [x] Validate mobile layout and exercise picker ordering
 
 ## Light Mode
-- [ ] Add warm light semantic tokens while preserving Dark mode
-- [ ] Enable System, Dark, and Light with account-backed persistence
-- [ ] Validate app screens, overlays, inputs, charts, and data stability
+- [x] Add warm light semantic tokens while preserving Dark mode
+- [x] Enable System, Dark, and Light with account-backed persistence
+- [x] Validate app screens, overlays, inputs, charts, and data stability
