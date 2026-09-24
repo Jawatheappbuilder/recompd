@@ -17,9 +17,9 @@
 
 - [x] Phase 2: move workouts, bodyweight, saved workouts and custom exercises to the account
 ## Focused Fine-Tuning Pass 1
-- [ ] Fix empty Workout → Build and preserve active workout resume
-- [ ] Expand the shared built-in exercise library and muscle metadata
-- [ ] Add cardio tracking across build, active, history, progress, and sharing
-- [ ] Rename Training Priority to Muscle Workload
-- [ ] Fix the Home This Week narrow-screen layout
-- [ ] Validate account persistence, compatibility, and mobile layouts
+- [x] Fix empty Workout → Build and preserve active workout resume
+- [x] Expand the shared built-in exercise library and muscle metadata
+- [x] Add cardio tracking across build, active, history, progress, and sharing
+- [x] Rename Training Priority to Muscle Workload
+- [x] Fix the Home This Week narrow-screen layout
+- [x] Validate account persistence, compatibility, and mobile layouts
