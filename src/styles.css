@@ -32,6 +32,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-elevated: var(--elevated);
+  --color-soft: var(--soft);
   --color-track: var(--track);
   --color-nav: var(--nav);
   --color-app-canvas: var(--app-canvas);
@@ -60,6 +61,7 @@
   --ring: oklch(0.86 0.25 145);
   --elevated: oklch(0.225 0.022 148);
   --track: oklch(0.27 0.02 148);
+  --soft: oklch(0.62 0.11 150);
   --nav: oklch(0.16 0.016 148);
   --app-canvas: oklch(0.105 0.012 148);
 }
