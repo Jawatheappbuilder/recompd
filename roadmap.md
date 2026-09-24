@@ -14,3 +14,5 @@
 - [x] Build and validate Settings, preferences, and custom-exercise management
 
 - [x] Build and validate Welcome, account forms, and onboarding
+
+- [x] Phase 2: move workouts, bodyweight, saved workouts and custom exercises to the account
