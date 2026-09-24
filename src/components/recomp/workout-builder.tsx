@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { muscleGroups, quickSelects, toWorkoutExercise, type Muscle, type WorkoutExercise } from "@/data/exercises";
+import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, loadSavedWorkouts, saveWorkout, type SavedWorkout } from "@/lib/workout-storage";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
@@ -66,7 +66,7 @@ function ManualMode() {
     const entry = { id: savedId ?? `saved-${Date.now()}`, name: finalName, exercises: workout, createdAt: Date.now() };
     saveWorkout(entry); setSavedId(entry.id); setSaved(loadSavedWorkouts()); toast.success("Workout saved");
   };
-  const load = (item: SavedWorkout) => { setName(item.name); setWorkout(item.exercises.map((exercise) => ({ ...toWorkoutExercise(exercise), sets: exercise.sets, reps: exercise.reps }))); setSavedId(item.id); };
+  const load = (item: SavedWorkout) => { setName(item.name); setWorkout(item.exercises.map((exercise) => ({ ...exercise }))); setSavedId(item.id); };
 
   return <>
     <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name (optional)" enterKeyHint="done" autoComplete="off" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
@@ -74,7 +74,7 @@ function ManualMode() {
       <span className="flex items-center gap-2 font-display text-xl font-extrabold uppercase tracking-wide"><Plus className="size-5" />Add exercise</span>
     </button>}
     <div>
-      <WorkoutEditor workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={setPickerOpen} />
+      <WorkoutEditor supersets workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={setPickerOpen} />
     </div>
     {workout.length > 0 && <div className="space-y-2">
       <Button variant="primary" size="xl" className="w-full" onClick={start}>Start workout</Button>
