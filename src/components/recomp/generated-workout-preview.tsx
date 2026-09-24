@@ -49,9 +49,10 @@ type SheetState =
   | { kind: "reps"; key: string }
   | { kind: "add" };
 
-export function GeneratedWorkoutPreview({ muscles, count }: { muscles: Muscle[]; count: number }) {
+export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Muscle[]; count: number; seed: number }) {
   const navigate = useNavigate();
-  const [workout, setWorkout] = useState(() => generateWorkout(muscles, count));
+  const [workout, setWorkout] = useState(() => generateWorkout(muscles, count, seed));
+  const [generation, setGeneration] = useState(seed);
   const [sheet, setSheet] = useState<SheetState>({ kind: "closed" });
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
@@ -94,7 +95,7 @@ export function GeneratedWorkoutPreview({ muscles, count }: { muscles: Muscle[];
           <h1 className="truncate text-xl font-extrabold">{muscles.join(" + ")}</h1>
           <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.length} exercises</p>
         </div>
-        <Button variant="ghost" size="sm" className="px-2 text-muted-foreground" onClick={() => setWorkout(generateWorkout(muscles, count))}>
+        <Button variant="ghost" size="sm" className="px-2 text-muted-foreground" onClick={() => { const next = generation + 1; setGeneration(next); setWorkout(generateWorkout(muscles, count, next)); }}>
           <RefreshCw /> Regenerate
         </Button>
       </div>

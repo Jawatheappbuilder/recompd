@@ -8,6 +8,7 @@ import { muscleGroups, type Muscle } from "@/data/exercises";
 const previewSearchSchema = z.object({
   muscles: fallback(z.string(), "Chest,Back").default("Chest,Back"),
   count: fallback(z.coerce.number().int().min(1).max(12), 6).default(6),
+  seed: fallback(z.coerce.number().int().min(1), 1).default(1),
 });
 
 export const Route = createFileRoute("/generated-workout")({
@@ -28,5 +29,5 @@ function GeneratedPreviewPage() {
   const allowed = new Set<string>(muscleGroups);
   const muscles = search["muscles"].split(",").filter((muscle: string): muscle is Muscle => allowed.has(muscle));
   const selection: Muscle[] = muscles.length ? muscles : ["Chest", "Back"];
-  return <Screen><GeneratedWorkoutPreview key={`${selection.join("-")}-${search["count"]}`} muscles={selection} count={search["count"]} /></Screen>;
+  return <Screen><GeneratedWorkoutPreview key={`${selection.join("-")}-${search["count"]}-${search["seed"]}`} muscles={selection} count={search["count"]} seed={search["seed"]} /></Screen>;
 }
