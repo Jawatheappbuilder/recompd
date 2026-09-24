@@ -14,6 +14,12 @@ import { Route as BuildRouteImport } from './routes/build'
 import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as WorkoutRouteImport } from './routes/workout'
+import { Route as ProgressIndexRouteImport } from './routes/progress.index'
+import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
+import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
+import { Route as ProgressRecordsRouteImport } from './routes/progress.records'
+import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
+import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,34 +46,102 @@ const WorkoutRoute = WorkoutRouteImport.update({
   path: '/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgressIndexRoute = ProgressIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProgressRoute,
+} as any)
+const ProgressBodyweightRoute = ProgressBodyweightRouteImport.update({
+  id: '/bodyweight',
+  path: '/bodyweight',
+  getParentRoute: () => ProgressRoute,
+} as any)
+const ProgressHistoryRoute = ProgressHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => ProgressRoute,
+} as any)
+const ProgressRecordsRoute = ProgressRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => ProgressRoute,
+} as any)
+const ProgressExerciseIdRoute = ProgressExerciseIdRouteImport.update({
+  id: '/exercise/$id',
+  path: '/exercise/$id',
+  getParentRoute: () => ProgressRoute,
+} as any)
+const ProgressWorkoutIdRoute = ProgressWorkoutIdRouteImport.update({
+  id: '/workout/$id',
+  path: '/workout/$id',
+  getParentRoute: () => ProgressRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
-  '/progress': typeof ProgressRoute
+  '/progress': typeof ProgressRouteWithChildren
   '/workout': typeof WorkoutRoute
+  '/progress/bodyweight': typeof ProgressBodyweightRoute
+  '/progress/history': typeof ProgressHistoryRoute
+  '/progress/records': typeof ProgressRecordsRoute
+  '/progress/': typeof ProgressIndexRoute
+  '/progress/exercise/$id': typeof ProgressExerciseIdRoute
+  '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
-  '/progress': typeof ProgressRoute
   '/workout': typeof WorkoutRoute
+  '/progress/bodyweight': typeof ProgressBodyweightRoute
+  '/progress/history': typeof ProgressHistoryRoute
+  '/progress/records': typeof ProgressRecordsRoute
+  '/progress': typeof ProgressIndexRoute
+  '/progress/exercise/$id': typeof ProgressExerciseIdRoute
+  '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
-  '/progress': typeof ProgressRoute
+  '/progress': typeof ProgressRouteWithChildren
   '/workout': typeof WorkoutRoute
+  '/progress/bodyweight': typeof ProgressBodyweightRoute
+  '/progress/history': typeof ProgressHistoryRoute
+  '/progress/records': typeof ProgressRecordsRoute
+  '/progress/': typeof ProgressIndexRoute
+  '/progress/exercise/$id': typeof ProgressExerciseIdRoute
+  '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/build' | '/generated-workout' | '/progress' | '/workout'
+  fullPaths:
+    | '/'
+    | '/build'
+    | '/generated-workout'
+    | '/progress'
+    | '/workout'
+    | '/progress/bodyweight'
+    | '/progress/history'
+    | '/progress/records'
+    | '/progress/'
+    | '/progress/exercise/$id'
+    | '/progress/workout/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/build' | '/generated-workout' | '/progress' | '/workout'
+  to:
+    | '/'
+    | '/build'
+    | '/generated-workout'
+    | '/workout'
+    | '/progress/bodyweight'
+    | '/progress/history'
+    | '/progress/records'
+    | '/progress'
+    | '/progress/exercise/$id'
+    | '/progress/workout/$id'
   id:
     | '__root__'
     | '/'
@@ -75,13 +149,19 @@ export interface FileRouteTypes {
     | '/generated-workout'
     | '/progress'
     | '/workout'
+    | '/progress/bodyweight'
+    | '/progress/history'
+    | '/progress/records'
+    | '/progress/'
+    | '/progress/exercise/$id'
+    | '/progress/workout/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuildRoute: typeof BuildRoute
   GeneratedWorkoutRoute: typeof GeneratedWorkoutRoute
-  ProgressRoute: typeof ProgressRoute
+  ProgressRoute: typeof ProgressRouteWithChildren
   WorkoutRoute: typeof WorkoutRoute
 }
 
@@ -122,14 +202,78 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/progress/': {
+      id: '/progress/'
+      path: '/'
+      fullPath: '/progress/'
+      preLoaderRoute: typeof ProgressIndexRouteImport
+      parentRoute: typeof ProgressRoute
+    }
+    '/progress/bodyweight': {
+      id: '/progress/bodyweight'
+      path: '/bodyweight'
+      fullPath: '/progress/bodyweight'
+      preLoaderRoute: typeof ProgressBodyweightRouteImport
+      parentRoute: typeof ProgressRoute
+    }
+    '/progress/history': {
+      id: '/progress/history'
+      path: '/history'
+      fullPath: '/progress/history'
+      preLoaderRoute: typeof ProgressHistoryRouteImport
+      parentRoute: typeof ProgressRoute
+    }
+    '/progress/records': {
+      id: '/progress/records'
+      path: '/records'
+      fullPath: '/progress/records'
+      preLoaderRoute: typeof ProgressRecordsRouteImport
+      parentRoute: typeof ProgressRoute
+    }
+    '/progress/exercise/$id': {
+      id: '/progress/exercise/$id'
+      path: '/exercise/$id'
+      fullPath: '/progress/exercise/$id'
+      preLoaderRoute: typeof ProgressExerciseIdRouteImport
+      parentRoute: typeof ProgressRoute
+    }
+    '/progress/workout/$id': {
+      id: '/progress/workout/$id'
+      path: '/workout/$id'
+      fullPath: '/progress/workout/$id'
+      preLoaderRoute: typeof ProgressWorkoutIdRouteImport
+      parentRoute: typeof ProgressRoute
+    }
   }
 }
+
+interface ProgressRouteChildren {
+  ProgressBodyweightRoute: typeof ProgressBodyweightRoute
+  ProgressHistoryRoute: typeof ProgressHistoryRoute
+  ProgressRecordsRoute: typeof ProgressRecordsRoute
+  ProgressIndexRoute: typeof ProgressIndexRoute
+  ProgressExerciseIdRoute: typeof ProgressExerciseIdRoute
+  ProgressWorkoutIdRoute: typeof ProgressWorkoutIdRoute
+}
+
+const ProgressRouteChildren: ProgressRouteChildren = {
+  ProgressBodyweightRoute: ProgressBodyweightRoute,
+  ProgressHistoryRoute: ProgressHistoryRoute,
+  ProgressRecordsRoute: ProgressRecordsRoute,
+  ProgressIndexRoute: ProgressIndexRoute,
+  ProgressExerciseIdRoute: ProgressExerciseIdRoute,
+  ProgressWorkoutIdRoute: ProgressWorkoutIdRoute,
+}
+
+const ProgressRouteWithChildren = ProgressRoute._addFileChildren(
+  ProgressRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildRoute: BuildRoute,
   GeneratedWorkoutRoute: GeneratedWorkoutRoute,
-  ProgressRoute: ProgressRoute,
+  ProgressRoute: ProgressRouteWithChildren,
   WorkoutRoute: WorkoutRoute,
 }
 export const routeTree = rootRouteImport
