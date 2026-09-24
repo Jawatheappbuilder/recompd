@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      bodyweight_entries: {
+        Row: {
+          created_at: string
+          id: string
+          kg: number
+          logged_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          kg: number
+          logged_at: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kg?: number
+          logged_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_exercises: {
+        Row: {
+          created_at: string
+          equipment: string
+          id: string
+          muscles: string[]
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipment: string
+          id: string
+          muscles: string[]
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          equipment?: string
+          id?: string
+          muscles?: string[]
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -59,6 +110,107 @@ export type Database = {
           week_starts_on?: string
           weekly_workout_target?: number
           weight_unit?: string
+        }
+        Relationships: []
+      }
+      saved_workouts: {
+        Row: {
+          created_at: string
+          exercises: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercises?: Json
+          id: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_exercises: {
+        Row: {
+          equipment: string
+          exercise_id: string
+          exercise_key: string
+          muscles: string[]
+          name: string
+          position: number
+          sets: Json
+          superset_with: string | null
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          equipment: string
+          exercise_id: string
+          exercise_key: string
+          muscles?: string[]
+          name: string
+          position: number
+          sets?: Json
+          superset_with?: string | null
+          user_id?: string
+          workout_id: string
+        }
+        Update: {
+          equipment?: string
+          exercise_id?: string
+          exercise_key?: string
+          muscles?: string[]
+          name?: string
+          position?: number
+          sets?: Json
+          superset_with?: string | null
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_exercises_user_id_workout_id_fkey"
+            columns: ["user_id", "workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          duration_sec: number
+          ended_at: string
+          id: string
+          name: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_sec: number
+          ended_at: string
+          id: string
+          name: string
+          started_at: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          duration_sec?: number
+          ended_at?: string
+          id?: string
+          name?: string
+          started_at?: string
+          user_id?: string
         }
         Relationships: []
       }
