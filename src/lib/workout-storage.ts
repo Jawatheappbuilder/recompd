@@ -45,3 +45,4 @@ export function formatScheduleDate(date: string, time?: string) {
   const [h, min] = time.split(":").map(Number);
   return `${label} · ${new Date(2000, 0, 1, h, min).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
+export const hasActiveWorkout = () => { try { return !!localStorage.getItem(ACTIVE_WORKOUT_KEY); } catch { return false; } };
