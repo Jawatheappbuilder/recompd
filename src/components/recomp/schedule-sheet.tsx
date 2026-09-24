@@ -10,7 +10,7 @@ import { cloneExercises, localDateKey, saveScheduledWorkout, type ScheduledWorko
 const field = "h-11 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-sm font-bold text-foreground outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary";
 
 export function ScheduleSheet({ open, onOpenChange, title = "Schedule workout", defaultName, initialDate, initialTime, confirmLabel = "Schedule workout", onConfirm }: {
-  open: boolean; onOpenChange: (open: boolean) => void; title?: string; defaultName: string; initialDate?: string; initialTime?: string; confirmLabel?: string;
+  open: boolean; onOpenChange: (open: boolean) => void; title?: string; defaultName: string; initialDate?: string | undefined; initialTime?: string | undefined; confirmLabel?: string;
   onConfirm: (value: { name: string; date: string; time?: string }) => void;
 }) {
   const [name, setName] = useState(defaultName);

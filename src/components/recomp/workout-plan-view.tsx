@@ -13,7 +13,7 @@ export const exerciseTarget = (exercise: WorkoutExercise) => exercise.tracking =
   ? `${Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min`
   : `${exercise.sets} × ${exercise.reps}`;
 
-export function PlanHeader({ back, title, subtitle }: { back: ReactNode; title: string; subtitle?: string }) {
+export function PlanHeader({ back, title, subtitle }: { back: ReactNode; title: string; subtitle?: string | undefined }) {
   return <div className="mb-4 flex items-center gap-3">
     {back}
     <div className="min-w-0 flex-1"><h1 className="truncate text-xl font-extrabold">{title}</h1>{subtitle && <p className="mt-0.5 truncate text-xs font-semibold text-muted-foreground">{subtitle}</p>}</div>
