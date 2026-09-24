@@ -22,7 +22,7 @@ export function useTrainingData(): TrainingData | null {
   return data ? { workouts: data.workouts, bodyweight: data.bodyweight } : null;
 }
 
-export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: number) {
+export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: number): CompletedWorkout {
   const exercises: CompletedExercise[] = active.exercises
     .map((exercise) => ({
       key: exercise.key,
@@ -34,8 +34,13 @@ export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: 
       sets: exercise.sessionSets.filter((set) => set.completed).map((set) => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 })),
     }))
     .filter((exercise) => exercise.sets.length);
-  if (!exercises.length) return;
-  mutate({ kind: "upsertWorkout", workout: { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises } });
+  return { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises };
+}
+
+export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: number) {
+  const workout = toCompletedWorkout(active, durationSec);
+  if (!workout.exercises.length) return;
+  mutate({ kind: "upsertWorkout", workout });
 }
 export const updateWorkout = (workout: CompletedWorkout) => mutate({ kind: "upsertWorkout", workout });
 export const deleteWorkout = (id: string) => mutate({ kind: "deleteWorkout", id });

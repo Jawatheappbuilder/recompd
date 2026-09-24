@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { deleteWorkout, formatDuration, formatLongDay, formatSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
+import { ShareWorkoutButton } from "../share-workout";
 import { SubHeader } from "./progress-widgets";
 
 export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs: { exerciseId: string; set: CompletedSet }[] }) {
@@ -40,7 +41,8 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           );
         })}
       </div>
-      <Button variant="ghost" className="mt-4 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
+      <ShareWorkoutButton workout={workout} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
+      <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Delete this workout?</AlertDialogTitle><AlertDialogDescription>{workout.name} will be removed from your history.</AlertDialogDescription></AlertDialogHeader>
