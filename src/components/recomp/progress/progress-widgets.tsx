@@ -53,7 +53,7 @@ export function TrainingSummary({ label, workouts, sets, durationSec }: { label:
   );
 }
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
-  return <div className="px-3 first:pl-0"><div className={cn("font-display text-3xl font-extrabold leading-none tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-1 text-[0.7rem] font-medium text-muted-foreground">{label}</div></div>;
+  return <div className="px-3 first:pl-0"><div className={cn("font-display whitespace-nowrap text-[1.75rem] font-extrabold leading-none tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-1 text-[0.7rem] font-medium text-muted-foreground">{label}</div></div>;
 }
 
 const levelStyle: Record<PriorityLevel, { bar: string; text: string }> = {
