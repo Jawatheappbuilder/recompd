@@ -76,7 +76,7 @@ function ManualMode() {
   const selectedIds = new Set(workout.map((e) => e.id));
   const toggle = (id: string) => setWorkout((w) => w.some((e) => e.id === id) ? w.filter((e) => e.id !== id) : [...w, toWorkoutExercise(exercises.find((e) => e.id === id)!)]);
   const update = (key: string, patch: Partial<WorkoutExercise>) => setWorkout((w) => w.map((e) => e.key === key ? { ...e, ...patch } : e));
-  const move = (i: number, d: number) => setWorkout((w) => { const n = [...w]; const j = i + d; if (j < 0 || j >= n.length) return w; [n[i], n[j]] = [n[j], n[i]]; return n; });
+  const move = (i: number, d: number) => setWorkout((w) => { const n = [...w]; const j = i + d; if (j < 0 || j >= n.length) return w; const t = n[i]!; n[i] = n[j]!; n[j] = t; return n; });
   const addCustom = () => { if (!customName.trim()) return; setWorkout((w) => [...w, toWorkoutExercise({ id: `custom-${Date.now()}`, name: customName.trim(), muscle: customMuscle, equipment: "Bodyweight", type: "Isolation" })]); setCustomName(""); setCustomOpen(false); };
 
   return <>
