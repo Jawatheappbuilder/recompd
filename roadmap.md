@@ -23,3 +23,8 @@
 - [x] Rename Training Priority to Muscle Workload
 - [x] Fix the Home This Week narrow-screen layout
 - [x] Validate account persistence, compatibility, and mobile layouts
+
+## Two Small Corrections
+- [ ] Fix cardio input overlap across 360–430px mobile widths
+- [ ] Alphabetise exercise-selection lists without changing workout order
+- [ ] Validate mobile layout and exercise picker ordering

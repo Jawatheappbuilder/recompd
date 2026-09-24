@@ -46,7 +46,7 @@ const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle ==
 
 function useLibrary() {
   const custom = useCustomExercises();
-  const all = useMemo(() => [...custom, ...libraryExercises], [custom]);
+  const all = useMemo(() => [...custom, ...libraryExercises].toSorted((a, b) => a.name.localeCompare(b.name)), [custom]);
   const addCustom = (exercise: Exercise) => saveCustomExercise(exercise);
   return { all, addCustom };
 }
@@ -232,7 +232,7 @@ function ReplaceDrawer({ open, exercise, workout, library, onOpenChange, onSelec
   const alternatives = useMemo(() => {
     if (!exercise) return [];
     const unused = library.filter((item) => isCardioExercise(item) === isCardioExercise(exercise) && !workout.some((current) => current.id === item.id));
-    return [...unused.filter((item) => matchesMuscle(item, exercise.muscle)), ...unused.filter((item) => !matchesMuscle(item, exercise.muscle))].slice(0, 8);
+    return unused.toSorted((a, b) => a.name.localeCompare(b.name)).slice(0, 8);
   }, [exercise, workout, library]);
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -324,7 +324,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
 
   useEffect(() => { if (!open) { setPicked([]); setCreating(false); setQuery(""); } }, [open]);
 
-  const results = library.filter((exercise) => (!muscle || matchesMuscle(exercise, muscle)) && (!equipment || exercise.equipment === equipment) && exercise.name.toLowerCase().includes(query.toLowerCase()));
+  const results = library.filter((exercise) => (!muscle || matchesMuscle(exercise, muscle)) && (!equipment || exercise.equipment === equipment) && exercise.name.toLowerCase().includes(query.toLowerCase())).toSorted((a, b) => a.name.localeCompare(b.name));
   const toggle = (exercise: Exercise) => setPicked((current) => current.some((item) => item.id === exercise.id) ? current.filter((item) => item.id !== exercise.id) : [...current, exercise]);
   const createCustom = () => {
     const first = customMuscles[0];
