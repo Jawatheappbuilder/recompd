@@ -1,4 +1,4 @@
-import type { CardioMetric, Equipment, Muscle } from "@/data/exercises";
+import { exercises as exerciseLibrary, type CardioMetric, type Equipment, type Muscle } from "@/data/exercises";
 import { mutate, useCloudData } from "./cloud-data";
 import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
 
@@ -108,6 +108,7 @@ export function trainingSummary(workouts: CompletedWorkout[], from: number) {
 
 export type WorkloadLevel = "High workload" | "Moderate workload" | "Low workload";
 export const priorityMuscles: Muscle[] = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Core"];
+const libraryMuscles = new Map(exerciseLibrary.map((exercise) => [exercise.id, exercise.muscles?.length ? exercise.muscles : [exercise.muscle]]));
 
 /** Completed sets per muscle; the first listed muscle gets full credit, supporting muscles get half. */
 export function trainingPriority(workouts: CompletedWorkout[], from: number) {
@@ -116,7 +117,8 @@ export function trainingPriority(workouts: CompletedWorkout[], from: number) {
     if (workout.startedAt < from) continue;
     for (const exercise of workout.exercises) {
       if (exercise.tracking === "cardio" || exercise.sets.some(isCardioSet)) continue;
-      exercise.muscles.forEach((muscle, index) => scores.set(muscle, (scores.get(muscle) ?? 0) + exercise.sets.length * (index === 0 ? 1 : 0.5)));
+      const muscles = exercise.muscles.length > 1 ? exercise.muscles : libraryMuscles.get(exercise.exerciseId) ?? exercise.muscles;
+      muscles.forEach((muscle, index) => scores.set(muscle, (scores.get(muscle) ?? 0) + exercise.sets.length * (index === 0 ? 1 : 0.5)));
     }
   }
   const max = Math.max(...scores.values());
