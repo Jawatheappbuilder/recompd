@@ -32,14 +32,14 @@ function GenerateMode() {
   const [workout, setWorkout] = useState<WorkoutExercise[]>([]);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
   const quick = (muscles: Muscle[]) => setSelected((c) => muscles.every((m) => c.includes(m)) ? c.filter((m) => !muscles.includes(m)) : [...c, ...muscles.filter((m) => !c.includes(m))]);
-  const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3}` : ""}` : `${count} exercises • choose muscles`;
+  const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
   const replace = (key: string) => setWorkout((w) => w.map((e) => { if (e.key !== key) return e; const r = findReplacement(e, w); return r ? { ...toWorkoutExercise(r), sets: e.sets, reps: e.reps } : e; }));
 
   return <>
     <section>
       <SectionHeading>Muscles</SectionHeading>
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
-      <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} onClick={() => toggle(m)} className="h-9 justify-between px-3 text-[0.8rem]">{m}{a && <Check />}</Button>; })}</div>
+      <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} onClick={() => toggle(m)} className="h-9 justify-between px-3">{m}{a && <Check />}</Button>; })}</div>
     </section>
     <section>
       <SectionHeading>Exercises</SectionHeading>
