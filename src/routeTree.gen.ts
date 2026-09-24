@@ -10,13 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BuildRouteImport } from './routes/build'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as BuildIndexRouteImport } from './routes/build.index'
+import { Route as BuildPreviewRouteImport } from './routes/build.preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuildRoute = BuildRouteImport.update({
+  id: '/build',
+  path: '/build',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -30,43 +37,61 @@ const WorkoutRoute = WorkoutRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuildIndexRoute = BuildIndexRouteImport.update({
-  id: '/build/',
-  path: '/build/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => BuildRoute,
+} as any)
+const BuildPreviewRoute = BuildPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => BuildRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/build': typeof BuildRouteWithChildren
   '/progress': typeof ProgressRoute
   '/workout': typeof WorkoutRoute
+  '/build/preview': typeof BuildPreviewRoute
   '/build/': typeof BuildIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/progress': typeof ProgressRoute
   '/workout': typeof WorkoutRoute
+  '/build/preview': typeof BuildPreviewRoute
   '/build': typeof BuildIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/build': typeof BuildRouteWithChildren
   '/progress': typeof ProgressRoute
   '/workout': typeof WorkoutRoute
+  '/build/preview': typeof BuildPreviewRoute
   '/build/': typeof BuildIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/progress' | '/workout' | '/build/'
+  fullPaths:
+    '/' | '/build' | '/progress' | '/workout' | '/build/preview' | '/build/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/progress' | '/workout' | '/build'
-  id: '__root__' | '/' | '/progress' | '/workout' | '/build/'
+  to: '/' | '/progress' | '/workout' | '/build/preview' | '/build'
+  id:
+    | '__root__'
+    | '/'
+    | '/build'
+    | '/progress'
+    | '/workout'
+    | '/build/preview'
+    | '/build/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuildRoute: typeof BuildRouteWithChildren
   ProgressRoute: typeof ProgressRoute
   WorkoutRoute: typeof WorkoutRoute
-  BuildIndexRoute: typeof BuildIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +101,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/build': {
+      id: '/build'
+      path: '/build'
+      fullPath: '/build'
+      preLoaderRoute: typeof BuildRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -94,19 +126,38 @@ declare module '@tanstack/react-router' {
     }
     '/build/': {
       id: '/build/'
-      path: '/build'
+      path: '/'
       fullPath: '/build/'
       preLoaderRoute: typeof BuildIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof BuildRoute
+    }
+    '/build/preview': {
+      id: '/build/preview'
+      path: '/preview'
+      fullPath: '/build/preview'
+      preLoaderRoute: typeof BuildPreviewRouteImport
+      parentRoute: typeof BuildRoute
     }
   }
 }
 
+interface BuildRouteChildren {
+  BuildPreviewRoute: typeof BuildPreviewRoute
+  BuildIndexRoute: typeof BuildIndexRoute
+}
+
+const BuildRouteChildren: BuildRouteChildren = {
+  BuildPreviewRoute: BuildPreviewRoute,
+  BuildIndexRoute: BuildIndexRoute,
+}
+
+const BuildRouteWithChildren = BuildRoute._addFileChildren(BuildRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuildRoute: BuildRouteWithChildren,
   ProgressRoute: ProgressRoute,
   WorkoutRoute: WorkoutRoute,
-  BuildIndexRoute: BuildIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
