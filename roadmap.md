@@ -12,3 +12,5 @@
 - [x] Build and validate the Active Workout experience
 - [x] Refine Active Workout current styling, rest controls, supersets, and completed summary
 - [x] Build and validate Settings, preferences, and custom-exercise management
+
+- [ ] Build and validate Welcome, account forms, and onboarding
