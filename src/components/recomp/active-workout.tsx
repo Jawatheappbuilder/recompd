@@ -37,7 +37,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { equipmentTypes, exercises, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
-import { recordCompletedWorkout } from "@/lib/training-data";
+import { personalRecords, recordCompletedWorkout, toCompletedWorkout, useTrainingData } from "@/lib/training-data";
+import { ShareWorkoutButton } from "./share-workout";
 import { cn } from "@/lib/utils";
 
 type Sheet =
@@ -331,11 +332,9 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
   })).filter(({ sets }) => sets.length > 0);
-  const share = async () => {
-    const details = performed.map(({ exercise, sets }) => `${exercise.name}: ${sets.map((set) => exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`).join(", ")}`).join("\n");
-    const text = `${result.workout.name}\n${formatDuration(result.duration)}\n\n${details}`;
-    if (navigator.share) await navigator.share({ title: result.workout.name, text }); else await navigator.clipboard.writeText(text);
-  };
-  return <div className="py-8"><CircleCheck className="size-11 text-primary"/><p className="mt-5 text-[0.7rem] font-bold uppercase text-primary">Workout complete</p><h1 className="mt-1 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1><div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={`${Math.round(result.volume).toLocaleString()} kg`}/></div>{performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}<Button variant="primary" size="xl" className="mt-5 w-full" onClick={() => void share()}><Share2/>Share workout</Button></div>;
+  const data = useTrainingData();
+  const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
+  const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
+  return <div className="py-8"><CircleCheck className="size-11 text-primary"/><p className="mt-5 text-[0.7rem] font-bold uppercase text-primary">Workout complete</p><h1 className="mt-1 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1><div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={`${Math.round(result.volume).toLocaleString()} kg`}/></div>{performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}{shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}</div>;
 }
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
