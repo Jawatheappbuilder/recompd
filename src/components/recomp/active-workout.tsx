@@ -294,10 +294,25 @@ function CardioFields({ exercise, set: session, onChange, onToggle }: { exercise
 }
 
 function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
+  const [cleared, setCleared] = useState<{ field: "weight" | "reps"; previous: string } | null>(null);
+  const focusField = (field: "weight" | "reps") => {
+    const value = String(set[field] ?? "");
+    setCleared(value ? { field, previous: value } : null);
+  };
+  const blurField = () => {
+    if (!cleared) return;
+    const field = cleared.field;
+    const value = field === "weight" ? set.weight : set.reps;
+    setCleared(null);
+    if (!value) {
+      if (field === "weight") onChange({ weight: cleared.previous, weightEdited: true }, true);
+      else onChange({ reps: cleared.previous });
+    }
+  };
   return <div className={cn("grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg px-1", set.completed && "bg-accent") }>
     <button type="button" disabled={!canRemove} aria-label={`Remove set ${number}`} onClick={onRemove} className="text-center text-xs font-bold text-muted-foreground disabled:cursor-default">{number}</button>
-    <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={set.weight} placeholder="—" onFocus={(event) => event.currentTarget.select()} onChange={(event) => onChange({ weight: event.target.value, weightEdited: true }, true)} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
-    <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={set.reps} onFocus={(event) => event.currentTarget.select()} onChange={(event) => onChange({ reps: event.target.value })} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
+    <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
+    <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
     <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border", set.completed ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}><Check className="size-4" strokeWidth={3} /></button>
   </div>;
 }
