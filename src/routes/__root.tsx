@@ -15,6 +15,7 @@ import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingProvider } from "@/components/recomp/onboarding-context";
 import { AuthProvider } from "@/components/recomp/auth-context";
+import { useUserPreferences } from "@/lib/user-preferences";
 
 function NotFoundComponent() {
   return (
@@ -120,12 +121,47 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ThemeHandler() {
+  const [preferences] = useUserPreferences();
+  
+  useEffect(() => {
+    const applyTheme = () => {
+      const theme = preferences.theme;
+      const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      
+      if (isDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+
+    applyTheme();
+
+    if (preferences.theme === "system") {
+      const media = window.matchMedia("(prefers-color-scheme: dark)");
+      const listener = () => applyTheme();
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
+    }
+  }, [preferences.theme]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider><OnboardingProvider><AppShell><Outlet /></AppShell></OnboardingProvider></AuthProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <AppShell>
+            <ThemeHandler />
+            <Outlet />
+          </AppShell>
+        </OnboardingProvider>
+      </AuthProvider>
       <Toaster position="top-center" />
     </QueryClientProvider>
   );
