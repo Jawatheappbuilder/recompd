@@ -69,12 +69,12 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
 
   const update = (key: string, patch: Partial<WorkoutExercise>) => setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...exercise, ...patch } : exercise));
   const replace = (key: string, alternative: Exercise) => {
-    setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...toWorkoutExercise(alternative), key: exercise.key, sets: exercise.sets, reps: exercise.reps, supersetWith: exercise.supersetWith } : exercise));
+    setWorkout((current) => current.map((exercise) => exercise.key === key ? { ...toWorkoutExercise(alternative), key: exercise.key, sets: exercise.sets, reps: exercise.reps, ...(exercise.supersetWith ? { supersetWith: exercise.supersetWith } : {}) } : exercise));
     setSheet({ kind: "closed" });
   };
   const unlink = (key: string) => setWorkout((current) => {
     const partner = current.find((exercise) => exercise.key === key)?.supersetWith;
-    return current.map(({ supersetWith, ...exercise }) => exercise.key === key || exercise.key === partner ? exercise : { ...exercise, supersetWith });
+    return current.map(({ supersetWith, ...exercise }) => exercise.key === key || exercise.key === partner || !supersetWith ? exercise : { ...exercise, supersetWith });
   });
   const pair = (key: string, partnerKey: string) => {
     setWorkout((current) => {
@@ -86,7 +86,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
     });
     setSheet({ kind: "closed" });
   };
-  const remove = (key: string) => setWorkout((current) => current.filter((item) => item.key !== key).map((item) => item.supersetWith === key ? { ...item, supersetWith: undefined } : item));
+  const remove = (key: string) => setWorkout((current) => current.filter((item) => item.key !== key).map(({ supersetWith, ...item }) => supersetWith && supersetWith !== key ? { ...item, supersetWith } : item));
   const partnerOf = (exercise: WorkoutExercise) => exercise.supersetWith ? workout.find((item) => item.key === exercise.supersetWith) : undefined;
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;

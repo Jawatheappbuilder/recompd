@@ -35,7 +35,7 @@ const raw: [string, Muscle, Equipment, "C" | "I"][] = [
 
 export const exercises: Exercise[] = raw.map(([name, muscle, equipment, t]) => ({ id: name.toLowerCase().replace(/[^a-z]+/g, "-"), name, muscle, equipment, type: t === "C" ? "Compound" : "Isolation" }));
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string | undefined };
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string };
 let seq = 0;
 export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12" });
 
