@@ -67,7 +67,8 @@ const previousPerformance: Partial<Record<string, string>> = {
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 const formatDuration = (seconds: number) => seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 
-export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void }) {
+export function ActiveWorkout({ workout, onChange, onCancel }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onCancel: () => void }) {
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
@@ -224,13 +225,20 @@ export function ActiveWorkout({ workout, onChange }: { workout: ActiveWorkoutSta
             onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
             onToggleSet={(set) => toggleSet(exercise, set)}
             onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.at(-1)?.weight ?? "", reps: item.sessionSets.at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
-            onRemoveSet={(setId) => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId) }))}
+            onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
             onRest={() => setSheet({ kind: "rest", key: exercise.key })}
             onActions={() => setSheet({ kind: "actions", key: exercise.key })}
           />;
         })}
       </div>
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
+      <Button variant="ghost" size="sm" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>Cancel workout</Button>
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
+          <AlertDialogHeader><AlertDialogTitle>Cancel workout?</AlertDialogTitle><AlertDialogDescription>Your progress from this workout will be discarded.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Keep Workout</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { setRest(null); setSheet({ kind: "closed" }); setCancelOpen(false); onCancel(); }}>Cancel Workout</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
       <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onReplace={replaceExercise} onPair={pairSuperset} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
@@ -295,6 +303,7 @@ function CardioFields({ exercise, set: session, onChange, onToggle }: { exercise
 
 function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
   const [cleared, setCleared] = useState<{ field: "weight" | "reps"; previous: string } | null>(null);
+  const [armed, setArmed] = useState(false);
   const focusField = (field: "weight" | "reps") => {
     const value = String(set[field] ?? "");
     setCleared(value ? { field, previous: value } : null);
@@ -310,7 +319,7 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
     }
   };
   return <div className={cn("grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg px-1", set.completed && "bg-accent") }>
-    <button type="button" disabled={!canRemove} aria-label={`Remove set ${number}`} onClick={onRemove} className="text-center text-xs font-bold text-muted-foreground disabled:cursor-default">{number}</button>
+    {canRemove && !set.completed ? <button type="button" aria-label={armed ? `Confirm remove set ${number}` : `Remove set ${number}`} onClick={() => armed ? onRemove() : setArmed(true)} onBlur={() => setArmed(false)} className={cn("relative grid h-9 place-items-center text-xs font-bold", armed ? "text-destructive" : "text-muted-foreground")}>{armed ? <Minus className="size-4" /> : <>{number}<span className="absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-border" /></>}</button> : <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>}
     <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
     <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
     <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border", set.completed ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}><Check className="size-4" strokeWidth={3} /></button>

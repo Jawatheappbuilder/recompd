@@ -15,5 +15,5 @@ function WorkoutPage() {
   const { workout, setWorkout, hydrated } = useActiveWorkout();
   if (!hydrated) return <Screen>{null}</Screen>;
   if (!workout) return <Screen><Header/><EmptyWorkout/></Screen>;
-  return <Screen className="pt-0"><ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} /></Screen>;
+  return <Screen className="pt-0"><ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} onCancel={() => { sessionStorage.removeItem("recomp-active-workout"); setWorkout(null); }} /></Screen>;
 }

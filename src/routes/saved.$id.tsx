@@ -3,6 +3,7 @@ import { CalendarPlus, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ShareLinkButton } from "@/components/recomp/share-link-button";
 import { Screen } from "@/components/recomp/core";
 import { ScheduleSheet, scheduleNewWorkout } from "@/components/recomp/schedule-sheet";
 import { BackLink, ConfirmDelete, ExerciseList, PlanEditor, PlanHeader } from "@/components/recomp/workout-plan-view";
@@ -44,6 +45,7 @@ function SavedWorkoutPage() {
         <Button variant="surface" onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
         <Button variant="surface" onClick={() => setEditing(true)}><Pencil />Edit</Button>
       </div>
+      <ShareLinkButton name={item.name} exercises={item.exercises} className="w-full" />
       <Button variant="ghost" className="w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirm(true)}><Trash2 />Delete</Button>
     </div>
     <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={item.name} onConfirm={(value) => scheduleNewWorkout(value, item.exercises, item.id)} />

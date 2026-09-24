@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/recomp/auth-context";
 import { Button } from "@/components/ui/button";
+import { PENDING_SHARE_KEY } from "@/lib/workout-share";
 
 const destinations = [
   { label: "Home", to: "/", icon: House },
@@ -21,16 +22,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const signedOutRoute = signedOutRoutes.includes(pathname);
   const onboardingRoute = pathname.startsWith("/onboarding");
   const resetRoute = pathname === "/reset-password";
-  const entryRoute = signedOutRoute || onboardingRoute || resetRoute;
+  const shareRoute = pathname.startsWith("/share/");
+  const entryRoute = signedOutRoute || onboardingRoute || resetRoute || (shareRoute && status !== "signedIn");
 
   let target: "/welcome" | "/onboarding/about" | "/" | null = null;
-  if (status === "signedOut" && !signedOutRoute && !resetRoute) target = "/welcome";
+  if (status === "signedOut" && !signedOutRoute && !resetRoute && !shareRoute) target = "/welcome";
   if (status === "signedIn" && !resetRoute) {
     if (!onboardingComplete && !onboardingRoute) target = "/onboarding/about";
     if (onboardingComplete && (signedOutRoute || onboardingRoute)) target = "/";
   }
 
-  useEffect(() => { if (target) void navigate({ to: target, replace: true }); }, [target, navigate]);
+  useEffect(() => {
+    if (!target) return;
+    const pending = target === "/" ? localStorage.getItem(PENDING_SHARE_KEY) : null;
+    if (pending) void navigate({ to: "/share/$token", params: { token: pending }, replace: true });
+    else void navigate({ to: target, replace: true });
+  }, [target, navigate]);
 
   const blocked = (status === "loading" && !resetRoute) || Boolean(target);
   return (
