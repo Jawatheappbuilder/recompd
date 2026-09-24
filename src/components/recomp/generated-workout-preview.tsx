@@ -31,7 +31,6 @@ import {
 import {
   equipmentTypes,
   exercises,
-  findReplacement,
   generateWorkout,
   muscleGroups,
   toWorkoutExercise,
