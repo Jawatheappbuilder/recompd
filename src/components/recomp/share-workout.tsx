@@ -205,7 +205,8 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
     setBlob(null); setUrl(null);
     renderWorkoutCard(workout, prs).then((b) => { if (cancelled) return; created = URL.createObjectURL(b); setBlob(b); setUrl(created); }).catch(() => toast.error("Couldn't create the image"));
     return () => { cancelled = true; if (created) URL.revokeObjectURL(created); };
-  }, [open, workout, prs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(workout), JSON.stringify(prs)]);
 
   const file = blob ? new File([blob], fileName(workout), { type: "image/png" }) : null;
   const canShareFile = !!file && typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] });

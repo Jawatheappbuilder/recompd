@@ -9,7 +9,7 @@ import {
   Minus,
   Plus,
   Search,
-  Share2,
+
   Shuffle,
   Trash2,
   Unlink,
