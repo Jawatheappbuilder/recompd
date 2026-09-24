@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ActiveWorkout } from "@/components/recomp/active-workout";
 import { EmptyWorkout } from "@/components/recomp/empty-workout";
 import { Header, Screen } from "@/components/recomp/core";
+import { useActiveWorkout } from "@/hooks/use-active-workout";
 
 export const Route = createFileRoute("/workout")({
   head: () => ({ meta: [
@@ -9,4 +11,9 @@ export const Route = createFileRoute("/workout")({
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }), component: WorkoutPage,
 });
-function WorkoutPage() { return <Screen><Header/><EmptyWorkout/></Screen>; }
+function WorkoutPage() {
+  const { workout, setWorkout, hydrated } = useActiveWorkout();
+  if (!hydrated) return <Screen />;
+  if (!workout) return <Screen><Header/><EmptyWorkout/></Screen>;
+  return <Screen className="pt-0"><ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} onClear={() => setWorkout(null)} /></Screen>;
+}
