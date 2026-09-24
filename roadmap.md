@@ -28,3 +28,8 @@
 - [x] Fix cardio input overlap across 360–430px mobile widths
 - [x] Alphabetise exercise-selection lists without changing workout order
 - [x] Validate mobile layout and exercise picker ordering
+
+## Light Mode
+- [x] Add warm light semantic tokens while preserving Dark mode
+- [x] Enable System, Dark, and Light with account-backed persistence
+- [x] Validate app screens, overlays, inputs, charts, and data stability

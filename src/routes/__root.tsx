@@ -15,6 +15,7 @@ import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingProvider } from "@/components/recomp/onboarding-context";
 import { AuthProvider } from "@/components/recomp/auth-context";
+import { applyThemePreference, loadUserPreferences } from "@/lib/user-preferences";
 
 function NotFoundComponent() {
   return (
@@ -107,8 +108,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem("recomp-user-preferences-v1"),p=s?JSON.parse(s):null,t=p&&p.theme||"system",d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches),e=document.documentElement;e.classList.toggle("dark",d);e.classList.toggle("light",!d);e.style.colorScheme=d?"dark":"light"}catch(e){}})();` }} />
         <HeadContent />
       </head>
       <body>
@@ -119,12 +121,32 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ThemeHandler() {
+  useEffect(() => {
+    const apply = () => applyThemePreference(loadUserPreferences().theme);
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    apply();
+    media.addEventListener("change", apply);
+    window.addEventListener("recomp-preferences-changed", apply);
+    window.addEventListener("storage", apply);
+    return () => { media.removeEventListener("change", apply); window.removeEventListener("recomp-preferences-changed", apply); window.removeEventListener("storage", apply); };
+  }, []);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider><OnboardingProvider><AppShell><Outlet /></AppShell></OnboardingProvider></AuthProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <AppShell>
+            <ThemeHandler />
+            <Outlet />
+          </AppShell>
+        </OnboardingProvider>
+      </AuthProvider>
       <Toaster position="top-center" />
     </QueryClientProvider>
   );
