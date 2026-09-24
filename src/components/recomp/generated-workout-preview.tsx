@@ -1,15 +1,17 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, CalendarPlus, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { generateWorkout, type Muscle } from "@/data/exercises";
-import { handOffWorkout } from "@/lib/workout-storage";
+import { defaultWorkoutName, handOffWorkout } from "@/lib/workout-storage";
+import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
 import { WorkoutEditor } from "./workout-editor";
 
 export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Muscle[]; count: number; seed: number }) {
   const navigate = useNavigate();
   const [workout, setWorkout] = useState(() => generateWorkout(muscles, count, seed));
   const [generation, setGeneration] = useState(seed);
+  const [scheduling, setScheduling] = useState(false);
   const startWorkout = () => { handOffWorkout({ exercises: workout }); void navigate({ to: "/workout" }); };
 
   return (
@@ -28,6 +30,8 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
       </div>
       <WorkoutEditor workout={workout} setWorkout={setWorkout} />
       <Button variant="primary" size="xl" className="mt-4 w-full" disabled={!workout.length} onClick={startWorkout}>Start workout</Button>
+      <Button variant="surface" className="mt-2 w-full" disabled={!workout.length} onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
+      <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={defaultWorkoutName(workout)} onConfirm={(value) => { scheduleNewWorkout(value, workout); void navigate({ to: "/" }); }} />
     </>
   );
 }

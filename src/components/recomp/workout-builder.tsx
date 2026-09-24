@@ -1,4 +1,4 @@
-import { Bookmark, Check, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Bookmark, CalendarPlus, Check, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ import { newId } from "@/lib/cloud-data";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
+import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
 
 const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent");
 
@@ -59,6 +60,7 @@ function ManualMode() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const saved = useSavedWorkouts();
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [scheduling, setScheduling] = useState(false);
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const start = () => { handOffWorkout({ name: finalName, exercises: workout }); void navigate({ to: "/workout" }); };
@@ -78,8 +80,12 @@ function ManualMode() {
     </div>
     {workout.length > 0 && <div className="space-y-2">
       <Button variant="primary" size="xl" className="w-full" onClick={start}>Start workout</Button>
-      <Button variant="surface" className="w-full" onClick={save}><Bookmark />Save workout</Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="surface" onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
+        <Button variant="surface" onClick={save}><Bookmark />Save</Button>
+      </div>
     </div>}
+    <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={finalName} onConfirm={(value) => { scheduleNewWorkout(value, workout, savedId ?? undefined); void navigate({ to: "/" }); }} />
     {saved.length > 0 && <section>
       <SectionHeading>Saved</SectionHeading>
       <Card className="divide-y divide-border px-3">{saved.map((item) => <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">

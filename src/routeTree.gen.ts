@@ -28,6 +28,9 @@ import { Route as ProgressIndexRouteImport } from './routes/progress.index'
 import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
 import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
 import { Route as ProgressRecordsRouteImport } from './routes/progress.records'
+import { Route as SavedIndexRouteImport } from './routes/saved.index'
+import { Route as SavedIdRouteImport } from './routes/saved.$id'
+import { Route as ScheduledIdRouteImport } from './routes/scheduled.$id'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
@@ -132,6 +135,21 @@ const ProgressRecordsRoute = ProgressRecordsRouteImport.update({
   path: '/records',
   getParentRoute: () => ProgressRoute,
 } as any)
+const SavedIndexRoute = SavedIndexRouteImport.update({
+  id: '/saved/',
+  path: '/saved/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedIdRoute = SavedIdRouteImport.update({
+  id: '/saved/$id',
+  path: '/saved/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScheduledIdRoute = ScheduledIdRouteImport.update({
+  id: '/scheduled/$id',
+  path: '/scheduled/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -192,12 +210,15 @@ export interface FileRoutesByFullPath {
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/saved/$id': typeof SavedIdRoute
+  '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/saved/': typeof SavedIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
@@ -219,12 +240,15 @@ export interface FileRoutesByTo {
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/saved/$id': typeof SavedIdRoute
+  '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress': typeof ProgressIndexRoute
+  '/saved': typeof SavedIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
@@ -249,12 +273,15 @@ export interface FileRoutesById {
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/saved/$id': typeof SavedIdRoute
+  '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/saved/': typeof SavedIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
@@ -280,12 +307,15 @@ export interface FileRouteTypes {
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/saved/$id'
+    | '/scheduled/$id'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
+    | '/saved/'
     | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
@@ -307,12 +337,15 @@ export interface FileRouteTypes {
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/saved/$id'
+    | '/scheduled/$id'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress'
+    | '/saved'
     | '/settings'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
@@ -336,12 +369,15 @@ export interface FileRouteTypes {
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/saved/$id'
+    | '/scheduled/$id'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
     | '/progress/'
+    | '/saved/'
     | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
@@ -361,6 +397,9 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   WelcomeRoute: typeof WelcomeRoute
   WorkoutRoute: typeof WorkoutRoute
+  SavedIdRoute: typeof SavedIdRoute
+  ScheduledIdRoute: typeof ScheduledIdRoute
+  SavedIndexRoute: typeof SavedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -498,6 +537,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgressRecordsRouteImport
       parentRoute: typeof ProgressRoute
     }
+    '/saved/': {
+      id: '/saved/'
+      path: '/saved'
+      fullPath: '/saved/'
+      preLoaderRoute: typeof SavedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved/$id': {
+      id: '/saved/$id'
+      path: '/saved/$id'
+      fullPath: '/saved/$id'
+      preLoaderRoute: typeof SavedIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scheduled/$id': {
+      id: '/scheduled/$id'
+      path: '/scheduled/$id'
+      fullPath: '/scheduled/$id'
+      preLoaderRoute: typeof ScheduledIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/': {
       id: '/settings/'
       path: '/'
@@ -629,6 +689,9 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRouteWithChildren,
   WelcomeRoute: WelcomeRoute,
   WorkoutRoute: WorkoutRoute,
+  SavedIdRoute: SavedIdRoute,
+  ScheduledIdRoute: ScheduledIdRoute,
+  SavedIndexRoute: SavedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
