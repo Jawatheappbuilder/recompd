@@ -26,7 +26,7 @@ export function WeekTracker({ start, trainedDays, startsOn }: { start: number; t
 }
 
 export function WeeklyTraining() {
-  const data = useTrainingData(); const { preferences } = useUserPreferences();
+  const data = useTrainingData(); const [preferences] = useUserPreferences();
   const start = weekStart(preferences.weekStartsOn);
   const week = (data?.workouts ?? []).filter((workout) => workout.startedAt >= start);
   const summary = trainingSummary(week, start); const target = preferences.weeklyWorkoutTarget;
