@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronRight, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ export function Header({ title }: { title?: string }) {
         <div className="wordmark">RECOMP<span className="text-primary">'</span>D</div>
         {title ? <h1 className="mt-3 truncate text-2xl font-bold">{title}</h1> : null}
       </div>
-      <Button aria-label="Settings" variant="surface" size="icon"><Settings /></Button>
+      <Button asChild aria-label="Settings" variant="surface" size="icon"><Link to="/settings"><Settings /></Link></Button>
     </header>
   );
 }

@@ -13,11 +13,18 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuildRouteImport } from './routes/build'
 import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as ProgressIndexRouteImport } from './routes/progress.index'
 import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
 import { Route as ProgressHistoryRouteImport } from './routes/progress.history'
 import { Route as ProgressRecordsRouteImport } from './routes/progress.records'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAccountRouteImport } from './routes/settings.account'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
+import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
+import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as SettingsTrainingRouteImport } from './routes/settings.training'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
 import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
 
@@ -39,6 +46,11 @@ const GeneratedWorkoutRoute = GeneratedWorkoutRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkoutRoute = WorkoutRouteImport.update({
@@ -66,6 +78,36 @@ const ProgressRecordsRoute = ProgressRecordsRouteImport.update({
   path: '/records',
   getParentRoute: () => ProgressRoute,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAccountRoute = SettingsAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsExercisesRoute = SettingsExercisesRouteImport.update({
+  id: '/exercises',
+  path: '/exercises',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsTrainingRoute = SettingsTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const ProgressExerciseIdRoute = ProgressExerciseIdRouteImport.update({
   id: '/exercise/$id',
   path: '/exercise/$id',
@@ -82,11 +124,18 @@ export interface FileRoutesByFullPath {
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/progress': typeof ProgressRouteWithChildren
+  '/settings': typeof SettingsRouteWithChildren
   '/workout': typeof WorkoutRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/settings/account': typeof SettingsAccountRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -98,7 +147,13 @@ export interface FileRoutesByTo {
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/settings/account': typeof SettingsAccountRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/training': typeof SettingsTrainingRoute
   '/progress': typeof ProgressIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -108,11 +163,18 @@ export interface FileRoutesById {
   '/build': typeof BuildRoute
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/progress': typeof ProgressRouteWithChildren
+  '/settings': typeof SettingsRouteWithChildren
   '/workout': typeof WorkoutRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
   '/progress/records': typeof ProgressRecordsRoute
+  '/settings/account': typeof SettingsAccountRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/training': typeof SettingsTrainingRoute
   '/progress/': typeof ProgressIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
 }
@@ -123,11 +185,18 @@ export interface FileRouteTypes {
     | '/build'
     | '/generated-workout'
     | '/progress'
+    | '/settings'
     | '/workout'
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/settings/account'
+    | '/settings/appearance'
+    | '/settings/exercises'
+    | '/settings/profile'
+    | '/settings/training'
     | '/progress/'
+    | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -139,7 +208,13 @@ export interface FileRouteTypes {
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/settings/account'
+    | '/settings/appearance'
+    | '/settings/exercises'
+    | '/settings/profile'
+    | '/settings/training'
     | '/progress'
+    | '/settings'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   id:
@@ -148,11 +223,18 @@ export interface FileRouteTypes {
     | '/build'
     | '/generated-workout'
     | '/progress'
+    | '/settings'
     | '/workout'
     | '/progress/bodyweight'
     | '/progress/history'
     | '/progress/records'
+    | '/settings/account'
+    | '/settings/appearance'
+    | '/settings/exercises'
+    | '/settings/profile'
+    | '/settings/training'
     | '/progress/'
+    | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
   fileRoutesById: FileRoutesById
@@ -162,6 +244,7 @@ export interface RootRouteChildren {
   BuildRoute: typeof BuildRoute
   GeneratedWorkoutRoute: typeof GeneratedWorkoutRoute
   ProgressRoute: typeof ProgressRouteWithChildren
+  SettingsRoute: typeof SettingsRouteWithChildren
   WorkoutRoute: typeof WorkoutRoute
 }
 
@@ -193,6 +276,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/workout': {
@@ -229,6 +319,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/progress/records'
       preLoaderRoute: typeof ProgressRecordsRouteImport
       parentRoute: typeof ProgressRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/account': {
+      id: '/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof SettingsAccountRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/appearance': {
+      id: '/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/exercises': {
+      id: '/settings/exercises'
+      path: '/exercises'
+      fullPath: '/settings/exercises'
+      preLoaderRoute: typeof SettingsExercisesRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/profile': {
+      id: '/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/training': {
+      id: '/settings/training'
+      path: '/training'
+      fullPath: '/settings/training'
+      preLoaderRoute: typeof SettingsTrainingRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/progress/exercise/$id': {
       id: '/progress/exercise/$id'
@@ -269,11 +401,34 @@ const ProgressRouteWithChildren = ProgressRoute._addFileChildren(
   ProgressRouteChildren,
 )
 
+interface SettingsRouteChildren {
+  SettingsAccountRoute: typeof SettingsAccountRoute
+  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
+  SettingsExercisesRoute: typeof SettingsExercisesRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsTrainingRoute: typeof SettingsTrainingRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAccountRoute: SettingsAccountRoute,
+  SettingsAppearanceRoute: SettingsAppearanceRoute,
+  SettingsExercisesRoute: SettingsExercisesRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
+  SettingsTrainingRoute: SettingsTrainingRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildRoute: BuildRoute,
   GeneratedWorkoutRoute: GeneratedWorkoutRoute,
   ProgressRoute: ProgressRouteWithChildren,
+  SettingsRoute: SettingsRouteWithChildren,
   WorkoutRoute: WorkoutRoute,
 }
 export const routeTree = rootRouteImport

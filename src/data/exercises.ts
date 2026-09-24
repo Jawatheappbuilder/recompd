@@ -37,7 +37,11 @@ export const exercises: Exercise[] = raw.map(([name, muscle, equipment, t]) => (
 
 export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string };
 let seq = 0;
-export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12" });
+const preferredRestSeconds = () => {
+  if (typeof window === "undefined") return 90;
+  try { return Number((JSON.parse(localStorage.getItem("recomp-user-preferences-v1") ?? "null") as { defaultRestSeconds?: number } | null)?.defaultRestSeconds ?? 90); } catch { return 90; }
+};
+export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12", restSeconds: preferredRestSeconds() });
 
 const shuffle = <T,>(a: T[], random: () => number = Math.random) => {
   const result = [...a];
