@@ -1,9 +1,10 @@
-import { Check, ChevronDown, ChevronUp, Minus, Plus, RefreshCw, Search, Shuffle, Sparkles, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Minus, Plus, Search, Sparkles, X } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { equipmentTypes, exercises, findReplacement, generateWorkout, muscleGroups, quickSelects, toWorkoutExercise, type Equipment, type Muscle, type WorkoutExercise } from "@/data/exercises";
+import { equipmentTypes, exercises, muscleGroups, quickSelects, toWorkoutExercise, type Equipment, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { SectionHeading } from "./core";
 
 const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent");
@@ -27,13 +28,12 @@ export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "ge
 }
 
 function GenerateMode() {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<Muscle[]>(["Chest", "Back"]);
   const [count, setCount] = useState(6);
-  const [workout, setWorkout] = useState<WorkoutExercise[]>([]);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
   const quick = (muscles: Muscle[]) => setSelected((c) => muscles.every((m) => c.includes(m)) ? c.filter((m) => !muscles.includes(m)) : [...c, ...muscles.filter((m) => !c.includes(m))]);
   const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
-  const replace = (key: string) => setWorkout((w) => w.map((e) => { if (e.key !== key) return e; const r = findReplacement(e, w); return r ? { ...toWorkoutExercise(r), sets: e.sets, reps: e.reps } : e; }));
 
   return <>
     <section>
@@ -46,22 +46,9 @@ function GenerateMode() {
       <div className="grid grid-cols-6 gap-1.5 rounded-xl border border-border bg-secondary p-1">{[3, 4, 5, 6, 7, 8].map((n) => <Button key={n} variant={count === n ? "segmentActive" : "segment"} className={cn("tabular-nums", count === n && "text-primary")} onClick={() => setCount(n)}>{n}</Button>)}</div>
       <p className="mt-1.5 truncate text-[0.7rem] font-semibold text-muted-foreground">{summary}</p>
     </section>
-    <Button variant="primary" size="lg" className="w-full" disabled={!selected.length} onClick={() => setWorkout(generateWorkout(selected, count))}>
-      {workout.length ? <><RefreshCw />Regenerate</> : <><Sparkles />Generate workout</>}
+    <Button variant="primary" size="lg" className="w-full" disabled={!selected.length} onClick={() => void navigate({ to: "/generated-workout", search: { muscles: selected.join(","), count, seed: Date.now() } })}>
+      <Sparkles />Generate workout
     </Button>
-    {workout.length > 0 && <section className="animate-screen">
-      <SectionHeading action={<span className="text-xs font-semibold text-muted-foreground">{workout.length} · ~{workout.length * 8} min</span>}>Workout</SectionHeading>
-      <Card className="divide-y divide-border px-4">{workout.map((e, i) => <div key={e.key} className="grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-3 py-3">
-        <span className="text-xs font-black tabular-nums text-muted-foreground">{i + 1}</span>
-        <div className="min-w-0">
-          <div className="truncate text-sm font-bold">{e.name}</div>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[0.7rem] text-muted-foreground"><span>{e.muscle}</span><span>·</span><span>{e.equipment}</span><Tag>{e.type}</Tag></div>
-          <div className="mt-1.5 text-xs font-bold tabular-nums text-primary">{e.sets} × {e.reps}</div>
-        </div>
-        <Button variant="surface" size="icon" className="size-9" aria-label={`Replace ${e.name}`} onClick={() => replace(e.key)}><Shuffle /></Button>
-      </div>)}</Card>
-      <Button variant="primary" size="xl" className="mt-4 w-full">Start workout</Button>
-    </section>}
   </>;
 }
 

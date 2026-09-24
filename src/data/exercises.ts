@@ -31,13 +31,30 @@ export type WorkoutExercise = Exercise & { key: string; sets: number; reps: stri
 let seq = 0;
 export const toWorkoutExercise = (e: Exercise): WorkoutExercise => ({ ...e, key: `${e.id}-${seq++}`, sets: e.type === "Compound" ? 4 : 3, reps: e.type === "Compound" ? "6–8" : "10–12" });
 
-const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
+const shuffle = <T,>(a: T[], random: () => number = Math.random) => {
+  const result = [...a];
+  for (let index = result.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex]!, result[index]!];
+  }
+  return result;
+};
 
-export function generateWorkout(muscles: Muscle[], count: number): WorkoutExercise[] {
+function seededRandom(seed: number) {
+  let state = seed || 1;
+  return () => {
+    state = Math.imul(state ^ (state >>> 15), 1 | state);
+    state ^= state + Math.imul(state ^ (state >>> 7), 61 | state);
+    return ((state ^ (state >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function generateWorkout(muscles: Muscle[], count: number, seed = 1): WorkoutExercise[] {
   if (!muscles.length) return [];
+  const random = seededRandom(seed);
   const pools = new Map(muscles.map((m) => {
     const list = exercises.filter((e) => e.muscle === m);
-    return [m, [...shuffle(list.filter((e) => e.type === "Compound")), ...shuffle(list.filter((e) => e.type === "Isolation"))]];
+    return [m, [...shuffle(list.filter((e) => e.type === "Compound"), random), ...shuffle(list.filter((e) => e.type === "Isolation"), random)]];
   }));
   const picked: Exercise[] = [];
   let guard = 0;
@@ -50,7 +67,7 @@ export function generateWorkout(muscles: Muscle[], count: number): WorkoutExerci
     }
     if (!added) break;
   }
-  return picked.sort((a, b) => (a.type === b.type ? 0 : a.type === "Compound" ? -1 : 1)).map(toWorkoutExercise);
+  return picked.sort((a, b) => (a.type === b.type ? 0 : a.type === "Compound" ? -1 : 1)).map((exercise, index) => ({ ...toWorkoutExercise(exercise), key: `${exercise.id}-${seed}-${index}` }));
 }
 
 export function findReplacement(current: WorkoutExercise, workout: WorkoutExercise[]): Exercise | undefined {

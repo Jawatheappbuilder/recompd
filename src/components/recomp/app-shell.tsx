@@ -27,7 +27,7 @@ export function BottomNavigation() {
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] border-t border-border bg-nav/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
       <div className="grid h-[4.75rem] grid-cols-4 px-2">
         {destinations.map(({ label, to, icon: Icon }) => {
-          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          const active = to === "/" ? pathname === "/" : to === "/build" ? pathname.startsWith("/build") || pathname === "/generated-workout" : pathname.startsWith(to);
           return (
             <Link key={to} to={to} aria-current={active ? "page" : undefined} className={cn("flex min-w-0 flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold text-muted-foreground transition-colors", active && "text-primary")}>
               <Icon className="size-[1.3rem]" strokeWidth={active ? 2.5 : 2} />

@@ -7,3 +7,4 @@
 - [x] Build the empty Workout screen
 - [x] Build the mock-data Progress overview
 - [x] Validate mobile and desktop layouts, navigation, overflow, and runtime health
+- [ ] Build and validate the generated workout preview flow
