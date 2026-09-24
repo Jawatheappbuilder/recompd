@@ -98,7 +98,7 @@ export const periodDays: Record<Period, number> = { "4W": 28, "3M": 91, "6M": 18
 export const periodLabel: Record<Period, string> = { "4W": "Last 4 weeks", "3M": "Last 3 months", "6M": "Last 6 months", "1Y": "Last year", ALL: "All time" };
 export const since = (period: Period, now = Date.now()) => now - periodDays[period] * DAY;
 
-export const setCount = (workout: CompletedWorkout) => workout.exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
+export const setCount = (workout: CompletedWorkout) => workout.exercises.reduce((total, exercise) => total + (exercise.tracking === "cardio" || exercise.sets.some(isCardioSet) ? 0 : exercise.sets.length), 0);
 export const volumeOf = (workout: CompletedWorkout) => workout.exercises.reduce((total, exercise) => total + exercise.sets.reduce((sum, set) => sum + set.weight * set.reps, 0), 0);
 
 export function trainingSummary(workouts: CompletedWorkout[], from: number) {
