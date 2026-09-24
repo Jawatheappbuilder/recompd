@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { equipmentTypes, exercises, findReplacement, generateWorkout, muscleGroups, quickSelects, toWorkoutExercise, type Equipment, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { SectionHeading } from "./core";
 
-const chip = (active: boolean) => cn("h-9 shrink-0 rounded-full border px-3.5 text-xs font-bold transition-colors", active ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent");
+const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent");
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" aria-pressed={active} onClick={onClick} className={chip(active)}>{children}</button>;
@@ -18,7 +18,7 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "generate" | "manual" }) {
   const [mode, setMode] = useState(initialMode);
-  return <div className="space-y-5">
+  return <div className="space-y-4">
     <div className="grid grid-cols-2 rounded-xl border border-border bg-secondary p-1">
       {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
@@ -32,17 +32,19 @@ function GenerateMode() {
   const [workout, setWorkout] = useState<WorkoutExercise[]>([]);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
   const quick = (muscles: Muscle[]) => setSelected((c) => muscles.every((m) => c.includes(m)) ? c.filter((m) => !muscles.includes(m)) : [...c, ...muscles.filter((m) => !c.includes(m))]);
+  const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
   const replace = (key: string) => setWorkout((w) => w.map((e) => { if (e.key !== key) return e; const r = findReplacement(e, w); return r ? { ...toWorkoutExercise(r), sets: e.sets, reps: e.reps } : e; }));
 
   return <>
     <section>
       <SectionHeading>Muscles</SectionHeading>
-      <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
-      <div className="grid grid-cols-2 gap-2">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} onClick={() => toggle(m)} className="h-11 justify-between">{m}{a && <Check />}</Button>; })}</div>
+      <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
+      <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} onClick={() => toggle(m)} className="h-9 justify-between px-3">{m}{a && <Check />}</Button>; })}</div>
     </section>
     <section>
       <SectionHeading>Exercises</SectionHeading>
       <div className="grid grid-cols-6 gap-1.5 rounded-xl border border-border bg-secondary p-1">{[3, 4, 5, 6, 7, 8].map((n) => <Button key={n} variant={count === n ? "segmentActive" : "segment"} className={cn("tabular-nums", count === n && "text-primary")} onClick={() => setCount(n)}>{n}</Button>)}</div>
+      <p className="mt-1.5 truncate text-[0.7rem] font-semibold text-muted-foreground">{summary}</p>
     </section>
     <Button variant="primary" size="lg" className="w-full" disabled={!selected.length} onClick={() => setWorkout(generateWorkout(selected, count))}>
       {workout.length ? <><RefreshCw />Regenerate</> : <><Sparkles />Generate workout</>}
