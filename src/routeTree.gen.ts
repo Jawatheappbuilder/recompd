@@ -37,6 +37,7 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings.appear
 import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTrainingRouteImport } from './routes/settings.training'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
 import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
 
@@ -180,6 +181,11 @@ const SettingsTrainingRoute = SettingsTrainingRouteImport.update({
   path: '/training',
   getParentRoute: () => SettingsRoute,
 } as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressExerciseIdRoute = ProgressExerciseIdRouteImport.update({
   id: '/exercise/$id',
   path: '/exercise/$id',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/progress/': typeof ProgressIndexRoute
   '/saved/': typeof SavedIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/progress': typeof ProgressIndexRoute
   '/saved': typeof SavedIndexRoute
   '/settings': typeof SettingsIndexRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/progress/': typeof ProgressIndexRoute
   '/saved/': typeof SavedIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
+    | '/share/$token'
     | '/progress/'
     | '/saved/'
     | '/settings/'
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
+    | '/share/$token'
     | '/progress'
     | '/saved'
     | '/settings'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/settings/exercises'
     | '/settings/profile'
     | '/settings/training'
+    | '/share/$token'
     | '/progress/'
     | '/saved/'
     | '/settings/'
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   WorkoutRoute: typeof WorkoutRoute
   SavedIdRoute: typeof SavedIdRoute
   ScheduledIdRoute: typeof ScheduledIdRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   SavedIndexRoute: typeof SavedIndexRoute
 }
 
@@ -600,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsTrainingRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress/exercise/$id': {
       id: '/progress/exercise/$id'
       path: '/exercise/$id'
@@ -691,6 +711,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkoutRoute: WorkoutRoute,
   SavedIdRoute: SavedIdRoute,
   ScheduledIdRoute: ScheduledIdRoute,
+  ShareTokenRoute: ShareTokenRoute,
   SavedIndexRoute: SavedIndexRoute,
 }
 export const routeTree = rootRouteImport
