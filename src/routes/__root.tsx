@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingProvider } from "@/components/recomp/onboarding-context";
+import { AuthProvider } from "@/components/recomp/auth-context";
 
 function NotFoundComponent() {
   return (
@@ -123,7 +124,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <OnboardingProvider><AppShell><Outlet /></AppShell></OnboardingProvider>
+      <AuthProvider><OnboardingProvider><AppShell><Outlet /></AppShell></OnboardingProvider></AuthProvider>
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

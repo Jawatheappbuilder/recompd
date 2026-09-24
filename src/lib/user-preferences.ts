@@ -57,6 +57,27 @@ export function saveUserPreferences(preferences: UserPreferences) {
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: preferences }));
 }
 
+export function clearUserPreferences() {
+  localStorage.removeItem(PREFERENCES_KEY);
+  window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: defaultUserPreferences }));
+}
+
+// The signed-in account whose cloud profile is the source of truth. Local storage acts as a cache.
+let cloudUserId: string | null = null;
+export function setPreferencesCloudUser(userId: string | null) { cloudUserId = userId; }
+
+let pendingSync: ReturnType<typeof setTimeout> | undefined;
+function syncToCloud(preferences: UserPreferences) {
+  const userId = cloudUserId;
+  if (!userId) return;
+  clearTimeout(pendingSync);
+  pendingSync = setTimeout(() => {
+    void Promise.all([import("./profile"), import("sonner")]).then(async ([{ saveProfile }, { toast }]) => {
+      try { await saveProfile(userId, preferences); } catch { toast.error("Couldn't save your changes. Check your connection and try again."); }
+    });
+  }, 300);
+}
+
 export function useUserPreferences() {
   const [preferences, setPreferencesState] = useState<UserPreferences>(defaultUserPreferences);
   useEffect(() => {
@@ -70,6 +91,7 @@ export function useUserPreferences() {
     setPreferencesState((current) => {
       const resolved = typeof next === "function" ? next(current) : next;
       saveUserPreferences(resolved);
+      syncToCloud(resolved);
       return resolved;
     });
   }, []);
