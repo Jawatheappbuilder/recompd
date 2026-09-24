@@ -182,6 +182,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_workouts: {
+        Row: {
+          created_at: string
+          exercises: Json
+          name: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercises?: Json
+          name: string
+          token: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          exercises?: Json
+          name?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_exercises: {
         Row: {
           equipment: string
@@ -264,7 +288,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_shared_workout: {
+        Args: { _token: string }
+        Returns: {
+          exercises: Json
+          name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
