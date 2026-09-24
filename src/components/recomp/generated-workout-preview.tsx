@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { generateWorkout, type Muscle } from "@/data/exercises";
 import { defaultWorkoutName, handOffWorkout } from "@/lib/workout-storage";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
+import { ShareLinkButton } from "./share-link-button";
 import { WorkoutEditor } from "./workout-editor";
 
 export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Muscle[]; count: number; seed: number }) {
@@ -31,6 +32,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
       <WorkoutEditor workout={workout} setWorkout={setWorkout} />
       <Button variant="primary" size="xl" className="mt-4 w-full" disabled={!workout.length} onClick={startWorkout}>Start workout</Button>
       <Button variant="surface" className="mt-2 w-full" disabled={!workout.length} onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
+      <ShareLinkButton name={defaultWorkoutName(workout)} exercises={workout} className="mt-2 w-full" />
       <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={defaultWorkoutName(workout)} onConfirm={(value) => { scheduleNewWorkout(value, workout); void navigate({ to: "/" }); }} />
     </>
   );
