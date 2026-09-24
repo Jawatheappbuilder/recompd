@@ -10,7 +10,11 @@ export function OnboardingScreen({ children, centered = false }: { children: Rea
   return <div className={cn("animate-screen mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))]", centered && "justify-center")}>{children}</div>;
 }
 
-export function OnboardingHeader({ title, subtitle, backTo, progress }: { title: string; subtitle: string; backTo: "/welcome" | "/create-account" | "/login" | "/onboarding/about"; progress?: 1 | 2 }) {
+export function FormMessage({ children, tone = "error" }: { children: ReactNode; tone?: "error" | "info" }) {
+  return <p role={tone === "error" ? "alert" : "status"} className={cn("rounded-xl border px-3 py-2.5 text-xs font-semibold", tone === "error" ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/30 bg-primary/[0.06] text-foreground")}>{children}</p>;
+}
+
+export function OnboardingHeader({ title, subtitle, backTo, progress }: { title: string; subtitle: string; backTo: "/welcome" | "/create-account" | "/login" | "/onboarding/about" | "/forgot-password"; progress?: 1 | 2 }) {
   const router = useRouter();
   return <header className="mb-6"><div className="mb-8 flex items-center justify-between"><Button variant="surface" size="icon" className="size-10" aria-label="Back" onClick={() => router.history.canGoBack() ? router.history.back() : void router.navigate({ to: backTo })}><ArrowLeft /></Button>{progress && <OnboardingProgress current={progress} />}<span className="size-10" /></div><div className="wordmark mb-5">RECOMP<span className="text-primary">'</span>D</div><h1 className="text-3xl font-extrabold">{title}</h1><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p></header>;
 }
