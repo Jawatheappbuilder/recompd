@@ -358,7 +358,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
               {muscleGroups.map((item) => { const active = customMuscles.includes(item); return <Button key={item} variant={active ? "choiceActive" : "choice"} className="h-9 justify-between px-3" onClick={() => setCustomMuscles((current) => active ? current.filter((value) => value !== item) : [...current, item])}>{item}{active && <Check />}</Button>; })}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
-              {equipmentTypes.map((item) => <Button key={item} variant={customEquipment === item ? "choiceActive" : "choice"} className="h-9 px-2 text-xs" onClick={() => setCustomEquipment(item)}>{item}</Button>)}
+              {equipmentTypes.map((item) => <Button key={item} variant={customEquipment === item ? "choiceActive" : "choice"} className="h-9 px-2 text-xs" onClick={() => setCustomEquipment(item)}>{item === "Plate-loaded Machine" ? "Plate loaded" : item === "Pin-loaded Machine" ? "Pin loaded" : item}</Button>)}
             </div>
             </div>
             <Button variant="primary" size="lg" className="mt-auto w-full" disabled={!name.trim() || !customMuscles.length} onClick={createCustom}>Add to workout</Button>
