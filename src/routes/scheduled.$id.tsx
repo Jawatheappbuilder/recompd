@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/recomp/core";
 import { ScheduleSheet } from "@/components/recomp/schedule-sheet";
+import { ShareLinkButton } from "@/components/recomp/share-link-button";
 import { BackLink, ConfirmDelete, ExerciseList, PlanEditor, PlanHeader } from "@/components/recomp/workout-plan-view";
 import { useCloudData } from "@/lib/cloud-data";
 import { deleteScheduledWorkout, formatScheduleDate, handOffWorkout, hasActiveWorkout, saveScheduledWorkout } from "@/lib/workout-storage";
@@ -40,6 +41,7 @@ function ScheduledWorkoutPage() {
     <ExerciseList exercises={item.exercises} />
     {item.completedAt ? <p className="mt-4 text-center text-sm font-semibold text-muted-foreground">Completed</p> : <div className="mt-4 space-y-2">
       <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
+      <ShareLinkButton name={item.name} exercises={item.exercises} className="w-full" />
       <div className="grid grid-cols-2 gap-2">
         <Button variant="surface" onClick={() => setEditing(true)}><Pencil />Edit</Button>
         <Button variant="surface" onClick={() => setRescheduling(true)}><CalendarClock />Reschedule</Button>
