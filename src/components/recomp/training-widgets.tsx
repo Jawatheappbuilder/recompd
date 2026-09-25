@@ -1,4 +1,5 @@
 import { Check, Clock3, Flame, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
@@ -45,7 +46,42 @@ export function WeeklyTraining() {
   const end = start + 7 * DAY_MS;
   const scheduledByDay = new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id]));
   const scheduledThisWeek = scheduled.filter((item) => !item.completedAt && (() => { const [y, m, d] = item.date.split("-").map(Number); const ts = new Date(y!, m! - 1, d!).getTime(); return ts >= start && ts < end; })()).length;
-  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><Metric value={String(summary.workouts)} label="Completed" accent/><Metric value={String(scheduledThisWeek)} label="Scheduled"/><Metric value={formatDuration(summary.durationSec)} label="Training time"/></div></Card></section>;
+  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><Metric value={String(summary.workouts)} label="Completed" accent/><Metric value={String(scheduledThisWeek)} label="Scheduled"/><TrainingTimeMetric seconds={summary.durationSec}/></div></Card></section>;
+}
+
+function TrainingTimeMetric({ seconds }: { seconds: number }) {
+  const element = useRef<HTMLDivElement>(null);
+  const [displaySeconds, setDisplaySeconds] = useState(0);
+
+  useEffect(() => {
+    const node = element.current;
+    if (!node) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || seconds <= 0 || !window.IntersectionObserver) {
+      setDisplaySeconds(seconds);
+      return;
+    }
+
+    setDisplaySeconds(0);
+    let frame = 0;
+    let started = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting || started) return;
+      started = true;
+      observer.disconnect();
+      const start = performance.now();
+      const animate = (now: number) => {
+        const progress = Math.min((now - start) / 900, 1);
+        setDisplaySeconds(seconds * (1 - Math.pow(1 - progress, 3)));
+        if (progress < 1) frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+    });
+    observer.observe(node);
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+  }, [seconds]);
+
+  return <div ref={element} role="img" aria-label={`Training time ${formatDuration(seconds)}`}><div aria-hidden="true"><Metric value={formatDuration(displaySeconds)} label="Training time"/></div></div>;
 }
 
 export function TrainingPriority({ compact = false }: { compact?: boolean }) {
