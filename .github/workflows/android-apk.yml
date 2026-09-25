@@ -43,6 +43,12 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Sync Capacitor Android files
+        run: |
+          mkdir -p dist
+          echo '<!doctype html><html><body></body></html>' > dist/index.html
+          npx cap sync android
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
