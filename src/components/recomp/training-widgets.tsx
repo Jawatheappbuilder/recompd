@@ -13,8 +13,7 @@ export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }:
   const circumference = 2 * Math.PI * radius;
   const compact = String(current).length + String(target).length > 3;
   const complete = target > 0 && current >= target;
-  const previewCelebration = true; // Temporary PR preview: remove before merge.
-  const celebrating = (complete && value >= 100) || (previewCelebration && value >= 100);
+  const celebrating = complete && value >= 100;
   const particles = Array.from({ length: 18 }, (_, index) => {
     const angle = (index / 18) * Math.PI * 2;
     const distance = 50 + (index % 3) * 8;
