@@ -32,7 +32,7 @@ function SavedWorkoutPage() {
   const estimate = item ? workoutTimeEstimate(item.exercises) : null;
   if (!data) return <Screen>{null}</Screen>;
   if (!item) return <Screen><PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title="Workout not found" /></Screen>;
-  if (editing) return <Screen><PlanEditor initial={item.exercises} onCancel={() => setEditing(false)} onSave={(exercises) => { saveWorkout({ ...item, exercises }); setEditing(false); toast.success("Workout updated"); }} /></Screen>;
+  if (editing) return <Screen><PlanEditor initial={item.exercises} initialName={item.name} onCancel={() => setEditing(false)} onSave={(name, exercises) => { saveWorkout({ ...item, name, exercises }); setEditing(false); toast.success("Workout updated"); }} /></Screen>;
 
   const start = () => {
     if (hasActiveWorkout()) { toast("Finish your current workout first"); void navigate({ to: "/workout" }); return; }
