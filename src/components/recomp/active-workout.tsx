@@ -364,6 +364,8 @@ function FilterRow<T extends string>({ items, value, onSelect }: { items: readon
 function ExerciseOption({ exercise, onSelect }: { exercise: Exercise; onSelect: (exercise: Exercise) => void }) { return <DrawerClose asChild><button type="button" className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-left last:border-0" onClick={() => onSelect(exercise)}><span className="min-w-0"><span className="block text-sm font-bold">{exercise.name}</span><span className="mt-1 block text-[0.7rem] text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span></span><Plus className="size-4 text-primary"/></button></DrawerClose>; }
 
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
+  const [celebrating, setCelebrating] = useState(true);
+  const [showStats, setShowStats] = useState(false);
   const performed = result.workout.exercises.map((exercise) => ({
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
@@ -371,6 +373,55 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const data = useTrainingData();
   const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
-  return <div className="py-8"><CircleCheck className="size-11 text-primary"/><p className="mt-5 text-[0.7rem] font-bold uppercase text-primary">Workout complete</p><h1 className="mt-1 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1><div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"}/></div>{performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}{shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}</div>;
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      setCelebrating(false);
+      setShowStats(true);
+      return;
+    }
+    const statsTimer = window.setTimeout(() => setShowStats(true), 500);
+    const finishTimer = window.setTimeout(() => setCelebrating(false), 1450);
+    return () => { window.clearTimeout(statsTimer); window.clearTimeout(finishTimer); };
+  }, []);
+
+  if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
+
+  return <div className="animate-in fade-in slide-in-from-bottom-2 py-8 duration-500">
+    <div className="flex items-center gap-3">
+      <div className="grid size-11 place-items-center rounded-full bg-primary/10"><CircleCheck className="size-8 text-primary"/></div>
+      <div><p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-primary">Workout complete</p><h1 className="mt-0.5 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1></div>
+    </div>
+    {sharePrs.length > 0 && <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.06] p-4"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.18em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><p className="mt-1 text-sm font-bold">{sharePrs.length === 1 ? "A new best performance." : `${sharePrs.length} new best performances.`}</p></div>}
+    <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"}/></div>
+    {performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}
+    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}
+  </div>;
 }
+
+function WorkoutCompleteCelebration({ result, showStats, prs }: { result: FinishedWorkout; showStats: boolean; prs: number }) {
+  const circumference = 2 * Math.PI * 54;
+  return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col items-center justify-center overflow-hidden bg-background px-5 py-8 text-center">
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_55%)] opacity-[0.07]" />
+    <div className="relative">
+      {[0,1,2,3,4,5,6,7].map((i) => <span key={i} className="absolute left-1/2 top-1/2 h-1 w-8 origin-left rounded-full bg-primary/60 animate-in fade-in zoom-in duration-500" style={{ transform: `rotate(${i * 45}deg) translateX(76px)` }} />)}
+      <svg viewBox="0 0 128 128" className="size-36 -rotate-90">
+        <circle cx="64" cy="64" r="54" fill="none" stroke="var(--color-track)" strokeWidth="6"/>
+        <circle cx="64" cy="64" r="54" fill="none" stroke="var(--color-primary)" strokeWidth="6" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset="0" className="transition-all duration-1000 ease-out"/>
+      </svg>
+      <div className="absolute inset-0 grid place-items-center"><div className="grid size-20 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg animate-in zoom-in duration-500"><Check className="size-10" strokeWidth={3}/></div></div>
+    </div>
+    <p className="mt-7 animate-in fade-in slide-in-from-bottom-2 text-[0.72rem] font-extrabold uppercase tracking-[0.24em] text-primary duration-500">Workout complete</p>
+    <h1 className="mt-2 max-w-[22rem] animate-in fade-in slide-in-from-bottom-2 text-3xl font-black leading-tight duration-700 [overflow-wrap:anywhere]">{result.workout.name}</h1>
+    <div className={cn("mt-7 grid w-full grid-cols-3 gap-2 transition-all duration-500", showStats ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0")}>
+      <CelebrationStat value={formatDuration(result.duration)} label="Time"/>
+      <CelebrationStat value={String(result.totalSets)} label="Sets"/>
+      <CelebrationStat value={result.volume ? Math.round(result.volume).toLocaleString() : "—"} label={result.volume ? "kg volume" : "Volume"}/>
+    </div>
+    {prs > 0 && <div className={cn("mt-4 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.12em] text-primary transition-all delay-300 duration-500", showStats ? "scale-100 opacity-100" : "scale-90 opacity-0")}>New personal record{prs > 1 ? "s" : ""} · {prs}</div>}
+  </div>;
+}
+
+function CelebrationStat({ value, label }: { value: string; label: string }) { return <div aria-label={`${label}: ${value}`} className="rounded-2xl border border-border bg-card/80 px-2 py-3 backdrop-blur"><div className="text-lg font-black tabular-nums">{value}</div><div className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</div></div>; }
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
