@@ -114,13 +114,20 @@ export const exercises = [...byId.values()];
 
 export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string; targetDurationSeconds?: number };
 let seq = 0;
+const preferredDefaults = () => {
+  if (typeof window === "undefined") return { restSeconds: 90, reps: "8–12" };
+  try {
+    const preferences = JSON.parse(localStorage.getItem("recomp-user-preferences-v1") ?? "null") as { defaultRestSeconds?: number; defaultRepRange?: string } | null;
+    return { restSeconds: Number(preferences?.defaultRestSeconds ?? 90), reps: preferences?.defaultRepRange ?? "8–12" };
+  } catch { return { restSeconds: 90, reps: "8–12" }; }
+};
 const preferredRestSeconds = () => {
   if (typeof window === "undefined") return 90;
   try { return Number((JSON.parse(localStorage.getItem("recomp-user-preferences-v1") ?? "null") as { defaultRestSeconds?: number } | null)?.defaultRestSeconds ?? 90); } catch { return 90; }
 };
 export const toWorkoutExercise = (exercise: Exercise): WorkoutExercise => isCardioExercise(exercise)
   ? { ...exercise, key: `${exercise.id}-${seq++}`, sets: 1, reps: "", targetDurationSeconds: 1200, restSeconds: 0 }
-  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: exercise.type === "Compound" ? "6–8" : "10–12", restSeconds: preferredRestSeconds() };
+  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: preferredDefaults().reps, restSeconds: preferredRestSeconds() };
 
 const shuffle = <T,>(items: T[], random: () => number = Math.random) => {
   const result = [...items];
