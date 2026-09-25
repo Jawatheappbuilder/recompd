@@ -66,38 +66,27 @@ export function WeeklyTraining() {
 }
 
 function CountUpMetric({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
-  const element = useRef<HTMLDivElement>(null);
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    const node = element.current;
-    if (!node) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || value <= 0 || !window.IntersectionObserver) {
+    if (reducedMotion || value <= 0) {
       setDisplayValue(value);
       return;
     }
-
     setDisplayValue(0);
     let frame = 0;
-    let started = false;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting || started) return;
-      started = true;
-      observer.disconnect();
-      const start = performance.now();
-      const animate = (now: number) => {
-        const progress = Math.min((now - start) / 900, 1);
-        setDisplayValue(Math.round(value * (1 - Math.pow(1 - progress, 3))));
-        if (progress < 1) frame = requestAnimationFrame(animate);
-      };
-      frame = requestAnimationFrame(animate);
-    });
-    observer.observe(node);
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+    const start = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min((now - start) / 900, 1);
+      setDisplayValue(Math.round(value * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
   }, [value]);
 
-  return <div ref={element} role="img" aria-label={`${label} ${value}`}><div aria-hidden="true"><Metric value={String(displayValue)} label={label} accent={accent}/></div></div>;
+  return <Metric value={String(displayValue)} label={label} accent={accent}/>;
 }
 
 function TrainingTimeMetric({ seconds }: { seconds: number }) {
