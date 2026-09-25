@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import {
   type CompletedWorkout, type ExerciseRecord, type Period, type WorkloadLevel,
 } from "@/lib/training-data";
 import { cn } from "@/lib/utils";
+import { localDateKey, useScheduledWorkouts } from "@/lib/workout-storage";
 
 export function PeriodSelector<T extends Period>({ value, options, onChange, className }: { value: T; options: readonly T[]; onChange: (value: T) => void; className?: string }) {
   return (
@@ -102,7 +103,7 @@ export function TrainingCalendar({ workouts }: { workouts: CompletedWorkout[] })
   const todayKey = dayKey(Date.now());
   const isCurrentMonth = new Date().getFullYear() === year && new Date().getMonth() === month;
   const count = [...Array(days).keys()].filter((index) => byDay.has(dayKey(new Date(year, month, index + 1).getTime()))).length;
-  const selectedWorkouts = selected ? byDay.get(dayKey(selected)) ?? [] : [];
+  const scheduledByDay = useMemo(() => new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id])), [scheduled]);\n  const selectedWorkouts = selected ? byDay.get(dayKey(selected)) ?? [] : [];
 
   return (
     <Card className="p-3">
@@ -117,15 +118,19 @@ export function TrainingCalendar({ workouts }: { workouts: CompletedWorkout[] })
         {Array.from({ length: days }, (_, index) => {
           const ts = new Date(year, month, index + 1).getTime();
           const trained = byDay.has(dayKey(ts));
+          const scheduleKey = localDateKey(new Date(ts));
+          const scheduledId = !trained ? scheduledByDay.get(scheduleKey) : undefined;
           const today = dayKey(ts) === todayKey;
-          return (
-            <button key={index} type="button" disabled={!trained} onClick={() => setSelected(ts)} aria-label={`${index + 1}${trained ? ", workout completed" : ""}`}
-              className={cn("relative mx-auto grid size-10 place-items-center rounded-xl text-xs font-semibold tabular-nums transition-colors",
-                trained ? "bg-primary/[0.12] text-foreground hover:bg-primary/20" : "text-muted-foreground/70",
-                today && "ring-1 ring-border")}>
-              {index + 1}
-              {trained && <span aria-hidden className="absolute bottom-1.5 size-1 rounded-full bg-primary" />}
-            </button>
+          const dayClass = cn("relative mx-auto grid size-10 place-items-center rounded-xl text-xs font-semibold tabular-nums transition-colors",
+            trained && "bg-emerald-500/[0.12] text-emerald-700 dark:bg-emerald-400/[0.12] dark:text-emerald-400",
+            scheduledId && "text-foreground",
+            !trained && !scheduledId && "text-muted-foreground/70",
+            today && "ring-1 ring-border");
+          const content = <><span>{trained ? <Check className="size-4" strokeWidth={3} /> : index + 1}</span>{scheduledId && <span aria-hidden className="absolute bottom-1.5 size-1.5 rounded-full bg-primary" />}</>;
+          return scheduledId ? (
+            <Link key={index} to="/scheduled/$id" params={{ id: scheduledId }} aria-label={`${index + 1}, scheduled workout`} className={dayClass}>{content}</Link>
+          ) : (
+            <button key={index} type="button" disabled={!trained} onClick={() => setSelected(ts)} aria-label={`${index + 1}${trained ? ", workout completed" : ""}`} className={dayClass}>{content}</button>
           );
         })}
       </div>
