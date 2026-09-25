@@ -6,7 +6,7 @@ import { Screen } from "@/components/recomp/core";
 import { muscleGroups, type Muscle } from "@/data/exercises";
 
 const previewSearchSchema = z.object({
-  muscles: fallback(z.string(), "Chest,Back").default("Chest,Back"),
+  muscles: fallback(z.string(), "").default(""),
   count: fallback(z.coerce.number().int().min(1).max(12), 6).default(6),
   seed: fallback(z.coerce.number().int().min(1), 1).default(1),
 });
@@ -29,6 +29,6 @@ function GeneratedPreviewPage() {
   const search = Route.useSearch();
   const allowed = new Set<string>(muscleGroups);
   const muscles = search["muscles"].split(",").filter((muscle: string): muscle is Muscle => allowed.has(muscle));
-  const selection: Muscle[] = muscles.length ? muscles : ["Chest", "Back"];
+  const selection: Muscle[] = muscles;
   return <Screen><GeneratedWorkoutPreview key={`${selection.join("-")}-${search["count"]}-${search["seed"]}`} muscles={selection} count={search["count"]} seed={search["seed"]} /></Screen>;
 }

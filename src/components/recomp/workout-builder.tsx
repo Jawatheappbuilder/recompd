@@ -31,7 +31,7 @@ export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "ge
 
 function GenerateMode() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<Muscle[]>(["Chest", "Back"]);
+  const [selected, setSelected] = useState<Muscle[]>([]);
   const [count, setCount] = useState(6);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
   const quick = (muscles: Muscle[]) => setSelected((c) => muscles.every((m) => c.includes(m)) ? c.filter((m) => !muscles.includes(m)) : [...c, ...muscles.filter((m) => !c.includes(m))]);
