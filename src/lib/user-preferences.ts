@@ -5,6 +5,13 @@ export type WeightUnit = "kg" | "lb";
 export type WeekStartsOn = "Monday" | "Sunday";
 export type ThemePreference = "system" | "dark" | "light";
 export type TrainingGoal = "Build muscle" | "Get stronger" | "Lose fat" | "Improve fitness" | "General health";
+export type DefaultRepRange = "4–6" | "8–12";
+
+export function trainingDefaultsForGoals(goals: TrainingGoal[]): { defaultRepRange: DefaultRepRange; defaultRestSeconds: UserPreferences["defaultRestSeconds"] } {
+  if (goals.includes("Get stronger")) return { defaultRepRange: "4–6", defaultRestSeconds: 180 };
+  if (goals.includes("Build muscle")) return { defaultRepRange: "8–12", defaultRestSeconds: 120 };
+  return { defaultRepRange: "8–12", defaultRestSeconds: 90 };
+}
 
 export type UserPreferences = {
   version: 1;
@@ -13,6 +20,7 @@ export type UserPreferences = {
   gender: Gender;
   weightUnit: WeightUnit;
   defaultRestSeconds: 30 | 45 | 60 | 90 | 120 | 150 | 180;
+  defaultRepRange: DefaultRepRange;
   weeklyWorkoutTarget: 2 | 3 | 4 | 5 | 6 | 7;
   weekStartsOn: WeekStartsOn;
   theme: ThemePreference;
@@ -37,6 +45,7 @@ export const defaultUserPreferences: UserPreferences = {
   gender: "Prefer not to say",
   weightUnit: "kg",
   defaultRestSeconds: 90,
+  defaultRepRange: "8–12",
   weeklyWorkoutTarget: 4,
   weekStartsOn: "Monday",
   theme: "system",
