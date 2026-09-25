@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { bodyweightChange, dayKey, formatDay, formatDuration, formatKg, setCount, since, trainingPriority, trainingSummary, useTrainingData } from "@/lib/training-data";
 import { useUserPreferences } from "@/lib/user-preferences";
-import { useScheduledWorkouts } from "@/lib/workout-storage";
+import { localDateKey, useScheduledWorkouts } from "@/lib/workout-storage";
 import { Metric, SectionHeading, SummaryRow } from "./core";
 
 export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }: { value?: number; current?: number; target?: number; size?: number }) {
@@ -30,7 +30,7 @@ export function WeekTracker({ start, trainedDays, scheduledByDay, startsOn }: { 
     const scheduledId = !complete ? scheduledByDay.get(key) : undefined;
     const isToday = key === today;
     const circle = <div className={cn("grid size-6 place-items-center rounded-full border text-[0.62rem] font-black min-[390px]:size-7 min-[390px]:text-[0.65rem]", complete && "border-emerald-500/30 bg-emerald-500/[0.12] text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/[0.12] dark:text-emerald-400", scheduledId && "border-2 border-primary bg-background text-primary", !complete && !scheduledId && isToday && "border-primary text-primary", !complete && !scheduledId && !isToday && "border-border bg-secondary text-muted-foreground")}>{complete ? <Check className="size-3.5" strokeWidth={3} /> : new Date(start + index * DAY_MS + DAY_MS / 2).getDate()}</div>;
-    return <div className="flex min-w-0 flex-col items-center gap-1.5" key={`${label}-${index}`}><span className="text-[0.62rem] font-bold text-muted-foreground">{label}</span>{scheduledId ? <Link to="/scheduled/$id" params={{ id: scheduledId }} aria-label={`View scheduled workout for ${key}`}>{circle}</Link> : circle}</div>;
+    return <div className="flex min-w-0 flex-col items-center gap-1.5" key={`${label}-${index}`}><span className="text-[0.62rem] font-bold text-muted-foreground">{label}</span>{scheduledId ? <Link to="/scheduled/$id" params={{ id: scheduledId }} aria-label={`View scheduled workout for ${scheduleKey}`}>{circle}</Link> : circle}</div>;
   })}</div>;
 }
 
