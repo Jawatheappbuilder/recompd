@@ -84,10 +84,19 @@ function TrainingTimeMetric({ seconds }: { seconds: number }) {
   return <div ref={element} role="img" aria-label={`Training time ${formatDuration(seconds)}`}><div aria-hidden="true"><Metric value={formatDuration(displaySeconds)} label="Training time"/></div></div>;
 }
 
+function WorkloadBar({ ratio, low, delay }: { ratio: number; low: boolean; delay: number }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  return <div className="h-1 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none", low ? "bg-muted-foreground" : "bg-primary")} style={{ width: visible ? `${Math.round(ratio * 100)}%` : "0%", transitionDelay: `${delay}ms` }} /></div>;
+}
+
 export function TrainingPriority({ compact = false }: { compact?: boolean }) {
   const data = useTrainingData();
   const items = trainingPriority(data?.workouts ?? [], since("4W")).filter((item) => item.score > 0).slice(0, compact ? 3 : undefined);
-  return <section><SectionHeading>Muscle workload · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{items.length ? items.map((item) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="font-semibold">{item.muscle}</span><span className={cn("shrink-0 font-bold", item.level === "High workload" ? "text-primary" : "text-muted-foreground")}>{item.level}</span></div><div className="h-1 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full", item.level === "Low workload" ? "bg-muted-foreground" : "bg-primary")} style={{ width: `${Math.round(item.ratio * 100)}%` }} /></div></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle workload.</p>}</Card></section>;
+  return <section><SectionHeading>Muscle workload · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{items.length ? items.map((item, index) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="font-semibold">{item.muscle}</span><span className={cn("shrink-0 font-bold", item.level === "High workload" ? "text-primary" : "text-muted-foreground")}>{item.level}</span></div><WorkloadBar ratio={item.ratio} low={item.level === "Low workload"} delay={index * 55} /></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle workload.</p>}</Card></section>;
 }
 
 function relativeDay(ts: number) {

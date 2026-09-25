@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -63,14 +63,24 @@ const levelStyle: Record<WorkloadLevel, { bar: string; text: string }> = {
   "Low workload": { bar: "bg-soft/40", text: "text-muted-foreground" },
 };
 
+function AnimatedPriorityBar({ item, delay }: { item: { ratio: number; level: WorkloadLevel; score: number }; delay: number }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  const target = Math.max(item.ratio * 100, item.score ? 4 : 0);
+  return <div className="h-1.5 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none", levelStyle[item.level].bar)} style={{ width: visible ? `${target}%` : "0%", transitionDelay: `${delay}ms` }} /></div>;
+}
+
 export function TrainingPriorityBars({ items }: { items: { muscle: string; ratio: number; level: WorkloadLevel; score: number }[] }) {
   if (!items.some((item) => item.score > 0)) return <Card className="px-4 py-2"><InlineEmpty>No training in this period</InlineEmpty></Card>;
   return (
     <Card className="space-y-1.5 p-4">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <div key={item.muscle} className="grid grid-cols-[5.5rem_minmax(0,1fr)_7.25rem] items-center gap-2">
           <span className="text-xs font-bold">{item.muscle}</span>
-          <div className="h-1.5 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-500", levelStyle[item.level].bar)} style={{ width: `${Math.max(item.ratio * 100, item.score ? 4 : 0)}%` }} /></div>
+          <AnimatedPriorityBar item={item} delay={index * 55} />
           <span className={cn("text-right text-[0.68rem] font-bold", levelStyle[item.level].text)}>{item.level}</span>
         </div>
       ))}
