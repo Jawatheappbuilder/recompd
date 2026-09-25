@@ -124,6 +124,17 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function PwaHandler() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch((error) => {
+        console.error("Service worker registration failed", error);
+      });
+    }
+  }, []);
+  return null;
+}
+
 function ThemeHandler() {
   useEffect(() => {
     const apply = () => applyThemePreference(loadUserPreferences().theme);
@@ -145,6 +156,7 @@ function RootComponent() {
       <AuthProvider>
         <OnboardingProvider>
           <AppShell>
+            <PwaHandler />
             <ThemeHandler />
             <Outlet />
           </AppShell>
