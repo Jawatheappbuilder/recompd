@@ -9,7 +9,6 @@ import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@
 import { newId } from "@/lib/cloud-data";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
-import { loadUserPreferences, saveUserPreferences, trainingDefaultsForGoals, type TrainingGoal } from "@/lib/user-preferences";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
@@ -32,13 +31,6 @@ export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "ge
 
 function GenerateMode() {
   const navigate = useNavigate();
-  const [testGoal, setTestGoal] = useState<TrainingGoal | null>(null);
-  const applyTestGoal = (goal: TrainingGoal) => {
-    const current = loadUserPreferences();
-    saveUserPreferences({ ...current, goals: [goal], ...trainingDefaultsForGoals([goal]) });
-    setTestGoal(goal);
-    toast.success(`Preview defaults: ${goal}`);
-  };
   const [selected, setSelected] = useState<Muscle[]>(["Chest", "Back"]);
   const [count, setCount] = useState(6);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
@@ -46,11 +38,6 @@ function GenerateMode() {
   const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
 
   return <>
-    <section className="rounded-xl border border-dashed border-primary/40 bg-card p-3">
-      <p className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Preview only · training goal</p>
-      <div className="mt-2 grid grid-cols-3 gap-1.5">{([["Get stronger", "Strength"], ["Build muscle", "Muscle"], ["Lose fat", "Fat loss"]] as const).map(([goal, label]) => <Button key={goal} variant={testGoal === goal ? "choiceActive" : "choice"} className="h-9 px-1 text-[0.7rem]" onClick={() => applyTestGoal(goal)}>{label}</Button>)}</div>
-      <p className="mt-2 text-[0.68rem] text-muted-foreground">Choose one, then generate a workout. This tester will be removed before merge.</p>
-    </section>
     <section>
       <SectionHeading>Muscles</SectionHeading>
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
