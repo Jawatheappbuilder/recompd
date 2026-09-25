@@ -25,7 +25,7 @@ function WorkoutPage() {
   useEffect(() => {
     if (!hydrated || !workout || user?.email?.toLowerCase() !== WIFEY_PREVIEW_EMAIL) return;
     setShowWifeyHype(true);
-    const timer = window.setTimeout(() => setShowWifeyHype(false), 3600);
+    const timer = window.setTimeout(() => setShowWifeyHype(false), 2600);
     return () => window.clearTimeout(timer);
   }, [hydrated, workout?.id, user?.email]);
 
@@ -45,7 +45,7 @@ function WifeyWorkoutHype() {
     rotate: `${(index * 47) % 180}deg`,
   }));
 
-  return <div className="fixed inset-0 z-[100] mx-auto flex max-w-[430px] items-center justify-center overflow-hidden bg-[#fff1d7] px-5 motion-safe:animate-[wifey-screen_3600ms_ease-in-out_both]" role="status" aria-label="Go wifey">
+  return <div className="fixed inset-0 z-[100] mx-auto flex max-w-[430px] items-center justify-center overflow-hidden bg-[#fff1d7] px-5 motion-safe:animate-[wifey-screen_2600ms_ease-in-out_both]" role="status" aria-label="Go wifey">
     <div className="pointer-events-none absolute inset-0 overflow-hidden motion-reduce:hidden" aria-hidden="true">
       {confetti.map((piece, index) => <span
         key={index}
