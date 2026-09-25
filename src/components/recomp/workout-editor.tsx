@@ -232,7 +232,11 @@ function ReplaceDrawer({ open, exercise, workout, library, onOpenChange, onSelec
   const alternatives = useMemo(() => {
     if (!exercise) return [];
     const unused = library.filter((item) => isCardioExercise(item) === isCardioExercise(exercise) && !workout.some((current) => current.id === item.id));
-    return [...unused].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8);
+    return [...unused].sort((a, b) => {
+      const aSameMuscle = matchesMuscle(a, exercise.muscle) ? 0 : 1;
+      const bSameMuscle = matchesMuscle(b, exercise.muscle) ? 0 : 1;
+      return aSameMuscle - bSameMuscle || a.name.localeCompare(b.name);
+    });
   }, [exercise, workout, library]);
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
