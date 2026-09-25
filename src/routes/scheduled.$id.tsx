@@ -9,6 +9,7 @@ import { ShareLinkButton } from "@/components/recomp/share-link-button";
 import { BackLink, ConfirmDelete, ExerciseList, PlanEditor, PlanHeader } from "@/components/recomp/workout-plan-view";
 import { useCloudData } from "@/lib/cloud-data";
 import { deleteScheduledWorkout, formatScheduleDate, handOffWorkout, hasActiveWorkout, saveScheduledWorkout } from "@/lib/workout-storage";
+import { workoutTimeEstimate } from "@/lib/workout-time";
 
 export const Route = createFileRoute("/scheduled/$id")({
   ssr: false,
@@ -28,6 +29,7 @@ function ScheduledWorkoutPage() {
   const [editing, setEditing] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const estimate = item ? workoutTimeEstimate(item.exercises) : null;
   if (!data) return <Screen>{null}</Screen>;
   if (!item) return <Screen><PlanHeader back={<BackLink to="/" label="Back to home" />} title="Workout not found" /></Screen>;
   if (editing) return <Screen><PlanEditor initial={item.exercises} onCancel={() => setEditing(false)} onSave={(exercises) => { saveScheduledWorkout({ ...item, exercises }); setEditing(false); toast.success("Workout updated"); }} /></Screen>;
@@ -37,7 +39,7 @@ function ScheduledWorkoutPage() {
     handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)), scheduledId: item.id }); void navigate({ to: "/workout" });
   };
   return <Screen>
-    <PlanHeader back={<BackLink to="/" label="Back to home" />} title={item.name} subtitle={`${formatScheduleDate(item.date, item.time)} · ${item.exercises.length} exercises`} />
+    <PlanHeader back={<BackLink to="/" label="Back to home" />} title={item.name} subtitle={`${formatScheduleDate(item.date, item.time)} · ${item.exercises.length} exercises${estimate ? ` · Est. ${estimate.label}` : ""}`} />
     <ExerciseList exercises={item.exercises} />
     {item.completedAt ? <p className="mt-4 text-center text-sm font-semibold text-muted-foreground">Completed</p> : <div className="mt-4 space-y-2">
       <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
