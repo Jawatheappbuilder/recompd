@@ -49,6 +49,19 @@ jobs:
           echo '<!doctype html><html><body></body></html>' > dist/index.html
           npx cap sync android
 
+      - name: Apply RECOMP'D launcher icon
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          for spec in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
+            set -- $spec
+            density=$1
+            size=$2
+            convert public/recompd-icon-v4-512.png -resize "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            cp "android/app/src/main/res/mipmap-${density}/ic_launcher.png" "android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
+          done
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
