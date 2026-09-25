@@ -35,14 +35,16 @@ export function ExerciseList({ exercises }: { exercises: WorkoutExercise[] }) {
 }
 
 /** Edit mode reuses the existing Workout Editor. */
-export function PlanEditor({ initial, onCancel, onSave }: { initial: WorkoutExercise[]; onCancel: () => void; onSave: (exercises: WorkoutExercise[]) => void }) {
+export function PlanEditor({ initial, initialName, onCancel, onSave }: { initial: WorkoutExercise[]; initialName: string; onCancel: () => void; onSave: (name: string, exercises: WorkoutExercise[]) => void }) {
   const [workout, setWorkout] = useState(() => initial.map((e) => structuredClone(e)));
+  const [name, setName] = useState(initialName);
   return <>
     <header className="mb-4 flex items-center justify-between gap-3 pt-1">
       <Button variant="ghost" onClick={onCancel} className="px-2 text-muted-foreground">Cancel</Button>
       <h1 className="text-base font-extrabold">Edit workout</h1>
-      <Button variant="ghost" disabled={!workout.length} onClick={() => onSave(workout)} className="px-2 text-primary">Save</Button>
+      <Button variant="ghost" disabled={!workout.length || !name.trim()} onClick={() => onSave(name.trim(), workout)} className="px-2 text-primary">Save</Button>
     </header>
+    <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name" enterKeyHint="done" autoComplete="off" className="mb-4 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
     <WorkoutEditor supersets workout={workout} setWorkout={setWorkout} />
   </>;
 }
