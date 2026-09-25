@@ -5,6 +5,7 @@ import { useAuth } from "@/components/recomp/auth-context";
 import { EmptyWorkout } from "@/components/recomp/empty-workout";
 import { Header, Screen } from "@/components/recomp/core";
 import { useActiveWorkout } from "@/hooks/use-active-workout";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/workout")({
   head: () => ({ meta: [
