@@ -25,7 +25,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
         </Button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-extrabold">{muscles.join(" + ")}</h1>
-          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.length} exercises{estimate ? ` · Est. ${estimate.label}` : ""}</p>
+          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</p>
         </div>
         <Button variant="ghost" size="sm" className="px-2 text-muted-foreground" onClick={() => { const next = generation + 1; setGeneration(next); setWorkout(generateWorkout(muscles, count, next)); }}>
           <RefreshCw /> Regenerate
