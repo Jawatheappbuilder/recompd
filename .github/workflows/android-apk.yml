@@ -8,6 +8,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/android-apk.yml"
+      - "public/recompd-android-icon-432.png"
+      - "public/recompd-android-icon-512.png"
   push:
     branches: [main]
     paths:
@@ -15,6 +17,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/android-apk.yml"
+      - "public/recompd-android-icon-432.png"
+      - "public/recompd-android-icon-512.png"
 
 jobs:
   build-apk:
@@ -53,12 +57,25 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq imagemagick
-          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          mkdir -p android/app/src/main/res/drawable-nodpi android/app/src/main/res/mipmap-anydpi-v26
+          cp public/recompd-android-icon-432.png android/app/src/main/res/drawable-nodpi/recompd_launcher_foreground.png
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/recompd_launcher_background" />
+              <foreground android:drawable="@drawable/recompd_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          cat > android/app/src/main/res/values/recompd_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources><color name="recompd_launcher_background">#FAF1EC</color></resources>
+          EOF
           for spec in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
             set -- $spec
             density=$1
             size=$2
-            convert public/recompd-launcher-v5.png -resize "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            convert public/recompd-android-icon-512.png -resize "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "android/app/src/main/res/mipmap-${density}/ic_launcher.png" "android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
