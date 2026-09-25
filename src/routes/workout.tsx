@@ -25,7 +25,7 @@ function WorkoutPage() {
   useEffect(() => {
     if (!hydrated || !workout || user?.email?.toLowerCase() !== WIFEY_PREVIEW_EMAIL) return;
     setShowWifeyHype(true);
-    const timer = window.setTimeout(() => setShowWifeyHype(false), 1800);
+    const timer = window.setTimeout(() => setShowWifeyHype(false), 3600);
     return () => window.clearTimeout(timer);
   }, [hydrated, workout?.id, user?.email]);
 
@@ -45,7 +45,7 @@ function WifeyWorkoutHype() {
     rotate: `${(index * 47) % 180}deg`,
   }));
 
-  return <div className="fixed inset-0 z-[100] mx-auto flex max-w-[430px] items-center justify-center overflow-hidden bg-[#fff1d7] px-5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200" role="status" aria-label="Go wifey">
+  return <div className="fixed inset-0 z-[100] mx-auto flex max-w-[430px] items-center justify-center overflow-hidden bg-[#fff1d7] px-5 motion-safe:animate-[wifey-screen_3600ms_ease-in-out_both]" role="status" aria-label="Go wifey">
     <div className="pointer-events-none absolute inset-0 overflow-hidden motion-reduce:hidden" aria-hidden="true">
       {confetti.map((piece, index) => <span
         key={index}
@@ -53,11 +53,17 @@ function WifeyWorkoutHype() {
         style={{ left: piece.left, animationDelay: piece.delay, ["--confetti-duration" as string]: piece.duration, transform: `rotate(${piece.rotate})` }}
       />)}
     </div>
-    <div className="relative -translate-y-[4dvh] text-center motion-safe:animate-[wifey-pop_700ms_cubic-bezier(.16,1,.3,1)_both]">
+    <div className="relative -translate-y-[18dvh] text-center motion-safe:animate-[wifey-pop_700ms_cubic-bezier(.16,1,.3,1)_both]">
       <div className="select-none text-[clamp(5.3rem,26vw,7.8rem)] font-black uppercase leading-[0.76] tracking-[-0.09em] text-[#f58eaa] [text-shadow:-6px_6px_0_#f12612,-12px_12px_0_#f12612]">GO</div>
       <div className="mt-7 select-none text-[clamp(4rem,20vw,6rem)] font-black uppercase leading-[0.76] tracking-[-0.075em] text-[#f58eaa] [text-shadow:-5px_5px_0_#f12612,-10px_10px_0_#f12612]">WIFEY</div>
     </div>
     <style>{`
+      @keyframes wifey-screen {
+        0% { opacity: 0; }
+        8% { opacity: 1; }
+        82% { opacity: 1; }
+        100% { opacity: 0; }
+      }
       @keyframes wifey-pop {
         0% { opacity: 0; transform: translateY(18px) scale(.72) rotate(-4deg); }
         55% { opacity: 1; transform: translateY(-6px) scale(1.08) rotate(1deg); }
