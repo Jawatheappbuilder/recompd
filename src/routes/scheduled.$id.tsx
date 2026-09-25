@@ -39,7 +39,7 @@ function ScheduledWorkoutPage() {
     handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)), scheduledId: item.id }); void navigate({ to: "/workout" });
   };
   return <Screen>
-    <PlanHeader back={<BackLink to="/" label="Back to home" />} title={item.name} subtitle={`${formatScheduleDate(item.date, item.time)} · ${item.exercises.length} exercises${estimate ? ` · Est. ${estimate.label}` : ""}`} />
+    <PlanHeader back={<BackLink to="/" label="Back to home" />} title={item.name} subtitle={<>{formatScheduleDate(item.date, item.time)} · {item.exercises.length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</>} />
     <ExerciseList exercises={item.exercises} />
     {item.completedAt ? <p className="mt-4 text-center text-sm font-semibold text-muted-foreground">Completed</p> : <div className="mt-4 space-y-2">
       <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
