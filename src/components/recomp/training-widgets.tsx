@@ -12,7 +12,22 @@ export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }:
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const compact = String(current).length + String(target).length > 3;
-  return <div className="relative shrink-0" style={{ width: size, height: size }}><svg className="-rotate-90" viewBox="0 0 86 86" aria-label={`${current} of ${target} workouts complete`}><circle cx="43" cy="43" r={radius} fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle className="progress-stroke" cx="43" cy="43" r={radius} fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)}/></svg><div className="absolute inset-0 grid min-w-0 place-content-center text-center"><span className={cn("font-black tabular-nums", compact ? "text-base" : "text-xl")}>{current}<span className="text-muted-foreground">/{target}</span></span></div></div>;
+  const complete = target > 0 && current >= target;
+  const celebrating = complete && value >= 100;
+  const particles = Array.from({ length: 18 }, (_, index) => {
+    const angle = (index / 18) * Math.PI * 2;
+    const distance = 50 + (index % 3) * 8;
+    return { x: Math.cos(angle) * distance, y: Math.sin(angle) * distance, delay: index * 18 };
+  });
+  return <div className="relative shrink-0" style={{ width: size, height: size }}>
+    {celebrating && <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center overflow-visible motion-reduce:hidden" aria-hidden="true">
+      <span className="absolute size-[115%] rounded-full bg-primary/20 animate-[ping_900ms_ease-out_forwards]" />
+      <span className="absolute size-[135%] rounded-full border-2 border-primary/70 animate-[ping_900ms_ease-out_150ms_forwards]" />
+      {particles.map((particle, index) => <span key={index} className={cn("absolute rounded-full opacity-0 animate-[ping_900ms_ease-out_forwards]", index % 3 === 0 ? "h-2 w-1 bg-primary" : "size-2 bg-primary")} style={{ transform: `translate(${particle.x}px, ${particle.y}px) rotate(${index * 20}deg)`, animationDelay: `${particle.delay}ms` }} />)}
+    </div>}
+    <svg className={cn("-rotate-90", celebrating && "motion-safe:animate-[pulse_900ms_ease-in-out_2]")} viewBox="0 0 86 86" aria-label={`${current} of ${target} workouts complete`}><circle cx="43" cy="43" r={radius} fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle className={cn("progress-stroke transition-colors duration-700", complete && value >= 100 ? "stroke-emerald-500" : "stroke-red-500")} cx="43" cy="43" r={radius} fill="none" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)}/></svg>
+    <div className="absolute inset-0 grid min-w-0 place-content-center text-center"><span className={cn("font-black tabular-nums", compact ? "text-base" : "text-xl")}>{current}<span className="text-muted-foreground">/{target}</span></span></div>
+  </div>;
 }
 
 const DAY_MS = 86_400_000;
@@ -46,7 +61,31 @@ export function WeeklyTraining() {
   const end = start + 7 * DAY_MS;
   const scheduledByDay = new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id]));
   const scheduledThisWeek = scheduled.filter((item) => !item.completedAt && (() => { const [y, m, d] = item.date.split("-").map(Number); const ts = new Date(y!, m! - 1, d!).getTime(); return ts >= start && ts < end; })()).length;
-  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><Metric value={String(summary.workouts)} label="Completed" accent/><Metric value={String(scheduledThisWeek)} label="Scheduled"/><TrainingTimeMetric seconds={summary.durationSec}/></div></Card></section>;
+  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><CountUpMetric value={summary.workouts} label="Completed" accent/><CountUpMetric value={scheduledThisWeek} label="Scheduled"/><TrainingTimeMetric seconds={summary.durationSec}/></div></Card></section>;
+}
+
+function CountUpMetric({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || value <= 0) {
+      setDisplayValue(value);
+      return;
+    }
+    setDisplayValue(0);
+    let frame = 0;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min((now - start) / 900, 1);
+      setDisplayValue(Math.round(value * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return <Metric value={String(displayValue)} label={label} accent={accent}/>;
 }
 
 function TrainingTimeMetric({ seconds }: { seconds: number }) {
