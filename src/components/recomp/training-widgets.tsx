@@ -12,17 +12,17 @@ export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }:
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const compact = String(current).length + String(target).length > 3;
-  const complete = target > 0 && current >= target;
+  const complete = target > 0 && current >= target;\n  const previewCelebration = true; // Temporary PR preview: remove before merge.
   const rays = Array.from({ length: 10 }, (_, index) => {
     const angle = (index / 10) * Math.PI * 2;
     return { x: Math.cos(angle) * 46, y: Math.sin(angle) * 46, delay: index * 22 };
   });
   return <div className="relative shrink-0" style={{ width: size, height: size }}>
-    {complete && <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-visible motion-reduce:hidden" aria-hidden="true">
+    {(complete || previewCelebration) && <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-visible motion-reduce:hidden" aria-hidden="true">
       {rays.map((ray, index) => <span key={index} className="absolute size-1.5 rounded-full bg-primary opacity-0 animate-[ping_650ms_ease-out_forwards]" style={{ transform: `translate(${ray.x}px, ${ray.y}px)`, animationDelay: `${ray.delay}ms` }} />)}
       <span className="absolute size-[92%] rounded-full border-2 border-primary/50 opacity-0 animate-[ping_700ms_ease-out_forwards]" />
     </div>}
-    <svg className={cn("-rotate-90", complete && "motion-safe:animate-[pulse_650ms_ease-out_1]")} viewBox="0 0 86 86" aria-label={`${current} of ${target} workouts complete`}><circle cx="43" cy="43" r={radius} fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle className="progress-stroke" cx="43" cy="43" r={radius} fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)}/></svg>
+    <svg className={cn("-rotate-90", (complete || previewCelebration) && "motion-safe:animate-[pulse_650ms_ease-out_1]")} viewBox="0 0 86 86" aria-label={`${current} of ${target} workouts complete`}><circle cx="43" cy="43" r={radius} fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle className="progress-stroke" cx="43" cy="43" r={radius} fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)}/></svg>
     <div className="absolute inset-0 grid min-w-0 place-content-center text-center"><span className={cn("font-black tabular-nums", compact ? "text-base" : "text-xl")}>{current}<span className="text-muted-foreground">/{target}</span></span></div>
   </div>;
 }
