@@ -25,5 +25,12 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "id": "/",
+  "scope": "/",
+  "orientation": "portrait",
+  "categories": [
+    "health",
+    "fitness"
   ]
 }
