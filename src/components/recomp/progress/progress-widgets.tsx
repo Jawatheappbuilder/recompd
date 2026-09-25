@@ -90,6 +90,7 @@ export function WorkoutRow({ workout }: { workout: CompletedWorkout }) {
 const weekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function TrainingCalendar({ workouts }: { workouts: CompletedWorkout[] }) {
+  const scheduled = useScheduledWorkouts();
   const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selected, setSelected] = useState<number | null>(null);
   const byDay = useMemo(() => {
@@ -103,7 +104,8 @@ export function TrainingCalendar({ workouts }: { workouts: CompletedWorkout[] })
   const todayKey = dayKey(Date.now());
   const isCurrentMonth = new Date().getFullYear() === year && new Date().getMonth() === month;
   const count = [...Array(days).keys()].filter((index) => byDay.has(dayKey(new Date(year, month, index + 1).getTime()))).length;
-  const scheduledByDay = useMemo(() => new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id])), [scheduled]);\n  const selectedWorkouts = selected ? byDay.get(dayKey(selected)) ?? [] : [];
+  const scheduledByDay = useMemo(() => new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id])), [scheduled]);
+  const selectedWorkouts = selected ? byDay.get(dayKey(selected)) ?? [] : [];
 
   return (
     <Card className="p-3">
