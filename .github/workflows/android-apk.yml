@@ -58,7 +58,7 @@ jobs:
             set -- $spec
             density=$1
             size=$2
-            convert public/recompd-icon-v4-512.png -resize "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+            convert public/recompd-launcher-v5.png -resize "${size}x${size}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
             cp "android/app/src/main/res/mipmap-${density}/ic_launcher.png" "android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
           done
 
