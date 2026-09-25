@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { newId } from "@/lib/cloud-data";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
+import { workoutTimeEstimate } from "@/lib/workout-time";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
@@ -63,6 +64,7 @@ function ManualMode() {
   const [scheduling, setScheduling] = useState(false);
 
   const finalName = name.trim() || defaultWorkoutName(workout);
+  const estimate = workoutTimeEstimate(workout);
   const start = () => { handOffWorkout({ name: finalName, exercises: workout }); void navigate({ to: "/workout" }); };
   const save = () => {
     const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
