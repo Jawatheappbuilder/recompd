@@ -1,0 +1,17 @@
+{
+  "name": "RECOMP'D",
+  "short_name": "RECOMP'D",
+  "description": "Strength training, built around your next session.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf4eb",
+  "theme_color": "#fbf4eb",
+  "icons": [
+    {
+      "src": "/recompd-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
