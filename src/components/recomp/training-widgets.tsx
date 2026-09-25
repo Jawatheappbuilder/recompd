@@ -28,7 +28,6 @@ export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }:
     </div>}
     <svg className={cn("-rotate-90", celebrating && "motion-safe:animate-[pulse_900ms_ease-in-out_2]")} viewBox="0 0 86 86" aria-label={`${current} of ${target} workouts complete`}><circle cx="43" cy="43" r={radius} fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle className="progress-stroke" cx="43" cy="43" r={radius} fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)}/></svg>
     <div className="absolute inset-0 grid min-w-0 place-content-center text-center"><span className={cn("font-black tabular-nums", compact ? "text-base" : "text-xl")}>{current}<span className="text-muted-foreground">/{target}</span></span></div>
-    {celebrating && <div className="pointer-events-none absolute -bottom-7 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.08em] text-primary-foreground shadow-lg motion-safe:animate-[pulse_900ms_ease-in-out_2]">Goal smashed</div>}
   </div>;
 }
 
