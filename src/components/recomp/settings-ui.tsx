@@ -19,7 +19,7 @@ export function SettingsSection({ title, children, className }: { title: string;
   return <section className={cn("space-y-1.5", className)}><h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.13em] text-muted-foreground">{title}</h2><div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card px-3">{children}</div></section>;
 }
 
-export function SettingsLink({ to, icon: Icon, label, value }: { to: "/settings/profile" | "/settings/training" | "/settings/exercises" | "/settings/appearance" | "/settings/account"; icon: LucideIcon; label: string; value?: string | undefined }) {
+export function SettingsLink({ to, icon: Icon, label, value }: { to: "/settings/profile" | "/settings/training" | "/settings/exercises" | "/settings/appearance" | "/settings/account" | "/privacy" | "/terms" | "/support"; icon: LucideIcon; label: string; value?: string | undefined }) {
   return (
     <Button asChild variant="ghost" className="h-auto min-h-14 w-full justify-start rounded-none px-0 hover:bg-transparent">
       <Link to={to}><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground"><Icon className="size-4" /></span><span className="min-w-0 flex-1 text-left text-sm font-bold">{label}</span>{value && <span className="max-w-32 truncate text-xs font-semibold text-muted-foreground">{value}</span>}<ChevronRight className="size-4 text-muted-foreground" /></Link>
