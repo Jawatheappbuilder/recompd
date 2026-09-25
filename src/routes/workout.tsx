@@ -15,7 +15,7 @@ export const Route = createFileRoute("/workout")({
   ] }), component: WorkoutPage,
 });
 
-const WIFEY_PREVIEW_EMAIL = "ashleyjpemberton@gmail.com";
+const WIFEY_USER_ID = "e791fd9b-67cf-41c1-9cad-de60e0753e8b";
 
 function WorkoutPage() {
   const { workout, setWorkout, hydrated } = useActiveWorkout();
@@ -23,11 +23,11 @@ function WorkoutPage() {
   const [showWifeyHype, setShowWifeyHype] = useState(false);
 
   useEffect(() => {
-    if (!hydrated || !workout || user?.email?.toLowerCase() !== WIFEY_PREVIEW_EMAIL) return;
+    if (!hydrated || !workout || user?.id !== WIFEY_USER_ID) return;
     setShowWifeyHype(true);
     const timer = window.setTimeout(() => setShowWifeyHype(false), 2600);
     return () => window.clearTimeout(timer);
-  }, [hydrated, workout?.id, user?.email]);
+  }, [hydrated, workout?.id, user?.id]);
 
   if (!hydrated) return <Screen>{null}</Screen>;
   if (!workout) return <Screen><Header/><EmptyWorkout/></Screen>;
