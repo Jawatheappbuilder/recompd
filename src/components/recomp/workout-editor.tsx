@@ -345,13 +345,15 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
           </Button>
         </DrawerHeader>
         {creating ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Exercise name" enterKeyHint="done" className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary" />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="shrink-0 pb-3"><input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Exercise name" enterKeyHint="done" className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary" /></div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-3">
             <div className="grid grid-cols-2 gap-1.5">
               {muscleGroups.map((item) => { const active = customMuscles.includes(item); return <Button key={item} variant={active ? "choiceActive" : "choice"} className="h-9 justify-between px-3" onClick={() => setCustomMuscles((current) => active ? current.filter((value) => value !== item) : [...current, item])}>{item}{active && <Check />}</Button>; })}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {equipmentTypes.map((item) => <Button key={item} variant={customEquipment === item ? "choiceActive" : "choice"} className="h-9 px-2 text-xs" onClick={() => setCustomEquipment(item)}>{item}</Button>)}
+            </div>
             </div>
             <Button variant="primary" size="lg" className="mt-auto w-full" disabled={!name.trim() || !customMuscles.length} onClick={createCustom}>Add to workout</Button>
           </div>
