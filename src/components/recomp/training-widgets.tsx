@@ -12,7 +12,8 @@ export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }:
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const compact = String(current).length + String(target).length > 3;
-  const complete = target > 0 && current >= target;\n  const previewCelebration = true; // Temporary PR preview: remove before merge.
+  const complete = target > 0 && current >= target;
+  const previewCelebration = true; // Temporary PR preview: remove before merge.
   const rays = Array.from({ length: 10 }, (_, index) => {
     const angle = (index / 10) * Math.PI * 2;
     return { x: Math.cos(angle) * 46, y: Math.sin(angle) * 46, delay: index * 22 };
