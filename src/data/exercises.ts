@@ -141,6 +141,43 @@ const shuffle = <T,>(items: T[], random: () => number = Math.random) => {
 };
 function seededRandom(seed: number) { let state = seed || 1; return () => { state = Math.imul(state ^ (state >>> 15), 1 | state); state ^= state + Math.imul(state ^ (state >>> 7), 61 | state); return ((state ^ (state >>> 14)) >>> 0) / 4294967296; }; }
 const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || exercise.muscles?.includes(muscle);
+const movementFamily = (exercise: Exercise) => {
+  const name = exercise.name.toLowerCase();
+  if (/(incline).*press/.test(name)) return "incline-press";
+  if (/(decline).*press/.test(name)) return "decline-press";
+  if (/(bench press|chest press|cable chest press)/.test(name) && !name.includes("close-grip")) return "flat-press";
+  if (/(push-up|push up)/.test(name)) return "push-up";
+  if (/\bdip\b/.test(name)) return exercise.muscle === "Triceps" ? "triceps-dip" : "chest-dip";
+  if (/(fly|pec deck)/.test(name)) return "chest-fly";
+  if (/pullover/.test(name)) return "pullover";
+  if (/(lat pulldown|pull-up|chin-up)/.test(name)) return "vertical-pull";
+  if (/row/.test(name)) return "row";
+  if (/(deadlift|rack pull)/.test(name) && exercise.muscle === "Back") return "back-hinge";
+  if (/(shoulder press|overhead press|push press|arnold press|handstand push-up)/.test(name)) return "shoulder-press";
+  if (/lateral raise/.test(name)) return "lateral-raise";
+  if (/(rear delt fly|face pull)/.test(name)) return "rear-delt";
+  if (/front raise/.test(name)) return "front-raise";
+  if (/(hammer curl|cross-body hammer)/.test(name)) return "hammer-curl";
+  if (/(preacher curl)/.test(name)) return "preacher-curl";
+  if (/curl/.test(name) && exercise.muscle === "Biceps") return "biceps-curl";
+  if (/(pushdown)/.test(name)) return "triceps-pushdown";
+  if (/(overhead.*extension)/.test(name)) return "overhead-triceps-extension";
+  if (/(skull crusher)/.test(name)) return "skull-crusher";
+  if (/(squat|leg press)/.test(name) && !/(split|sissy)/.test(name)) return "squat-press";
+  if (/(split squat|lunge|step-up)/.test(name)) return "single-leg-knee-dominant";
+  if (/leg extension/.test(name)) return "leg-extension";
+  if (/(romanian deadlift|stiff-leg deadlift|good morning|pull-through)/.test(name)) return "hip-hinge";
+  if (/(leg curl|nordic curl|glute-ham raise)/.test(name)) return "leg-curl";
+  if (/(hip thrust|glute bridge|glute drive)/.test(name)) return "hip-thrust";
+  if (/(kickback|hip abduction)/.test(name)) return "glute-isolation";
+  if (/calf raise/.test(name)) return "calf-raise";
+  if (/tibialis/.test(name)) return "tibialis";
+  if (/(crunch|sit-up)/.test(name)) return "core-flexion";
+  if (/(leg raise|knee raise|reverse crunch)/.test(name)) return "core-leg-raise";
+  if (/(wood chop|pallof|rotary torso)/.test(name)) return "core-rotation";
+  if (/(plank|dead bug|bird dog|ab wheel)/.test(name)) return "core-stability";
+  return exercise.id;
+};
 
 export function generateWorkout(muscles: Muscle[], count: number, seed = 1): WorkoutExercise[] {
   if (!muscles.length) return [];
@@ -151,14 +188,15 @@ export function generateWorkout(muscles: Muscle[], count: number, seed = 1): Wor
     const secondary = list.filter((exercise) => exercise.muscle !== muscle);
     return [muscle, [...shuffle(primary.filter((exercise) => exercise.type === "Compound"), random), ...shuffle(primary.filter((exercise) => exercise.type === "Isolation"), random), ...shuffle(secondary, random)]];
   }));
-  const picked: Exercise[] = []; const used = new Set<string>(); let guard = 0;
+  const picked: Exercise[] = []; const used = new Set<string>(); const usedFamilies = new Set<string>(); let guard = 0;
   while (picked.length < count && guard++ < 100) {
     let added = false;
     for (const muscle of muscles) {
       if (picked.length >= count) break;
       const pool = pools.get(muscle) ?? [];
-      const next = pool.find((exercise) => !used.has(exercise.id));
-      if (next) { picked.push(next); used.add(next.id); pools.set(muscle, pool.filter((exercise) => exercise.id !== next.id)); added = true; }
+      const unused = pool.filter((exercise) => !used.has(exercise.id));
+      const next = unused.find((exercise) => !usedFamilies.has(movementFamily(exercise))) ?? unused[0];
+      if (next) { picked.push(next); used.add(next.id); usedFamilies.add(movementFamily(next)); pools.set(muscle, pool.filter((exercise) => exercise.id !== next.id)); added = true; }
     }
     if (!added) break;
   }
