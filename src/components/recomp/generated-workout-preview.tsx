@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { generateWorkout, type Muscle } from "@/data/exercises";
 import { defaultWorkoutName, handOffWorkout } from "@/lib/workout-storage";
+import { workoutTimeEstimate } from "@/lib/workout-time";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
 import { ShareLinkButton } from "./share-link-button";
 import { WorkoutEditor } from "./workout-editor";
@@ -14,6 +15,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
   const [generation, setGeneration] = useState(seed);
   const [scheduling, setScheduling] = useState(false);
   const startWorkout = () => { handOffWorkout({ exercises: workout }); void navigate({ to: "/workout" }); };
+  const estimate = workoutTimeEstimate(workout);
 
   return (
     <>
@@ -23,7 +25,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
         </Button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-extrabold">{muscles.join(" + ")}</h1>
-          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.length} exercises</p>
+          <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.length} exercises{estimate ? ` · Est. ${estimate.label}` : ""}</p>
         </div>
         <Button variant="ghost" size="sm" className="px-2 text-muted-foreground" onClick={() => { const next = generation + 1; setGeneration(next); setWorkout(generateWorkout(muscles, count, next)); }}>
           <RefreshCw /> Regenerate
