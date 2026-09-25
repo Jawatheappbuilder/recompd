@@ -39,7 +39,7 @@ function SavedWorkoutPage() {
     handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)) }); void navigate({ to: "/workout" });
   };
   return <Screen>
-    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={`${item.exercises.length} exercises${estimate ? ` · Est. ${estimate.label}` : ""}`} />
+    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={<>{item.exercises.length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</>} />
     <ExerciseList exercises={item.exercises} />
     <div className="mt-4 space-y-2">
       <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
