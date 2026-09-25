@@ -40,14 +40,36 @@ export const InlineEmpty = ({ children, action }: { children: ReactNode; action?
   <div className="flex min-h-12 items-center justify-between gap-3 text-sm text-muted-foreground"><span>{children}</span>{action}</div>
 );
 
+function CountUpStat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || value <= 0) {
+      setDisplayValue(value);
+      return;
+    }
+    setDisplayValue(0);
+    let frame = 0;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min((now - start) / 900, 1);
+      setDisplayValue(Math.round(value * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <Stat value={String(displayValue)} label={label} accent={accent} />;
+}
+
 export function TrainingSummary({ label, workouts, sets, durationSec }: { label: string; workouts: number; sets: number; durationSec: number }) {
   return (
     <Card className="relative overflow-hidden p-4">
       <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-36 rounded-full bg-primary/10 blur-3xl" />
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
       <div className="mt-2 grid grid-cols-3 divide-x divide-border">
-        <Stat value={String(workouts)} label="workouts" accent />
-        <Stat value={String(sets)} label="sets" />
+        <CountUpStat value={workouts} label="workouts" accent />
+        <CountUpStat value={sets} label="sets" />
         <Stat value={formatDuration(durationSec)} label="trained" />
       </div>
     </Card>
