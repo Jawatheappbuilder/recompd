@@ -303,8 +303,12 @@ function CardioFields({ exercise, set: session, onChange, onToggle }: { exercise
 
 function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
   const [cleared, setCleared] = useState<{ field: "weight" | "reps"; previous: string } | null>(null);
-  const [armed, setArmed] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const deleteWidth = 72;
   const focusField = (field: "weight" | "reps") => {
+    setSwipeX(0);
     const value = String(set[field] ?? "");
     setCleared(value ? { field, previous: value } : null);
   };
@@ -318,11 +322,43 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
       else onChange({ reps: cleared.previous });
     }
   };
-  return <div className={cn("grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg px-1", set.completed && "bg-accent") }>
-    {canRemove && !set.completed ? <button type="button" aria-label={armed ? `Confirm remove set ${number}` : `Remove set ${number}`} onClick={() => armed ? onRemove() : setArmed(true)} onBlur={() => setArmed(false)} className={cn("relative grid h-9 place-items-center text-xs font-bold", armed ? "text-destructive" : "text-muted-foreground")}>{armed ? <Minus className="size-4" /> : <>{number}<span className="absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-border" /></>}</button> : <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>}
-    <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
-    <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
-    <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border", set.completed ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}><Check className="size-4" strokeWidth={3} /></button>
+  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!canRemove || set.completed) return;
+    const touch = event.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+    setDragging(false);
+  };
+  const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStart || !canRemove || set.completed) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - touchStart.x;
+    const dy = touch.clientY - touchStart.y;
+    if (!dragging && Math.abs(dx) < 8) return;
+    if (!dragging && Math.abs(dy) > Math.abs(dx)) { setTouchStart(null); return; }
+    setDragging(true);
+    setSwipeX(Math.max(-deleteWidth, Math.min(0, dx)));
+  };
+  const onTouchEnd = () => {
+    if (!touchStart) return;
+    setSwipeX(swipeX < -36 ? -deleteWidth : 0);
+    setTouchStart(null);
+    setDragging(false);
+  };
+  return <div className="relative overflow-hidden rounded-lg">
+    {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent", !dragging && "transition-transform duration-200 ease-out")}
+      style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
+    >
+      <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>
+      <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
+      <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
+      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border", set.completed ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}><Check className="size-4" strokeWidth={3} /></button>
+    </div>
   </div>;
 }
 
