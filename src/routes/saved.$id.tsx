@@ -9,6 +9,7 @@ import { ScheduleSheet, scheduleNewWorkout } from "@/components/recomp/schedule-
 import { BackLink, ConfirmDelete, ExerciseList, PlanEditor, PlanHeader } from "@/components/recomp/workout-plan-view";
 import { useCloudData } from "@/lib/cloud-data";
 import { deleteSavedWorkout, handOffWorkout, hasActiveWorkout, saveWorkout } from "@/lib/workout-storage";
+import { workoutTimeEstimate } from "@/lib/workout-time";
 
 export const Route = createFileRoute("/saved/$id")({
   ssr: false,
@@ -28,6 +29,7 @@ function SavedWorkoutPage() {
   const [editing, setEditing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const estimate = item ? workoutTimeEstimate(item.exercises) : null;
   if (!data) return <Screen>{null}</Screen>;
   if (!item) return <Screen><PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title="Workout not found" /></Screen>;
   if (editing) return <Screen><PlanEditor initial={item.exercises} onCancel={() => setEditing(false)} onSave={(exercises) => { saveWorkout({ ...item, exercises }); setEditing(false); toast.success("Workout updated"); }} /></Screen>;
@@ -37,7 +39,7 @@ function SavedWorkoutPage() {
     handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)) }); void navigate({ to: "/workout" });
   };
   return <Screen>
-    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={`${item.exercises.length} exercises`} />
+    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={`${item.exercises.length} exercises${estimate ? ` · Est. ${estimate.label}` : ""}`} />
     <ExerciseList exercises={item.exercises} />
     <div className="mt-4 space-y-2">
       <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
