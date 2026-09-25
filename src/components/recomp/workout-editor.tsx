@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -321,8 +321,6 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
   const [name, setName] = useState("");
   const [customMuscles, setCustomMuscles] = useState<Muscle[]>([]);
   const [customEquipment, setCustomEquipment] = useState<Equipment>("Dumbbell");
-  const customScrollRef = useRef<HTMLDivElement>(null);
-  const restoreCustomFormTop = () => window.setTimeout(() => customScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
 
   useEffect(() => { if (!open) { setPicked([]); setCreating(false); setQuery(""); } }, [open]);
 
@@ -339,7 +337,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto h-[86dvh] max-w-[430px] touch-pan-y rounded-t-2xl bg-popover">
+      <DrawerContent className="mx-auto h-[86dvh] max-w-[430px] rounded-t-2xl bg-popover">
         <DrawerHeader className="flex-row items-center justify-between pb-2 text-left">
           <DrawerTitle>{creating ? "Custom exercise" : "Add exercise"}</DrawerTitle>
           <Button variant="ghost" size="sm" className="-mr-2 px-2 text-primary" onClick={() => setCreating((value) => !value)}>
@@ -348,8 +346,10 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
         </DrawerHeader>
         {creating ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <div className="shrink-0 pb-3"><input value={name} onChange={(event) => setName(event.target.value)} onBlur={restoreCustomFormTop} placeholder="Exercise name" enterKeyHint="done" className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary" /></div>
-            <div ref={customScrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-3">
+            <div className="shrink-0 space-y-3 bg-popover pb-3">
+              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Exercise name" enterKeyHint="done" className="h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary" />
+            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-3" onTouchStart={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>
             <div className="grid grid-cols-2 gap-1.5">
               {muscleGroups.map((item) => { const active = customMuscles.includes(item); return <Button key={item} variant={active ? "choiceActive" : "choice"} className="h-9 justify-between px-3" onClick={() => setCustomMuscles((current) => active ? current.filter((value) => value !== item) : [...current, item])}>{item}{active && <Check />}</Button>; })}
             </div>
