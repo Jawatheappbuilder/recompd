@@ -336,7 +336,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false} dismissible={!creating}>
       <DrawerContent className="mx-auto h-[86dvh] max-w-[430px] overflow-hidden rounded-t-2xl bg-popover">
         <DrawerHeader className="flex-row items-center justify-between pb-2 text-left">
           <DrawerTitle>{creating ? "Custom exercise" : "Add exercise"}</DrawerTitle>
