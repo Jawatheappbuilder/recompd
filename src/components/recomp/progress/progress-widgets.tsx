@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -62,6 +62,41 @@ function CountUpStat({ value, label, accent }: { value: number; label: string; a
   return <Stat value={String(displayValue)} label={label} accent={accent} />;
 }
 
+function CountUpDurationStat({ seconds, label }: { seconds: number; label: string }) {
+  const element = useRef<HTMLDivElement>(null);
+  const [displaySeconds, setDisplaySeconds] = useState(0);
+
+  useEffect(() => {
+    const node = element.current;
+    if (!node) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || seconds <= 0 || !window.IntersectionObserver) {
+      setDisplaySeconds(seconds);
+      return;
+    }
+
+    setDisplaySeconds(0);
+    let frame = 0;
+    let started = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting || started) return;
+      started = true;
+      observer.disconnect();
+      const start = performance.now();
+      const animate = (now: number) => {
+        const progress = Math.min((now - start) / 900, 1);
+        setDisplaySeconds(seconds * (1 - Math.pow(1 - progress, 3)));
+        if (progress < 1) frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+    });
+    observer.observe(node);
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+  }, [seconds]);
+
+  return <div ref={element} role="img" aria-label={`${label} ${formatDuration(seconds)}`}><div aria-hidden="true"><Stat value={formatDuration(displaySeconds)} label={label} /></div></div>;
+}
+
 export function TrainingSummary({ label, workouts, sets, durationSec }: { label: string; workouts: number; sets: number; durationSec: number }) {
   return (
     <Card className="relative overflow-hidden p-4">
@@ -70,7 +105,7 @@ export function TrainingSummary({ label, workouts, sets, durationSec }: { label:
       <div className="mt-2 grid grid-cols-3 divide-x divide-border">
         <CountUpStat value={workouts} label="workouts" accent />
         <CountUpStat value={sets} label="sets" />
-        <Stat value={formatDuration(durationSec)} label="trained" />
+        <CountUpDurationStat seconds={durationSec} label="trained" />
       </div>
     </Card>
   );
