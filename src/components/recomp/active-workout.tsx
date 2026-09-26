@@ -139,7 +139,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
-    if (shouldRest) setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true });
+    if (shouldRest) window.setTimeout(() => setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true }), 650);
   };
 
   const startExercise = (key: string) => {
@@ -254,6 +254,15 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={removeExercise}>Remove</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <style>{`
+        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes checkPop { 0% { transform: scale(.45); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
+        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 30% { background-color: rgba(34,197,94,.24); transform: scale(1.018); } 100% { background-color: var(--color-accent); transform: scale(1); } }
+        .workout-card-enter { animation: workoutCardEnter 650ms cubic-bezier(.16,1,.3,1) both; }
+        .check-pop { animation: checkPop 480ms cubic-bezier(.16,1,.3,1); }
+        .set-success-pulse { animation: setSuccessPulse 760ms ease-out; }
+        @media (prefers-reduced-motion: reduce) { .workout-card-enter, .check-pop, .set-success-pulse { animation: none !important; } }
+      `}</style>
       <AlertDialog open={finishOpen} onOpenChange={setFinishOpen}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
           <AlertDialogHeader><AlertDialogTitle>Finish workout?</AlertDialogTitle><AlertDialogDescription>You still have {totalSets - completedSets} incomplete sets.</AlertDialogDescription></AlertDialogHeader>
@@ -468,14 +477,3 @@ function WorkoutCompleteCelebration({ result, showStats, prs }: { result: Finish
 
 function CelebrationStat({ value, label }: { value: string; label: string }) { return <div aria-label={`${label}: ${value}`} className="rounded-2xl border border-border bg-card/80 px-2 py-3 backdrop-blur"><div className="text-lg font-black tabular-nums">{value}</div><div className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</div></div>; }
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
-
-
-      <style>{`
-        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes checkPop { 0% { transform: scale(.45); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
-        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 30% { background-color: rgba(34,197,94,.24); transform: scale(1.018); } 100% { background-color: var(--color-accent); transform: scale(1); } }
-        .workout-card-enter { animation: workoutCardEnter 650ms cubic-bezier(.16,1,.3,1) both; }
-        .check-pop { animation: checkPop 480ms cubic-bezier(.16,1,.3,1); }
-        .set-success-pulse { animation: setSuccessPulse 760ms ease-out; }
-        @media (prefers-reduced-motion: reduce) { .workout-card-enter, .check-pop, .set-success-pulse { animation: none !important; } }
-      `}</style>
