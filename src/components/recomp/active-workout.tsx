@@ -118,7 +118,8 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const updatedExercise = nextExercises.find((item) => item.key === exercise.key);
     const completedExercise = updatedExercise?.sessionSets.every((row) => row.completed) ?? false;
     let currentKey = workout.currentKey;
-    let shouldRest = nextCompleted && !isCardioExercise(exercise);
+    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.every((row) => row.completed) : false;
+    let shouldRest = nextCompleted && !isCardioExercise(exercise) && hasMoreSetsHere;
     const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
 
     if (nextCompleted && updatedExercise && partner && !partner.sessionSets.every((row) => row.completed)) {
