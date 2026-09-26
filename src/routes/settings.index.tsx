@@ -25,9 +25,9 @@ function SettingsPage() {
     <SettingsSection title="Preview"><SettingsRow icon={RefreshCcw} label="Restart onboarding" onClick={() => { setPreferences({ ...preferences, onboardingComplete: false }); void navigate({ to: "/welcome" }); }} /></SettingsSection>
     <SettingsSection title="About & support">
       <SettingsRow icon={Info} label="About RECOMP'D" value="Version 0.1.0" />
-      <SettingsRow icon={Shield} label="Privacy Policy" value="Coming later" disabled />
-      <SettingsRow icon={FileText} label="Terms" value="Coming later" disabled />
-      <SettingsRow icon={Mail} label="Contact / Support" value="Coming later" disabled />
+      <SettingsLink to="/privacy" icon={Shield} label="Privacy Policy" />
+      <SettingsLink to="/terms" icon={FileText} label="Terms & Fitness Disclaimer" />
+      <SettingsLink to="/support" icon={Mail} label="Contact / Support" />
     </SettingsSection>
     <p className="px-1 text-center text-[0.65rem] text-muted-foreground">RECOMP'D · Built for better training</p>
   </div></Screen>;
