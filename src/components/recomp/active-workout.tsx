@@ -214,7 +214,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           const completed = exercise.sessionSets.every((set) => set.completed);
           const current = exercise.key === workout.currentKey && !completed;
           const expanded = current || expandedUpcoming === exercise.key;
-          return <div key={exercise.key} className="motion-safe:animate-[workout-card-in_420ms_cubic-bezier(.16,1,.3,1)_both]" style={{ animationDelay: `${exerciseIndex * 65}ms` }}><ExerciseCard
+          return <div key={exercise.key} className="workout-card-enter" style={{ animationDelay: `${exerciseIndex * 90}ms` }}><ExerciseCard
             exercise={exercise}
             current={current}
             completed={completed}
@@ -352,13 +352,13 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent motion-safe:animate-[set-success_620ms_ease-out]", !dragging && "transition-transform duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent set-success-pulse", !dragging && "transition-transform duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
       <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>
       <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
       <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
-      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground motion-safe:animate-[check-pop_420ms_cubic-bezier(.16,1,.3,1)]" : "border-border text-muted-foreground")}><Check className={cn("size-4 transition-all duration-300", set.completed ? "scale-100 rotate-0 opacity-100" : "scale-50 -rotate-45 opacity-35")} strokeWidth={3} /></button>
+      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground check-pop" : "border-border text-muted-foreground")}><Check className={cn("size-4 transition-all duration-300", set.completed ? "scale-100 rotate-0 opacity-100" : "scale-50 -rotate-45 opacity-35")} strokeWidth={3} /></button>
     </div>
   </div>;
 }
@@ -469,8 +469,13 @@ function WorkoutCompleteCelebration({ result, showStats, prs }: { result: Finish
 function CelebrationStat({ value, label }: { value: string; label: string }) { return <div aria-label={`${label}: ${value}`} className="rounded-2xl border border-border bg-card/80 px-2 py-3 backdrop-blur"><div className="text-lg font-black tabular-nums">{value}</div><div className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</div></div>; }
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
 
-<style>{`
-@keyframes workout-card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes check-pop { 0% { transform: scale(.82); } 55% { transform: scale(1.13); } 100% { transform: scale(1); } }
-@keyframes set-success { 0% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent); } 35% { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--color-primary) 12%, transparent); } 100% { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--color-primary) 0%, transparent); } }
-`}</style>
+
+      <style>{`
+        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(18px) scale(.985); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes checkPop { 0% { transform: scale(.55) rotate(-35deg); } 60% { transform: scale(1.22) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 35% { background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-card)); transform: scale(1.012); } 100% { background-color: var(--color-accent); transform: scale(1); } }
+        .workout-card-enter { animation: workoutCardEnter 520ms cubic-bezier(.16,1,.3,1) both; }
+        .check-pop { animation: checkPop 480ms cubic-bezier(.16,1,.3,1); }
+        .set-success-pulse { animation: setSuccessPulse 760ms ease-out; }
+        @media (prefers-reduced-motion: reduce) { .workout-card-enter, .check-pop, .set-success-pulse { animation: none !important; } }
+      `}</style>
