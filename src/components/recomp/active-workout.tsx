@@ -214,7 +214,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           const completed = exercise.sessionSets.every((set) => set.completed);
           const current = exercise.key === workout.currentKey && !completed;
           const expanded = current || expandedUpcoming === exercise.key;
-          return <div key={exercise.key} className="workout-card-enter" style={{ animationDelay: `${exerciseIndex * 90}ms` }}><ExerciseCard
+          return <div key={exercise.key} className="workout-card-enter" style={{ animationDelay: `${exerciseIndex * 120}ms` }}><ExerciseCard
             exercise={exercise}
             current={current}
             completed={completed}
@@ -358,7 +358,7 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
       <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>
       <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
       <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
-      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground check-pop" : "border-border text-muted-foreground")}><Check className={cn("size-4 transition-all duration-300", set.completed ? "scale-100 rotate-0 opacity-100" : "scale-50 -rotate-45 opacity-35")} strokeWidth={3} /></button>
+      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground check-pop" : "border-border text-muted-foreground")}><span className={cn("block text-lg font-black leading-none transition-all duration-200", set.completed ? "scale-100 opacity-100" : "scale-75 opacity-25")} aria-hidden="true">✓</span></button>
     </div>
   </div>;
 }
@@ -471,10 +471,10 @@ function SummaryMetric({ label, value }: { label: string; value: string }) { ret
 
 
       <style>{`
-        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(18px) scale(.985); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes checkPop { 0% { transform: scale(.55) rotate(-35deg); } 60% { transform: scale(1.22) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
-        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 35% { background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-card)); transform: scale(1.012); } 100% { background-color: var(--color-accent); transform: scale(1); } }
-        .workout-card-enter { animation: workoutCardEnter 520ms cubic-bezier(.16,1,.3,1) both; }
+        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes checkPop { 0% { transform: scale(.45); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
+        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 30% { background-color: rgba(34,197,94,.24); transform: scale(1.018); } 100% { background-color: var(--color-accent); transform: scale(1); } }
+        .workout-card-enter { animation: workoutCardEnter 650ms cubic-bezier(.16,1,.3,1) both; }
         .check-pop { animation: checkPop 480ms cubic-bezier(.16,1,.3,1); }
         .set-success-pulse { animation: setSuccessPulse 760ms ease-out; }
         @media (prefers-reduced-motion: reduce) { .workout-card-enter, .check-pop, .set-success-pulse { animation: none !important; } }
