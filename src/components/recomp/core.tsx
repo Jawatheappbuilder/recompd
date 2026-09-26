@@ -9,14 +9,14 @@ export function Screen({ children, className }: { children: ReactNode; className
   return <div className={cn("animate-screen px-4 pb-5 pt-[calc(1rem+env(safe-area-inset-top))]", className)}>{children}</div>;
 }
 
-export function Header({ title }: { title?: string }) {
+export function Header({ title, accent = false }: { title?: string; accent?: boolean }) {
   return (
-    <header className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+    <header className={cn("mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4", accent && "-mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] mb-5 bg-primary px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))]")}>
       <div className="min-w-0">
-        <div className="wordmark">RECOMP<span className="text-primary">'</span>D</div>
+        <div className={cn("wordmark", accent && "text-primary-foreground")}>RECOMP<span className={cn("text-primary", accent && "text-primary-foreground")}>'</span>D</div>
         {title ? <h1 className="mt-3 truncate text-2xl font-bold">{title}</h1> : null}
       </div>
-      <Button asChild aria-label="Settings" variant="surface" size="icon"><Link to="/settings"><Settings /></Link></Button>
+      <Button asChild aria-label="Settings" variant="surface" size="icon" className={cn(accent && "border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15")}><Link to="/settings"><Settings /></Link></Button>
     </header>
   );
 }
