@@ -24,6 +24,9 @@ function WorkoutPage() {
 
   useEffect(() => {
     if (!hydrated || !workout || user?.id !== WIFEY_USER_ID) return;
+    const hypeKey = `recomp-wifey-hype-${workout.id}`;
+    if (sessionStorage.getItem(hypeKey)) return;
+    sessionStorage.setItem(hypeKey, "shown");
     setShowWifeyHype(true);
     const timer = window.setTimeout(() => setShowWifeyHype(false), 2600);
     return () => window.clearTimeout(timer);
