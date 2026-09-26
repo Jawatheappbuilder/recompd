@@ -118,7 +118,8 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const updatedExercise = nextExercises.find((item) => item.key === exercise.key);
     const completedExercise = updatedExercise?.sessionSets.every((row) => row.completed) ?? false;
     let currentKey = workout.currentKey;
-    let shouldRest = nextCompleted && !isCardioExercise(exercise);
+    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.every((row) => row.completed) : false;
+    let shouldRest = nextCompleted && !isCardioExercise(exercise) && hasMoreSetsHere;
     const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
 
     if (nextCompleted && updatedExercise && partner && !partner.sessionSets.every((row) => row.completed)) {
@@ -139,7 +140,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
-    if (shouldRest) setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true });
+    if (shouldRest) window.setTimeout(() => setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true }), 650);
   };
 
   const startExercise = (key: string) => {
@@ -210,12 +211,11 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
       <div className="mt-3 space-y-2">
-        {workout.exercises.map((exercise) => {
+        {workout.exercises.map((exercise, exerciseIndex) => {
           const completed = exercise.sessionSets.every((set) => set.completed);
           const current = exercise.key === workout.currentKey && !completed;
           const expanded = current || expandedUpcoming === exercise.key;
-          return <ExerciseCard
-            key={exercise.key}
+          return <div key={exercise.key} className="workout-card-enter" style={{ animationDelay: `${exerciseIndex * 120}ms` }}><ExerciseCard
             exercise={exercise}
             current={current}
             completed={completed}
@@ -229,7 +229,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
             onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
             onRest={() => setSheet({ kind: "rest", key: exercise.key })}
             onActions={() => setSheet({ kind: "actions", key: exercise.key })}
-          />;
+          /></div>;
         })}
       </div>
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
@@ -255,6 +255,15 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={removeExercise}>Remove</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <style>{`
+        @keyframes workoutCardEnter { 0% { opacity: 0; transform: translateY(28px) scale(.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes checkPop { 0% { transform: scale(.45); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
+        @keyframes setSuccessPulse { 0% { background-color: var(--color-card); } 30% { background-color: rgba(34,197,94,.24); transform: scale(1.018); } 100% { background-color: var(--color-accent); transform: scale(1); } }
+        .workout-card-enter { animation: workoutCardEnter 650ms cubic-bezier(.16,1,.3,1) both; }
+        .check-pop { animation: checkPop 480ms cubic-bezier(.16,1,.3,1); }
+        .set-success-pulse { animation: setSuccessPulse 760ms ease-out; }
+        @media (prefers-reduced-motion: reduce) { .workout-card-enter, .check-pop, .set-success-pulse { animation: none !important; } }
+      `}</style>
       <AlertDialog open={finishOpen} onOpenChange={setFinishOpen}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
           <AlertDialogHeader><AlertDialogTitle>Finish workout?</AlertDialogTitle><AlertDialogDescription>You still have {totalSets - completedSets} incomplete sets.</AlertDialogDescription></AlertDialogHeader>
@@ -353,13 +362,13 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent", !dragging && "transition-transform duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent set-success-pulse", !dragging && "transition-transform duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
       <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>
       <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
       <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
-      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border", set.completed ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground")}><Check className="size-4" strokeWidth={3} /></button>
+      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground check-pop" : "border-border text-muted-foreground")}><span className={cn("block text-lg font-black leading-none transition-all duration-200", set.completed ? "scale-100 opacity-100" : "scale-75 opacity-25")} aria-hidden="true">✓</span></button>
     </div>
   </div>;
 }
