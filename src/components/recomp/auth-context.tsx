@@ -14,6 +14,7 @@ type AuthContextValue = {
   /** Persists preferences to the signed-in profile and local cache. Throws on failure. */
   commitPreferences: (preferences: UserPreferences) => Promise<void>;
   signOut: () => Promise<void>;
+  finishDeletedAccount: () => Promise<void>;
   enterDemo: () => Promise<void>;
   exitDemo: () => void;
 };
@@ -74,6 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
+  const finishDeletedAccount = useCallback(async () => {
+    demoRef.current = false;
+    loadedFor.current = null;
+    setUser(null);
+    setPreferencesCloudUser(null);
+    clearUserPreferences();
+    clearCloudData();
+    setOnboardingComplete(false);
+    setStatus("signedOut");
+    // The auth user no longer exists server-side, so only clear the local session.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  }, []);
   const enterDemo = useCallback(async () => {
     setPreferencesCloudUser(null);
     saveUserPreferences({ ...defaultUserPreferences, name: "Alex", weeklyWorkoutTarget: 4, goals: ["Build muscle"], onboardingComplete: true, theme: "light" });
@@ -82,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const exitDemo = useCallback(() => { demoRef.current = false; leaveDemoData(); clearUserPreferences(); setOnboardingComplete(false); setStatus("signedOut"); }, []);
   const retryProfile = useCallback(() => { if (user) void loadProfile(user); }, [user, loadProfile]);
 
-  const value = useMemo(() => ({ status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo }), [status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo]);
+  const value = useMemo(() => ({ status, user, onboardingComplete, retryProfile, commitPreferences, signOut, finishDeletedAccount, enterDemo, exitDemo }), [status, user, onboardingComplete, retryProfile, commitPreferences, signOut, finishDeletedAccount, enterDemo, exitDemo]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
