@@ -85,7 +85,7 @@ function CountUpMetric({ value, label, accent }: { value: number; label: string;
     return () => cancelAnimationFrame(frame);
   }, [value]);
 
-  return <Metric value={String(displayValue)} label={label} accent={accent}/>;
+  return <Metric value={String(displayValue)} label={label} {...(accent !== undefined ? { accent } : {})}/>;
 }
 
 function TrainingTimeMetric({ seconds }: { seconds: number }) {
