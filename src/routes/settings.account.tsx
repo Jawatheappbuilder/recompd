@@ -27,7 +27,7 @@ function AccountPage() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      const { error } = await supabase.rpc("delete_my_account");
+      const { error } = await supabase.functions.invoke("delete-account");
       if (error) throw error;
       await supabase.auth.signOut({ scope: "local" });
       setPreferencesCloudUser(null);
