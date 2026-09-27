@@ -15,7 +15,7 @@ import {
   Unlink,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -77,6 +77,8 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [finishOpen, setFinishOpen] = useState(false);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean } | null>(null);
+  const restAudioRef = useRef<AudioContext | null>(null);
+  const restWasActiveRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -91,7 +93,27 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
 
   useEffect(() => {
-    if (rest && restRemaining === 0) setRest(null);
+    if (rest && restRemaining > 0) restWasActiveRef.current = true;
+    if (rest && restRemaining === 0) {
+      if (restWasActiveRef.current) {
+        const audio = restAudioRef.current;
+        if (audio && audio.state === "running") {
+          const oscillator = audio.createOscillator();
+          const gain = audio.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(660, audio.currentTime);
+          gain.gain.setValueAtTime(0.0001, audio.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.08, audio.currentTime + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.28);
+          oscillator.connect(gain);
+          gain.connect(audio.destination);
+          oscillator.start();
+          oscillator.stop(audio.currentTime + 0.3);
+        }
+      }
+      restWasActiveRef.current = false;
+      setRest(null);
+    }
   }, [rest, restRemaining]);
 
   const updateExercise = (key: string, updater: (exercise: ActiveExercise) => ActiveExercise) => {
@@ -140,7 +162,15 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
-    if (shouldRest) window.setTimeout(() => setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true }), 650);
+    if (shouldRest) {
+      const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) {
+        const audio = restAudioRef.current ?? new AudioContextClass();
+        restAudioRef.current = audio;
+        if (audio.state === "suspended") void audio.resume();
+      }
+      window.setTimeout(() => setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true }), 650);
+    }
   };
 
   const startExercise = (key: string) => {
@@ -221,7 +251,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
             completed={completed}
             expanded={expanded}
             pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
-            onToggle={() => { if (!current && !completed) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
+            onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
             onStart={() => startExercise(exercise.key)}
             onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
             onToggleSet={(set) => toggleSet(exercise, set)}
@@ -289,7 +319,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
   return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/50 bg-primary/[0.04]", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
     <button type="button" className="grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 text-left" onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
-      <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!completed && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
+      <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
