@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Dumbbell, Hammer, House } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/recomp/auth-context";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ const signedOutRoutes = ["/welcome", "/create-account", "/login", "/forgot-passw
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
+  const previousPath = useRef(pathname);
+  const isTopLevel = destinations.some(({ to }) => to === "/" ? pathname === "/" : pathname === to);
+  const previousWasTopLevel = destinations.some(({ to }) => to === "/" ? previousPath.current === "/" : previousPath.current === to);
+  const transitionClass = isTopLevel && previousWasTopLevel ? "recomp-tab-transition" : "recomp-push-transition";
+
+  useEffect(() => { previousPath.current = pathname; }, [pathname]);
   const { status, onboardingComplete, retryProfile, signOut } = useAuth();
   const signedOutRoute = signedOutRoutes.includes(pathname);
   const onboardingRoute = pathname.startsWith("/onboarding");
@@ -44,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <><style>{pageTransitionStyles}</style><div className="min-h-dvh bg-app-canvas">
       <div className="relative mx-auto min-h-dvh max-w-[430px] bg-background md:border-x md:border-border">
         {status === "profileError" && !resetRoute ? <ProfileError onRetry={retryProfile} onSignOut={() => void signOut()} /> : blocked ? <AuthLoading /> : <>
-          <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}><div key={pathname} className="recomp-page-transition">{children}</div></main>
+          <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}><div key={pathname} className={transitionClass}>{children}</div></main>
           {!entryRoute && <BottomNavigation />}
         </>}
       </div>
@@ -81,15 +87,24 @@ export function BottomNavigation() {
 
 
 const pageTransitionStyles = `
-@keyframes recompPageEnter {
-  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+@keyframes recompTabEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes recompPushEnter {
+  from { opacity: 0.72; transform: translate3d(18px, 0, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-.recomp-page-transition {
-  animation: recompPageEnter 220ms cubic-bezier(.22,.61,.36,1) both;
+.recomp-tab-transition {
+  animation: recompTabEnter 170ms ease-out both;
+}
+.recomp-push-transition {
+  animation: recompPushEnter 240ms cubic-bezier(.22,.61,.36,1) both;
+}
+.recomp-tab-transition, .recomp-push-transition {
   will-change: opacity, transform;
 }
 @media (prefers-reduced-motion: reduce) {
-  .recomp-page-transition { animation: none; }
+  .recomp-tab-transition, .recomp-push-transition { animation: none; }
 }
 `;
