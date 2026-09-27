@@ -16,16 +16,16 @@ export const Route = createFileRoute("/settings/account")({
 function AccountPage() {
   const [confirming, setConfirming] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const { user, signOut } = useAuth(); const navigate = useNavigate();
+  const { user, signOut, finishDeletedAccount } = useAuth(); const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const handleDelete = async () => {
     setDeleting(true);
     try {
       await requestAccountDeletion();
       try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
-      await signOut().catch(() => undefined);
-      toast.success("Your account has been deleted.");
+      await finishDeletedAccount();
       void navigate({ to: "/welcome", replace: true });
+      toast.success("Your account has been deleted.");
     } catch { toast.error("Couldn't delete your account. Please try again."); setDeleting(false); }
   };
   const handleSignOut = async () => {
