@@ -9,6 +9,7 @@ import { Screen } from "@/components/recomp/core";
 import { SettingsHeader, SettingsRow, SettingsSection } from "@/components/recomp/settings-ui";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/settings/account")({
   head: () => ({ meta: [{ title: "Account — RECOMP'D" }, { name: "description", content: "Account and sync status for RECOMP'D." }, { property: "og:title", content: "Account — RECOMP'D" }, { property: "og:description", content: "View your RECOMP'D account status." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -23,7 +24,11 @@ function AccountPage() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteAccountFn();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("No authenticated session");
+      await deleteAccountFn({
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
       await signOut().catch(() => undefined);
       toast.success("Your account has been deleted.");
