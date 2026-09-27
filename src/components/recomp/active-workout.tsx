@@ -1,5 +1,6 @@
 import {
   Check,
+  GripVertical,
   ChevronDown,
   ChevronUp,
   CircleCheck,
@@ -15,6 +16,25 @@ import {
   Unlink,
   X,
 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -77,8 +97,14 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [finishOpen, setFinishOpen] = useState(false);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean } | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const restAudioRef = useRef<AudioContext | null>(null);
   const restWasActiveRef = useRef(false);
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -219,6 +245,14 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     setRemoveKey(null);
   };
 
+  const reorderExercises = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const from = workout.exercises.findIndex((exercise) => exercise.key === active.id);
+    const to = workout.exercises.findIndex((exercise) => exercise.key === over.id);
+    if (from < 0 || to < 0) return;
+    onChange({ ...workout, exercises: arrayMove(workout.exercises, from, to) });
+  };
+
   const finishWorkout = () => {
     const result: FinishedWorkout = {
       workout,
@@ -240,28 +274,46 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     <>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <div className="mt-3 space-y-2">
-        {workout.exercises.map((exercise, exerciseIndex) => {
-          const completed = exercise.sessionSets.every((set) => set.completed);
-          const current = exercise.key === workout.currentKey && !completed;
-          const expanded = current || expandedUpcoming === exercise.key;
-          return <div key={exercise.key} className="workout-card-enter" style={{ animationDelay: `${exerciseIndex * 120}ms` }}><ExerciseCard
-            exercise={exercise}
-            current={current}
-            completed={completed}
-            expanded={expanded}
-            pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
-            onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
-            onStart={() => startExercise(exercise.key)}
-            onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
-            onToggleSet={(set) => toggleSet(exercise, set)}
-            onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.at(-1)?.weight ?? "", reps: item.sessionSets.at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
-            onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
-            onRest={() => setSheet({ kind: "rest", key: exercise.key })}
-            onActions={() => setSheet({ kind: "actions", key: exercise.key })}
-          /></div>;
-        })}
-      </div>
+      <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
+        <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
+          <div className="mt-3 space-y-2">
+            {workout.exercises.map((exercise, exerciseIndex) => {
+              const completed = exercise.sessionSets.every((set) => set.completed);
+              const current = exercise.key === workout.currentKey && !completed;
+              const expanded = current || expandedUpcoming === exercise.key;
+              return <SortableActiveExercise key={exercise.key} exercise={exercise} index={exerciseIndex}><ExerciseCard
+                exercise={exercise}
+                current={current}
+                completed={completed}
+                expanded={expanded}
+                pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
+                onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
+                onStart={() => startExercise(exercise.key)}
+                onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
+                onToggleSet={(set) => toggleSet(exercise, set)}
+                onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.at(-1)?.weight ?? "", reps: item.sessionSets.at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
+                onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
+                onRest={() => setSheet({ kind: "rest", key: exercise.key })}
+                onActions={() => setSheet({ kind: "actions", key: exercise.key })}
+              /></SortableActiveExercise>;
+            })}
+          </div>
+        </SortableContext>
+        <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
+          {draggingKey && (() => {
+            const dragged = workout.exercises.find((exercise) => exercise.key === draggingKey);
+            if (!dragged) return null;
+            const done = dragged.sessionSets.filter((set) => set.completed).length;
+            return <Card className="w-[calc(100vw-2rem)] max-w-[398px] border-primary/35 bg-card px-3 py-3 shadow-xl">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
+                <GripVertical className="size-4 text-muted-foreground" />
+                <div className="min-w-0"><div className="truncate text-sm font-extrabold">{dragged.name}</div><div className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{dragged.muscle} · {dragged.equipment}</div></div>
+                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{dragged.sessionSets.length}</span>
+              </div>
+            </Card>;
+          })()}
+        </DragOverlay>
+      </DndContext>
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
       <Button variant="surface" className="mt-2 w-full" onClick={() => setSheet({ kind: "addCardio" })}><Plus /> Add cardio</Button>
       <Button variant="ghost" size="sm" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>Cancel workout</Button>
@@ -311,13 +363,23 @@ function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixe
   </header>;
 }
 
+function SortableActiveExercise({ exercise, index, children }: { exercise: ActiveExercise; index: number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercise.key });
+  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "opacity-25")} >
+    <button type="button" aria-label={`Reorder ${exercise.name}, position ${index + 1}`} className="absolute left-1 top-2 z-10 grid size-10 touch-none place-items-center rounded-lg text-muted-foreground/70 focus-visible:outline-none focus-visible:text-primary" {...attributes} {...listeners}>
+      <GripVertical className="size-4" />
+    </button>
+    {children}
+  </div>;
+}
+
 function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onRemoveSet, onRest, onActions }: {
   exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined;
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void;
 }) {
   const done = exercise.sessionSets.filter((set) => set.completed).length;
-  return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/50 bg-primary/[0.04]", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
-    <button type="button" className="grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 text-left" onClick={onToggle}>
+  return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/35", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
+    <button type="button" className={cn("grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pl-11 pr-3 text-left transition-colors", current && "bg-primary/[0.16] dark:bg-primary/[0.20]")} onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
       <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
