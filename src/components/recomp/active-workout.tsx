@@ -349,7 +349,7 @@ function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixe
 
 function SortableActiveExercise({ exercise, index, children }: { exercise: ActiveExercise; index: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercise.key });
-  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative workout-card-enter", isDragging && "z-30 opacity-90")} >
+  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "z-30 opacity-90")} >
     <button type="button" aria-label={`Reorder ${exercise.name}, position ${index + 1}`} className="absolute left-1 top-2 z-10 grid size-10 touch-none place-items-center rounded-lg text-muted-foreground/70 focus-visible:outline-none focus-visible:text-primary" {...attributes} {...listeners}>
       <GripVertical className="size-4" />
     </button>
