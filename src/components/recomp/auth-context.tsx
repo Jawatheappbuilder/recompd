@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const loadedFor = useRef<string | null>(null);
   const demoRef = useRef(false);
+  const recoveryRef = useRef(false);
 
   const loadProfile = useCallback(async (nextUser: User) => {
     setStatus("loading");
@@ -45,7 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") recoveryRef.current = true;
       const nextUser = session?.user ?? null;
       setUser(nextUser);
       if (!nextUser) {
@@ -56,6 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearCloudData();
         setOnboardingComplete(false);
         setStatus("signedOut");
+        return;
+      }
+      if (event === "PASSWORD_RECOVERY" || recoveryRef.current) {
+        setStatus("signedIn");
+        if (window.location.pathname !== "/reset-password") {
+          window.location.replace("/reset-password");
+        }
         return;
       }
       if (loadedFor.current === nextUser.id) return;
@@ -74,9 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnboardingComplete(preferences.onboardingComplete);
   }, [user]);
 
-  const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
+  const signOut = useCallback(async () => { recoveryRef.current = false; await supabase.auth.signOut(); }, []);
   const finishDeletedAccount = useCallback(async () => {
     demoRef.current = false;
+    recoveryRef.current = false;
     loadedFor.current = null;
     setUser(null);
     setPreferencesCloudUser(null);
