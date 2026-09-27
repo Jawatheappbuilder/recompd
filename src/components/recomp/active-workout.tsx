@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import {
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
@@ -96,6 +97,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [finishOpen, setFinishOpen] = useState(false);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean } | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const restAudioRef = useRef<AudioContext | null>(null);
   const restWasActiveRef = useRef(false);
   const reorderSensors = useSensors(
@@ -272,7 +274,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     <>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragEnd={reorderExercises}>
+      <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
           <div className="mt-3 space-y-2">
             {workout.exercises.map((exercise, exerciseIndex) => {
@@ -297,6 +299,20 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
             })}
           </div>
         </SortableContext>
+        <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
+          {draggingKey && (() => {
+            const dragged = workout.exercises.find((exercise) => exercise.key === draggingKey);
+            if (!dragged) return null;
+            const done = dragged.sessionSets.filter((set) => set.completed).length;
+            return <Card className="w-[calc(100vw-2rem)] max-w-[398px] border-primary/35 bg-card px-3 py-3 shadow-xl">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
+                <GripVertical className="size-4 text-muted-foreground" />
+                <div className="min-w-0"><div className="truncate text-sm font-extrabold">{dragged.name}</div><div className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{dragged.muscle} · {dragged.equipment}</div></div>
+                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{dragged.sessionSets.length}</span>
+              </div>
+            </Card>;
+          })()}
+        </DragOverlay>
       </DndContext>
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
       <Button variant="surface" className="mt-2 w-full" onClick={() => setSheet({ kind: "addCardio" })}><Plus /> Add cardio</Button>
@@ -349,7 +365,7 @@ function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixe
 
 function SortableActiveExercise({ exercise, index, children }: { exercise: ActiveExercise; index: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercise.key });
-  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "z-30 opacity-90")} >
+  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "opacity-25")} >
     <button type="button" aria-label={`Reorder ${exercise.name}, position ${index + 1}`} className="absolute left-1 top-2 z-10 grid size-10 touch-none place-items-center rounded-lg text-muted-foreground/70 focus-visible:outline-none focus-visible:text-primary" {...attributes} {...listeners}>
       <GripVertical className="size-4" />
     </button>
