@@ -341,7 +341,7 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
   };
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
     if (!touchStart || !canRemove || set.completed) return;
-    const touch = event.touches[0];
+    const touch = event.touches[0]; if (!touch) return;
     const dx = touch.clientX - touchStart.x;
     const dy = touch.clientY - touchStart.y;
     if (!dragging && Math.abs(dx) < 8) return;

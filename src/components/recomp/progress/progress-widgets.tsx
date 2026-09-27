@@ -59,7 +59,7 @@ function CountUpStat({ value, label, accent }: { value: number; label: string; a
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <Stat value={String(displayValue)} label={label} accent={accent} />;
+  return <Stat value={String(displayValue)} label={label} {...(accent !== undefined ? { accent } : {})} />;
 }
 
 function CountUpDurationStat({ seconds, label }: { seconds: number; label: string }) {
