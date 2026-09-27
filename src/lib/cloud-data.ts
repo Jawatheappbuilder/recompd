@@ -173,6 +173,24 @@ export async function loadDemoData() {
 export function leaveDemoData() { demoMode = false; userId = null; data = null; notify(); }
 export const isDemoData = () => demoMode;
 
+const DEMO_IMPORT_KEY = "recomp-pending-demo-import-v1";
+export function stageDemoImport() { if (demoMode && data) localStorage.setItem(DEMO_IMPORT_KEY, JSON.stringify(data)); }
+export function clearStagedDemoImport() { localStorage.removeItem(DEMO_IMPORT_KEY); }
+export function hasStagedDemoImport() { return !!localStorage.getItem(DEMO_IMPORT_KEY); }
+export async function importStagedDemoData() {
+  if (!userId) return false;
+  const staged = readJson<CloudData>(DEMO_IMPORT_KEY); if (!staged) return false;
+  const ops: Op[] = [
+    ...staged.workouts.map((workout) => ({ kind: "upsertWorkout" as const, workout })),
+    ...staged.bodyweight.map((entry) => ({ kind: "upsertBodyweight" as const, entry })),
+    ...staged.saved.map((workout) => ({ kind: "upsertSaved" as const, workout })),
+    ...staged.custom.map((exercise) => ({ kind: "upsertCustom" as const, exercise })),
+    ...staged.scheduled.map((workout) => ({ kind: "upsertScheduled" as const, workout })),
+  ];
+  for (const op of ops) { commit(apply(data ?? { workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [] }, op)); await run(op); }
+  localStorage.removeItem(DEMO_IMPORT_KEY); return true;
+}
+
 export function clearCloudData() {
   if (userId) localStorage.removeItem(snapshotKey(userId));
   userId = null; demoMode = false; data = null; notify();

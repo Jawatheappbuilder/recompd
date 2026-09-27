@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   let target: "/welcome" | "/onboarding/about" | "/" | null = null;
   if (status === "signedOut" && !signedOutRoute && !resetRoute && !shareRoute) target = "/welcome";
-  if (status === "demo" && (signedOutRoute || onboardingRoute)) target = "/";
+  if (status === "demo" && ((signedOutRoute && pathname !== "/create-account") || onboardingRoute)) target = "/";
   if (status === "signedIn" && !resetRoute) {
     if (!onboardingComplete && !onboardingRoute) target = "/onboarding/about";
     if (onboardingComplete && (signedOutRoute || onboardingRoute)) target = "/";
