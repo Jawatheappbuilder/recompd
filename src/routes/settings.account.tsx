@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { deleteAccount } from "@/lib/account.functions";
+import { requestAccountDeletion } from "@/lib/account-api";
 import { Cloud, KeyRound, LogOut, Mail, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,11 +18,10 @@ function AccountPage() {
   const [signingOut, setSigningOut] = useState(false);
   const { user, signOut } = useAuth(); const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
-  const deleteAccountFn = useServerFn(deleteAccount);
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteAccountFn();
+      await requestAccountDeletion();
       try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
       await signOut().catch(() => undefined);
       toast.success("Your account has been deleted.");
