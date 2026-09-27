@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const loadedFor = useRef<string | null>(null);
+  const demoRef = useRef(false);
 
   const loadProfile = useCallback(async (nextUser: User) => {
     setStatus("loading");
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextUser = session?.user ?? null;
       setUser(nextUser);
       if (!nextUser) {
-        if (status === "demo") return;
+        if (demoRef.current) return;
         loadedFor.current = null;
         setPreferencesCloudUser(null);
         clearUserPreferences();
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sync = () => { if (loadedFor.current) setOnboardingComplete(loadUserPreferences().onboardingComplete); };
     window.addEventListener("recomp-preferences-changed", sync);
     return () => { data.subscription.unsubscribe(); window.removeEventListener("recomp-preferences-changed", sync); };
-  }, [loadProfile, status]);
+  }, [loadProfile]);
 
   const commitPreferences = useCallback(async (preferences: UserPreferences) => {
     if (!user) throw new Error("Not signed in");
@@ -75,9 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const enterDemo = useCallback(async () => {
     setPreferencesCloudUser(null);
     saveUserPreferences({ ...defaultUserPreferences, name: "Alex", weeklyWorkoutTarget: 4, goals: ["Build muscle"], onboardingComplete: true, theme: "light" });
-    await loadDemoData(); setOnboardingComplete(true); setStatus("demo");
+    await loadDemoData(); demoRef.current = true; setOnboardingComplete(true); setStatus("demo");
   }, []);
-  const exitDemo = useCallback(() => { leaveDemoData(); clearUserPreferences(); setOnboardingComplete(false); setStatus("signedOut"); }, []);
+  const exitDemo = useCallback(() => { demoRef.current = false; leaveDemoData(); clearUserPreferences(); setOnboardingComplete(false); setStatus("signedOut"); }, []);
   const retryProfile = useCallback(() => { if (user) void loadProfile(user); }, [user, loadProfile]);
 
   const value = useMemo(() => ({ status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo }), [status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo]);
