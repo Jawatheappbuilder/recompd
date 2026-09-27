@@ -47,7 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") recoveryRef.current = true;
+      // Recovery links can establish the session before this listener mounts. In that
+      // case Supabase reports INITIAL_SESSION, so also detect the recovery marker
+      // carried in the callback URL itself.
+      const callbackParams = new URLSearchParams(
+        window.location.hash.slice(1) + "&" + window.location.search.slice(1),
+      );
+      const isRecoveryCallback = callbackParams.get("type") === "recovery";
+      if (event === "PASSWORD_RECOVERY" || isRecoveryCallback) recoveryRef.current = true;
       const nextUser = session?.user ?? null;
       setUser(nextUser);
       if (!nextUser) {
@@ -60,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("signedOut");
         return;
       }
-      if (event === "PASSWORD_RECOVERY" || recoveryRef.current) {
+      if (event === "PASSWORD_RECOVERY" || isRecoveryCallback || recoveryRef.current) {
         setStatus("signedIn");
         if (window.location.pathname !== "/reset-password") {
           window.location.replace("/reset-password");
