@@ -43,6 +43,7 @@ import { Route as SettingsTrainingRouteImport } from './routes/settings.training
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
 import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
+import { Route as ApiPublicAccountDeleteRouteImport } from './routes/api/public/account/delete'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -214,6 +215,11 @@ const ProgressWorkoutIdRoute = ProgressWorkoutIdRouteImport.update({
   path: '/workout/$id',
   getParentRoute: () => ProgressRoute,
 } as any)
+const ApiPublicAccountDeleteRoute = ApiPublicAccountDeleteRouteImport.update({
+  id: '/api/public/account/delete',
+  path: '/api/public/account/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
+  '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
+  '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/settings/': typeof SettingsIndexRoute
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
+  '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
+    | '/api/public/account/delete'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
+    | '/api/public/account/delete'
   id:
     | '__root__'
     | '/'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
+    | '/api/public/account/delete'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -452,6 +464,7 @@ export interface RootRouteChildren {
   ScheduledIdRoute: typeof ScheduledIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
   SavedIndexRoute: typeof SavedIndexRoute
+  ApiPublicAccountDeleteRoute: typeof ApiPublicAccountDeleteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -694,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgressWorkoutIdRouteImport
       parentRoute: typeof ProgressRoute
     }
+    '/api/public/account/delete': {
+      id: '/api/public/account/delete'
+      path: '/api/public/account/delete'
+      fullPath: '/api/public/account/delete'
+      preLoaderRoute: typeof ApiPublicAccountDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -776,6 +796,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduledIdRoute: ScheduledIdRoute,
   ShareTokenRoute: ShareTokenRoute,
   SavedIndexRoute: SavedIndexRoute,
+  ApiPublicAccountDeleteRoute: ApiPublicAccountDeleteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
