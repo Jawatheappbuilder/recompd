@@ -41,14 +41,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const blocked = (status === "loading" && !resetRoute) || Boolean(target);
   return (
-    <div className="min-h-dvh bg-app-canvas">
+    <><style>{pageTransitionStyles}</style><div className="min-h-dvh bg-app-canvas">
       <div className="relative mx-auto min-h-dvh max-w-[430px] bg-background md:border-x md:border-border">
         {status === "profileError" && !resetRoute ? <ProfileError onRetry={retryProfile} onSignOut={() => void signOut()} /> : blocked ? <AuthLoading /> : <>
-          <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}>{children}</main>
+          <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}><div key={pathname} className="recomp-page-transition">{children}</div></main>
           {!entryRoute && <BottomNavigation />}
         </>}
       </div>
-    </div>
+    </div></>
   );
 }
 
@@ -78,3 +78,18 @@ export function BottomNavigation() {
     </nav>
   );
 }
+
+
+const pageTransitionStyles = `
+@keyframes recompPageEnter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.recomp-page-transition {
+  animation: recompPageEnter 220ms cubic-bezier(.22,.61,.36,1) both;
+  will-change: opacity, transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recomp-page-transition { animation: none; }
+}
+`;
