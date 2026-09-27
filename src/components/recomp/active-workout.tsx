@@ -275,9 +275,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 }
 
 function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixedTracking, onFinish }: { name: string; elapsed: number; progress: number; completedSets: number; totalSets: number; mixedTracking: boolean; onFinish: () => void }) {
-  return <header className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-xl">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h1 className="text-lg font-extrabold leading-tight">{name}</h1><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-muted-foreground"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15" onClick={onFinish}>Finish workout</Button></div>
-    <div className="mt-2 h-1 overflow-hidden rounded-full bg-track"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div>
+  return <header className="sticky top-0 z-20 -mx-4 bg-primary px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-primary-foreground">
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h1 className="text-lg font-extrabold leading-tight">{name}</h1><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
+    <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/25"><div className="h-full bg-primary-foreground transition-[width]" style={{ width: `${progress}%` }} /></div>
   </header>;
 }
 
