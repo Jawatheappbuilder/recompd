@@ -347,7 +347,7 @@ function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixe
 function SortableActiveExercise({ exercise, index, children }: { exercise: ActiveExercise; index: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercise.key });
   return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative workout-card-enter", isDragging && "z-30 opacity-90")} >
-    <button type="button" aria-label={`Reorder ${exercise.name}, position ${index + 1}`} className="absolute right-11 top-2 z-10 grid size-10 touch-none place-items-center rounded-lg text-muted-foreground/70 focus-visible:outline-none focus-visible:text-primary" {...attributes} {...listeners}>
+    <button type="button" aria-label={`Reorder ${exercise.name}, position ${index + 1}`} className="absolute left-1 top-2 z-10 grid size-10 touch-none place-items-center rounded-lg text-muted-foreground/70 focus-visible:outline-none focus-visible:text-primary" {...attributes} {...listeners}>
       <GripVertical className="size-4" />
     </button>
     {children}
@@ -360,7 +360,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
 }) {
   const done = exercise.sessionSets.filter((set) => set.completed).length;
   return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/35", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
-    <button type="button" className={cn("grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 pr-12 text-left transition-colors", current && "bg-primary/[0.10] dark:bg-primary/[0.14]")} onClick={onToggle}>
+    <button type="button" className={cn("grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pl-11 pr-3 text-left transition-colors", current && "bg-primary/[0.16] dark:bg-primary/[0.20]")} onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
       <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
