@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2 } from "lucide-react";
+import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -340,13 +340,16 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false} dismissible={!creating}>
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false} dismissible>
       <DrawerContent className="mx-auto h-[86dvh] max-w-[430px] overflow-hidden rounded-t-2xl bg-popover">
         <DrawerHeader className="flex-row items-center justify-between pb-2 text-left">
           <DrawerTitle>{creating ? "Custom exercise" : "Add exercise"}</DrawerTitle>
-          <Button variant="ghost" size="sm" className="-mr-2 px-2 text-primary" onClick={() => setCreating((value) => !value)}>
-            {creating ? "Library" : <><Plus /> Create custom exercise</>}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="px-2 text-primary" onClick={() => setCreating((value) => !value)}>
+              {creating ? "Library" : <><Plus /> Create custom exercise</>}
+            </Button>
+            {creating && <Button variant="ghost" size="icon" className="-mr-2 size-9 text-muted-foreground" aria-label="Close custom exercise" onClick={() => onOpenChange(false)}><X className="size-5" /></Button>}
+          </div>
         </DrawerHeader>
         {creating ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" onTouchMove={(event) => event.stopPropagation()}>
