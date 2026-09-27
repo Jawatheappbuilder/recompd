@@ -17,9 +17,12 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as OnboardingAboutRouteImport } from './routes/onboarding.about'
@@ -81,6 +84,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -94,6 +102,16 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -206,9 +224,12 @@ export interface FileRoutesByFullPath {
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
@@ -239,7 +260,10 @@ export interface FileRoutesByTo {
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
@@ -271,9 +295,12 @@ export interface FileRoutesById {
   '/generated-workout': typeof GeneratedWorkoutRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
@@ -306,9 +333,12 @@ export interface FileRouteTypes {
     | '/generated-workout'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/progress'
     | '/reset-password'
     | '/settings'
+    | '/support'
+    | '/terms'
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
@@ -339,7 +369,10 @@ export interface FileRouteTypes {
     | '/generated-workout'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/reset-password'
+    | '/support'
+    | '/terms'
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
@@ -370,9 +403,12 @@ export interface FileRouteTypes {
     | '/generated-workout'
     | '/login'
     | '/onboarding'
+    | '/privacy'
     | '/progress'
     | '/reset-password'
     | '/settings'
+    | '/support'
+    | '/terms'
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
@@ -404,9 +440,12 @@ export interface RootRouteChildren {
   GeneratedWorkoutRoute: typeof GeneratedWorkoutRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
   ProgressRoute: typeof ProgressRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  SupportRoute: typeof SupportRoute
+  TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
   WorkoutRoute: typeof WorkoutRoute
   SavedIdRoute: typeof SavedIdRoute
@@ -473,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress': {
       id: '/progress'
       path: '/progress'
@@ -492,6 +538,20 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome': {
@@ -704,9 +764,12 @@ const rootRouteChildren: RootRouteChildren = {
   GeneratedWorkoutRoute: GeneratedWorkoutRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
   ProgressRoute: ProgressRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  SupportRoute: SupportRoute,
+  TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
   WorkoutRoute: WorkoutRoute,
   SavedIdRoute: SavedIdRoute,

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteAccount } from "@/lib/account.functions";
 import { Cloud, KeyRound, LogOut, Mail, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,6 +18,18 @@ function AccountPage() {
   const [confirming, setConfirming] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { user, signOut } = useAuth(); const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccountFn = useServerFn(deleteAccount);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccountFn();
+      try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
+      await signOut().catch(() => undefined);
+      toast.success("Your account has been deleted.");
+      void navigate({ to: "/welcome", replace: true });
+    } catch { toast.error("Couldn't delete your account. Please try again."); setDeleting(false); }
+  };
   const handleSignOut = async () => {
     setSigningOut(true);
     try { await signOut(); void navigate({ to: "/welcome", replace: true }); } catch { toast.error("Couldn't sign out. Please try again."); } finally { setSigningOut(false); }
@@ -23,7 +37,7 @@ function AccountPage() {
   return <Screen><SettingsHeader title="Account" /><div className="space-y-5">
     <SettingsSection title="Account"><SettingsRow icon={Mail} label="Email" value={user?.email ?? "—"} /><SettingsRow icon={KeyRound} label="Change password" value="Coming later" disabled /><SettingsRow icon={Cloud} label="Profile sync" value="Saved to account" /></SettingsSection>
     <SettingsSection title="Session"><SettingsRow icon={LogOut} label={signingOut ? "Signing out…" : "Sign out"} onClick={() => void handleSignOut()} /></SettingsSection>
-    <section className="space-y-2 pt-2"><h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.13em] text-destructive">Danger zone</h2><Button variant="surface" className="h-12 w-full justify-start border-destructive/40 text-destructive" onClick={() => setConfirming(true)}><Trash2 />Delete account</Button><p className="px-1 text-[0.68rem] leading-relaxed text-muted-foreground">Account deletion will be available in a later update.</p></section>
-    <AlertDialog open={confirming} onOpenChange={setConfirming}><AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover"><AlertDialogHeader><AlertDialogTitle>Delete account?</AlertDialogTitle><AlertDialogDescription>Account deletion isn't available yet, so nothing will be deleted.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => setConfirming(false)}>I understand</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <section className="space-y-2 pt-2"><h2 className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.13em] text-destructive">Danger zone</h2><Button variant="surface" className="h-12 w-full justify-start border-destructive/40 text-destructive" onClick={() => setConfirming(true)}><Trash2 />Delete account</Button></section>
+    <AlertDialog open={confirming} onOpenChange={(o) => !deleting && setConfirming(o)}><AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover"><AlertDialogHeader><AlertDialogTitle>Delete account?</AlertDialogTitle><AlertDialogDescription>This permanently deletes your account and all your workouts, progress and saved data. This can't be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" disabled={deleting} onClick={(e) => { e.preventDefault(); void handleDelete(); }}>{deleting ? "Deleting…" : "Delete account"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div></Screen>;
 }
