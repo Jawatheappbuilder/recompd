@@ -29,6 +29,7 @@ type Op =
   | { kind: "deleteScheduled"; id: string };
 
 let userId: string | null = null;
+let demoMode = false;
 let data: CloudData | null = null;
 let flushing = false;
 const listeners = new Set<() => void>();
@@ -164,9 +165,17 @@ export async function loadCloudData(id: string) {
   }
 }
 
+export async function loadDemoData() {
+  demoMode = true; userId = null;
+  const { createDemoData } = await import("./demo-data");
+  commit(createDemoData());
+}
+export function leaveDemoData() { demoMode = false; userId = null; data = null; notify(); }
+export const isDemoData = () => demoMode;
+
 export function clearCloudData() {
   if (userId) localStorage.removeItem(snapshotKey(userId));
-  userId = null; data = null; notify();
+  userId = null; demoMode = false; data = null; notify();
 }
 
 function apply(d: CloudData, op: Op): CloudData {
@@ -186,9 +195,9 @@ function apply(d: CloudData, op: Op): CloudData {
 
 /** Optimistically applies a change and syncs it to the account in the background. */
 export function mutate(op: Op) {
-  if (!data || !userId) return;
+  if (!data) return;
   commit(apply(data, op));
-  enqueue(op);
+  if (!demoMode && userId) enqueue(op);
 }
 
 export const getCloudData = () => data;
