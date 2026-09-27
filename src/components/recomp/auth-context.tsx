@@ -1,11 +1,11 @@
 import type { User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { clearCloudData, loadCloudData } from "@/lib/cloud-data";
+import { clearCloudData, leaveDemoData, loadCloudData, loadDemoData } from "@/lib/cloud-data";
 import { fetchOrCreateProfile, saveProfile } from "@/lib/profile";
-import { clearUserPreferences, loadUserPreferences, saveUserPreferences, setPreferencesCloudUser, type UserPreferences } from "@/lib/user-preferences";
+import { clearUserPreferences, defaultUserPreferences, loadUserPreferences, saveUserPreferences, setPreferencesCloudUser, type UserPreferences } from "@/lib/user-preferences";
 
-type AuthStatus = "loading" | "signedOut" | "signedIn" | "profileError";
+type AuthStatus = "loading" | "signedOut" | "signedIn" | "demo" | "profileError";
 type AuthContextValue = {
   status: AuthStatus;
   user: User | null;
@@ -14,6 +14,8 @@ type AuthContextValue = {
   /** Persists preferences to the signed-in profile and local cache. Throws on failure. */
   commitPreferences: (preferences: UserPreferences) => Promise<void>;
   signOut: () => Promise<void>;
+  enterDemo: () => Promise<void>;
+  exitDemo: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -23,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const loadedFor = useRef<string | null>(null);
+  const demoRef = useRef(false);
 
   const loadProfile = useCallback(async (nextUser: User) => {
     setStatus("loading");
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextUser = session?.user ?? null;
       setUser(nextUser);
       if (!nextUser) {
+        if (demoRef.current) return;
         loadedFor.current = null;
         setPreferencesCloudUser(null);
         clearUserPreferences();
@@ -69,9 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
+  const enterDemo = useCallback(async () => {
+    setPreferencesCloudUser(null);
+    saveUserPreferences({ ...defaultUserPreferences, name: "Alex", weeklyWorkoutTarget: 4, goals: ["Build muscle"], onboardingComplete: true, theme: "light" });
+    await loadDemoData(); demoRef.current = true; setOnboardingComplete(true); setStatus("demo");
+  }, []);
+  const exitDemo = useCallback(() => { demoRef.current = false; leaveDemoData(); clearUserPreferences(); setOnboardingComplete(false); setStatus("signedOut"); }, []);
   const retryProfile = useCallback(() => { if (user) void loadProfile(user); }, [user, loadProfile]);
 
-  const value = useMemo(() => ({ status, user, onboardingComplete, retryProfile, commitPreferences, signOut }), [status, user, onboardingComplete, retryProfile, commitPreferences, signOut]);
+  const value = useMemo(() => ({ status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo }), [status, user, onboardingComplete, retryProfile, commitPreferences, signOut, enterDemo, exitDemo]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
