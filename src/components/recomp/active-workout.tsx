@@ -335,7 +335,7 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
   };
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     if (!canRemove || set.completed) return;
-    const touch = event.touches[0];
+    const touch = event.touches[0]; if (!touch) return;
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setDragging(false);
   };
