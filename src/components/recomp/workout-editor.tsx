@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X } from "lucide-react";
+import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 const repRanges = ["4–6", "6–8", "8–10", "10–12", "12–15", "15–20"];
 const cardioDurations = [300, 600, 900, 1200, 1800, 2700, 3600];
 
-type SheetState = { kind: "closed" } | { kind: "superset"; key: string } | { kind: "planGroup"; key: string } | { kind: "planCircuit"; key: string } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "duration"; key: string } | { kind: "add" };
+type SheetState = { kind: "closed" } | { kind: "actions"; key: string } | { kind: "superset"; key: string } | { kind: "planGroup"; key: string } | { kind: "planCircuit"; key: string } | { kind: "replace"; key: string } | { kind: "reps"; key: string } | { kind: "duration"; key: string } | { kind: "add" };
 
 const matchesMuscle = (exercise: Exercise, muscle: Muscle) => exercise.muscle === muscle || !!exercise.muscles?.includes(muscle);
 
@@ -144,6 +144,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         onPair={pair}
         onUnlink={(key) => { unlink(key); setSheet({ kind: "closed" }); }}
       />}
+      {supersets && <Drawer open={sheet.kind==="actions"} onOpenChange={o=>!o&&setSheet({kind:"closed"})}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Exercise options</DrawerTitle></DrawerHeader>{sheet.kind==="actions"&&<div className="space-y-1 px-4 pb-4"><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planGroup",key:sheet.key})}><Link2/>Superset / tri-set</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planCircuit",key:sheet.key})}><span className="w-4 text-center">⏱</span>Timed circuit</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"superset",key:sheet.key})}><Link2/>Classic superset</Button></div>}</DrawerContent></Drawer>}
       {supersets && <PlanGroupDrawer exercise={sheet.kind==="planGroup"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,rest)=>{ const id=`group-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,groupId:id,groupRestSeconds:rest,supersetWith:undefined}:e)); setSheet({kind:"closed"}); }}/>}
       {supersets && <PlanCircuitDrawer exercise={sheet.kind==="planCircuit"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,work,rest,rounds)=>{ const id=`circuit-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,circuitId:id,circuitWorkSeconds:work,circuitRestSeconds:rest,circuitRounds:rounds,circuitReps:10}:e)); setSheet({kind:"closed"}); }}/>}
       <RepDrawer
@@ -169,7 +170,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
   );
 }
 
-function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onGroup, onCircuit, partnerName, linkedAbove, linkedBelow }: {
+function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onActions, partnerName, linkedAbove, linkedBelow }: {
   onSuperset: (() => void) | undefined;
   onGroup: (() => void) | undefined;
   onCircuit: (() => void) | undefined;
@@ -218,7 +219,7 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDurati
           </div>}
           {isCardioExercise(exercise) ? <Button variant="surface" size="sm" className="h-9 px-3 text-[0.7rem] tabular-nums" onClick={onDuration}>{Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min target</Button> : <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{exercise.reps} reps</Button>}
           <div className="flex items-center">
-            {onGroup && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", exercise.groupId && "text-primary")} aria-label={`Group ${exercise.name}`} onClick={onGroup}><Link2 /></Button>}{onCircuit && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", exercise.circuitId && "text-primary")} aria-label={`Circuit ${exercise.name}`} onClick={onCircuit}><span className="text-xs font-black">⏱</span></Button>}{onSuperset && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", partnerName && "text-primary")} aria-label={`Superset ${exercise.name}`} onClick={onSuperset}><Link2 /></Button>}
+            {onActions && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", (exercise.groupId||exercise.circuitId||partnerName) && "text-primary")} aria-label={`Options for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button>}{!onActions && onSuperset && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", partnerName && "text-primary")} aria-label={`Superset ${exercise.name}`} onClick={onSuperset}><Link2 /></Button>}
             <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Replace ${exercise.name}`} onClick={onReplace}><Shuffle /></Button>
           </div>
         </div>
