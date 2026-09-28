@@ -10,7 +10,7 @@ export type ActiveSet = {
   reps: string;
   completed: boolean;
   weightEdited: boolean;
-  kind?: "strength" | "cardio";
+  kind?: "strength" | "cardio" | "warmup";
   durationSeconds?: string;
   distanceKm?: string;
   speedKph?: string;

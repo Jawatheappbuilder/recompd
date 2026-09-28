@@ -112,11 +112,11 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   }, []);
 
   const elapsed = Math.max(0, Math.floor((now - workout.startedAt) / 1000));
-  const totalSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.length, 0);
-  const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed).length, 0);
-  const strengthSets = workout.exercises.reduce((sum, exercise) => sum + (isCardioExercise(exercise) ? 0 : exercise.sessionSets.filter((set) => set.completed).length), 0);
+  const totalSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.kind !== "warmup").length, 0);
+  const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length, 0);
+  const strengthSets = workout.exercises.reduce((sum, exercise) => sum + (isCardioExercise(exercise) ? 0 : exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length), 0);
   const progress = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
-  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.every((set) => set.completed));
+  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
 
   useEffect(() => {
@@ -165,15 +165,15 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       ? { ...item, sessionSets: item.sessionSets.map((row) => row.id === set.id ? { ...row, completed: nextCompleted } : row) }
       : item);
     const updatedExercise = nextExercises.find((item) => item.key === exercise.key);
-    const completedExercise = updatedExercise?.sessionSets.every((row) => row.completed) ?? false;
+    const completedExercise = updatedExercise?.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed) ?? false;
     let currentKey = workout.currentKey;
-    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.every((row) => row.completed) : false;
+    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed) : false;
     let shouldRest = nextCompleted && !isCardioExercise(exercise) && hasMoreSetsHere;
     const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
 
-    if (nextCompleted && updatedExercise && partner && !partner.sessionSets.every((row) => row.completed)) {
-      const completedHere = updatedExercise.sessionSets.filter((row) => row.completed).length;
-      const completedThere = partner.sessionSets.filter((row) => row.completed).length;
+    if (nextCompleted && updatedExercise && partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)) {
+      const completedHere = updatedExercise.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length;
+      const completedThere = partner.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length;
       if (completedThere < completedHere) {
         currentKey = partner.key;
         shouldRest = false;
@@ -183,9 +183,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }
 
     if (completedExercise && currentKey === exercise.key) {
-      currentKey = partner && !partner.sessionSets.every((row) => row.completed)
+      currentKey = partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)
         ? partner.key
-        : nextExercises.find((item) => !item.sessionSets.every((row) => row.completed))?.key ?? exercise.key;
+        : nextExercises.find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
@@ -201,10 +201,10 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   };
 
   const startExercise = (key: string) => {
-    const completed = workout.exercises.filter((exercise) => exercise.sessionSets.every((set) => set.completed));
+    const completed = workout.exercises.filter((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
     const selected = workout.exercises.find((exercise) => exercise.key === key);
     if (!selected) return;
-    const remaining = workout.exercises.filter((exercise) => exercise.key !== key && !exercise.sessionSets.every((set) => set.completed));
+    const remaining = workout.exercises.filter((exercise) => exercise.key !== key && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
     onChange({ ...workout, currentKey: key, exercises: [...completed, selected, ...remaining] });
     setExpandedUpcoming(null);
   };
@@ -241,7 +241,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       const { supersetWith: _supersetWith, ...unpaired } = exercise;
       return unpaired;
     });
-    const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
+    const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
     onChange({ ...workout, currentKey, exercises: remaining });
     setRemoveKey(null);
   };
@@ -258,9 +258,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const result: FinishedWorkout = {
       workout,
       duration: elapsed,
-      completedExercises: workout.exercises.filter((exercise) => exercise.sessionSets.every((set) => set.completed)).length,
+      completedExercises: workout.exercises.filter((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).length,
       totalSets: strengthSets,
-      volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed).reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
+      volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
     };
     localStorage.setItem("recomp-last-workout", JSON.stringify(result));
     recordCompletedWorkout(workout, elapsed);
@@ -279,7 +279,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
           <div className="mt-3 space-y-2">
             {workout.exercises.map((exercise, exerciseIndex) => {
-              const completed = exercise.sessionSets.every((set) => set.completed);
+              const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
               const current = exercise.key === workout.currentKey && !completed;
               const expanded = current || expandedUpcoming === exercise.key;
               return <SortableActiveExercise key={exercise.key} exercise={exercise} index={exerciseIndex}><ExerciseCard
@@ -292,7 +292,8 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 onStart={() => startExercise(exercise.key)}
                 onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
                 onToggleSet={(set) => toggleSet(exercise, set)}
-                onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.at(-1)?.weight ?? "", reps: item.sessionSets.at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
+                onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.weight ?? "", reps: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
+                onAddWarmup={() => updateExercise(exercise.key, (item) => { const firstWorking = item.sessionSets.findIndex((set) => set.kind !== "warmup"); const insertAt = firstWorking < 0 ? item.sessionSets.length : firstWorking; const warmups = item.sessionSets.filter((set) => set.kind === "warmup"); const next: ActiveSet = { id: `${item.key}-warmup-${Date.now()}`, weight: warmups.at(-1)?.weight ?? "", reps: warmups.at(-1)?.reps ?? "10", completed: false, weightEdited: false, kind: "warmup" }; return { ...item, sessionSets: [...item.sessionSets.slice(0, insertAt), next, ...item.sessionSets.slice(insertAt)] }; })}
                 onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
                 onRest={() => setSheet({ kind: "rest", key: exercise.key })}
                 onActions={() => setSheet({ kind: "actions", key: exercise.key })}
@@ -304,12 +305,13 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           {draggingKey && (() => {
             const dragged = workout.exercises.find((exercise) => exercise.key === draggingKey);
             if (!dragged) return null;
-            const done = dragged.sessionSets.filter((set) => set.completed).length;
+            const draggedWorking = dragged.sessionSets.filter((set) => set.kind !== "warmup");
+            const done = draggedWorking.filter((set) => set.completed).length;
             return <Card className="w-[calc(100vw-2rem)] max-w-[398px] border-primary/35 bg-card px-3 py-3 shadow-xl">
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
                 <GripVertical className="size-4 text-muted-foreground" />
                 <div className="min-w-0"><div className="truncate text-sm font-extrabold">{dragged.name}</div><div className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{dragged.muscle} · {dragged.equipment}</div></div>
-                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{dragged.sessionSets.length}</span>
+                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{draggedWorking.length}</span>
               </div>
             </Card>;
           })()}
@@ -378,22 +380,25 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
   </div>;
 }
 
-function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onRemoveSet, onRest, onActions }: {
+function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions }: {
   exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined;
-  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void;
+  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void;
 }) {
-  const done = exercise.sessionSets.filter((set) => set.completed).length;
+  const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
+  const warmupSets = exercise.sessionSets.filter((set) => set.kind === "warmup");
+  const done = workingSets.filter((set) => set.completed).length;
+  const workingStarted = workingSets.some((set) => set.completed);
   return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/35", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
     <button type="button" className={cn("grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pl-11 pr-3 text-left transition-colors", current && "bg-primary/[0.16] dark:bg-primary/[0.20]")} onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
-      <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{exercise.sessionSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
+      <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{workingSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
         {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
         <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
-        <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} active={current && index === exercise.sessionSets.findIndex((row) => !row.completed)} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
-        <div className="mt-2 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
+        <div className="space-y-1">{warmupSets.length > 0 && workingStarted && <div className="mb-1 rounded-lg bg-secondary/60 px-2 py-2 text-[0.68rem] font-bold text-muted-foreground">✓ {warmupSets.filter((set) => set.completed).length} of {warmupSets.length} warm-up sets</div>}{exercise.sessionSets.map((set) => { const isWarmup = set.kind === "warmup"; const warmupIndex = warmupSets.findIndex((row) => row.id === set.id); const workingIndex = workingSets.findIndex((row) => row.id === set.id); if (isWarmup && workingStarted) return null; return <SetRow key={set.id} set={set} number={isWarmup ? `W${warmupIndex + 1}` : workingIndex + 1} active={current && set.id === exercise.sessionSets.find((row) => !row.completed)?.id} canRemove={!isWarmup && workingSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />; })}</div>
+        <div className="mt-2 flex items-center justify-between gap-2"><div className="flex items-center gap-1"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddWarmup}><Plus /> Warm-up</Button></div><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
         <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
       </>}
       {isCardioExercise(exercise) && <div className="mt-2 flex justify-end"><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>}
@@ -409,7 +414,7 @@ function CardioFields({ exercise, set: session, onChange, onToggle }: { exercise
   return <div><div className="grid min-w-0 grid-cols-1 gap-x-2 gap-y-2 min-[390px]:grid-cols-2"><label className="block min-w-0 w-full text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">Duration (min)</span><input inputMode="decimal" value={session.durationSeconds ? Math.round(Number(session.durationSeconds) / 60) : ""} onChange={(event) => onChange({ durationSeconds: String((Number(event.target.value) || 0) * 60) })} className={cardioInput} /></label>{field("distance", "Distance (km)", "distanceKm")}{field("speed", "Speed (km/h)", "speedKph")}{field("pace", "Pace (/km)", "pace")}{field("incline", "Incline (%)", "incline")}{field("level", "Level", "level", "numeric")}{field("floors", "Floors", "floors", "numeric")}{field("steps", "Steps", "steps", "numeric")}{field("pace500m", "Pace /500m", "pace500m")}</div><Button variant={session.completed ? "primary" : "surface"} className="mt-3 w-full" onClick={onToggle}><Check />{session.completed ? "Cardio completed" : "Complete cardio"}</Button></div>;
 }
 
-function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; active: boolean; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
+function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number | string; active: boolean; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
   const [cleared, setCleared] = useState<{ field: "weight" | "reps"; previous: string } | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -459,7 +464,7 @@ function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] scale-[1.018] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", !dragging && "duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] scale-[1.018] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", set.kind === "warmup" && !set.completed && "bg-secondary/45 opacity-90", !dragging && "duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
       <span className={cn("text-center text-xs font-bold transition-colors", active ? "text-primary" : "text-muted-foreground")}>{number}</span>
@@ -498,7 +503,7 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   return <>
     <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[30, 45, 60, 90, 120, 150, 180].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds} sec</Button>)}</div></DrawerContent></Drawer>
     <ExercisePicker open={sheet.kind === "add"} onClose={onClose} onSelect={onAdd} />
     <CardioPicker open={sheet.kind === "addCardio"} onClose={onClose} onSelect={onAdd} />
