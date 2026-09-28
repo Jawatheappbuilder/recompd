@@ -468,7 +468,10 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
   const [swipeX, setSwipeX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const rowRef = useRef<HTMLDivElement | null>(null);\n  const attentionSeen = useRef(false);\n  const deleteWidth = 72;\n  useEffect(() => { if (attention && !attentionSeen.current) { attentionSeen.current = true; window.setTimeout(() => rowRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80); } if (!attention) attentionSeen.current = false; }, [attention]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const attentionSeen = useRef(false);
+  const deleteWidth = 72;
+  useEffect(() => { if (attention && !attentionSeen.current) { attentionSeen.current = true; window.setTimeout(() => rowRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80); } if (!attention) attentionSeen.current = false; }, [attention]);
   const focusField = (field: "weight" | "reps") => {
     setSwipeX(0);
     const value = String(set[field] ?? "");
