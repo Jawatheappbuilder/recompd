@@ -19,7 +19,7 @@ function SettingsPage() {
     <SettingsSection title="Profile"><SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} /></SettingsSection>
     <SettingsSection title="Training"><SettingsLink to="/settings/training" icon={SlidersHorizontal} label="Training preferences" value={`${preferences.weightUnit} · ${preferences.defaultRestSeconds}s`} /></SettingsSection>
     <SettingsSection title="Exercises"><SettingsLink to="/settings/exercises" icon={Dumbbell} label="Manage custom exercises" /></SettingsSection>
-    <SettingsSection title="Appearance"><SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={theme} /></SettingsSection>
+    <SettingsSection title="Appearance"><SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={`${theme} · ${preferences.accent === "blue" ? "Blue" : preferences.accent === "black" ? "Black" : "Red"}`} /></SettingsSection>
     <SettingsSection title="Account">{status === "demo" ? <SettingsRow icon={UserPlus} label="Create account" value="Save your progress" onClick={() => void navigate({ to: "/create-account" })} /> : <SettingsLink to="/settings/account" icon={CircleUserRound} label="Account" value={user?.email ?? "Account"} />}</SettingsSection>
     <SettingsSection title="Data"><SettingsRow icon={Cloud} label="Export data" value="Coming later" disabled /></SettingsSection>
     <SettingsSection title="Preview"><SettingsRow icon={RefreshCcw} label="Restart onboarding" onClick={() => { setPreferences({ ...preferences, onboardingComplete: false }); void navigate({ to: "/welcome" }); }} /></SettingsSection>
