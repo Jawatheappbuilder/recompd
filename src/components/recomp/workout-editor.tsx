@@ -168,7 +168,9 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
 }
 
 function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onGroup, onCircuit, partnerName, linkedAbove, linkedBelow }: {
-  onSuperset: (() => void) | undefined;\n  onGroup: (() => void) | undefined;\n  onCircuit: (() => void) | undefined;
+  onSuperset: (() => void) | undefined;
+  onGroup: (() => void) | undefined;
+  onCircuit: (() => void) | undefined;
   partnerName: string | undefined;
   linkedAbove: boolean;
   linkedBelow: boolean;
