@@ -30,7 +30,16 @@ export function workoutShareText(workout: CompletedWorkout) {
 
 /* ---------- canvas rendering ---------- */
 
-const C = { bg: "#080B09", surface: "#101612", border: "#263129", text: "#F3F7F4", muted: "#8D9A91", green: "#27F46C", greenDim: "#12B94B" };
+const SHARE_ACCENTS = {
+  red: { accent: "#D55D54", glow: "rgba(213,93,84,0.16)", tint: "rgba(213,93,84,0.12)", border: "rgba(213,93,84,0.50)" },
+  blue: { accent: "#4285D4", glow: "rgba(66,133,212,0.17)", tint: "rgba(66,133,212,0.12)", border: "rgba(66,133,212,0.50)" },
+  black: { accent: "#E8E8E6", glow: "rgba(232,232,230,0.10)", tint: "rgba(232,232,230,0.09)", border: "rgba(232,232,230,0.34)" },
+} as const;
+const C = { bg: "#080B09", surface: "#101311", border: "#252C27", text: "#F3F7F4", muted: "#8D9690" };
+function shareAccent() {
+  const id = typeof document !== "undefined" ? document.documentElement.dataset.accent : undefined;
+  return SHARE_ACCENTS[id === "blue" || id === "black" ? id : "red"];
+}
 const DISPLAY = "'Barlow Condensed', ui-sans-serif, system-ui, sans-serif";
 const SANS = "Manrope, ui-sans-serif, system-ui, sans-serif";
 const W = 1080;
@@ -113,11 +122,12 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   const H = Math.max(BASE_H, plan.height);
   canvas.width = W; canvas.height = H;
   const inner = W - PAD * 2;
+  const brand = shareAccent();
 
-  // Background with a restrained glow.
+  // Background with a restrained glow that follows the user accent.
   ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
   const glow = ctx.createRadialGradient(W * 0.9, 0, 0, W * 0.9, 0, 900);
-  glow.addColorStop(0, "rgba(39,244,108,0.13)"); glow.addColorStop(1, "rgba(39,244,108,0)");
+  glow.addColorStop(0, brand.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow; ctx.fillRect(0, 0, W, 1000);
   ctx.strokeStyle = C.border; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(28, 28, W - 56, H - 56, 44); ctx.stroke();
@@ -128,7 +138,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   ctx.font = `800 44px ${DISPLAY}`; spacing(ctx, 6); ctx.fillStyle = C.text;
   ctx.fillText("RECOMP'D", PAD, y);
   const markW = ctx.measureText("RECOMP'D").width;
-  ctx.fillStyle = C.green; ctx.fillRect(PAD + markW + 14, y - 10, 10, 10);
+  ctx.fillStyle = brand.accent; ctx.fillRect(PAD + markW + 14, y - 10, 10, 10);
   spacing(ctx, 0);
   ctx.font = `600 28px ${SANS}`; ctx.fillStyle = C.muted; ctx.textAlign = "right";
   ctx.fillText(formatLongDay(workout.startedAt), W - PAD, y); ctx.textAlign = "left";
@@ -139,7 +149,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   for (const line of plan.title) { y += plan.titleSize * 0.95; ctx.fillText(line, PAD, y); }
   spacing(ctx, 0);
   y += 40;
-  ctx.fillStyle = C.greenDim; ctx.fillRect(PAD, y, 72, 6);
+  ctx.fillStyle = brand.accent; ctx.fillRect(PAD, y, 72, 6);
   y += 60;
 
   // Stats
@@ -171,9 +181,9 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
     if (block.pr) {
       ctx.font = `800 24px ${SANS}`; spacing(ctx, 2);
       const tw = ctx.measureText("PR").width + 36;
-      ctx.fillStyle = "rgba(39,244,108,0.12)"; ctx.strokeStyle = "rgba(39,244,108,0.55)"; ctx.lineWidth = 2;
+      ctx.fillStyle = brand.tint; ctx.strokeStyle = brand.border; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.roundRect(W - PAD - tw, y + 4, tw, 40, 20); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = C.green; ctx.fillText("PR", W - PAD - tw + 18, y + 33); spacing(ctx, 0);
+      ctx.fillStyle = brand.accent; ctx.fillText("PR", W - PAD - tw + 18, y + 33); spacing(ctx, 0);
     }
     y += block.name.length * NAME_LH + 10;
     ctx.font = `600 ${SET_SIZE}px ${SANS}`; ctx.fillStyle = C.muted;
