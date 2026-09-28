@@ -177,6 +177,21 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     let currentKey = workout.currentKey;
     const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed) : false;
     let shouldRest = nextCompleted && !isCardioExercise(exercise) && hasMoreSetsHere;
+    const exerciseGroup = exercise.groupId ? workout.exerciseGroups?.find((group) => group.id === exercise.groupId) : undefined;
+    if (exerciseGroup && nextCompleted) {
+      shouldRest = false;
+      const members = exerciseGroup.memberKeys.map((key) => nextExercises.find((item) => item.key === key)).filter(Boolean) as ActiveExercise[];
+      const memberIndex = members.findIndex((item) => item.key === exercise.key);
+      const completedHere = updatedExercise?.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length ?? 0;
+      const nextMember = members.slice(memberIndex + 1).find((item) => item.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length < completedHere);
+      if (nextMember) currentKey = nextMember.key;
+      else if (memberIndex === members.length - 1) {
+        const groupComplete = members.every((item) => item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed));
+        shouldRest = !groupComplete;
+        const firstPending = members.find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed));
+        if (firstPending) currentKey = firstPending.key;
+      }
+    }
     const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
 
     if (nextCompleted && updatedExercise && partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)) {
@@ -204,7 +219,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         restAudioRef.current = audio;
         if (audio.state === "suspended") void audio.resume();
       }
-      window.setTimeout(() => setRest({ endsAt: Date.now() + exercise.restSeconds * 1000, expanded: true }), 650);
+      window.setTimeout(() => setRest({ endsAt: Date.now() + (exerciseGroup?.restSeconds ?? exercise.restSeconds) * 1000, expanded: true }), 650);
     }
   };
 
