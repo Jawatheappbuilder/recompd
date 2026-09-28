@@ -78,6 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return;
       }
+      if (demoRef.current) {
+        demoRef.current = false;
+        leaveDemoData();
+      }
       if (loadedFor.current === nextUser.id) return;
       setStatus("loading");
       setTimeout(() => void loadProfile(nextUser), 0);
