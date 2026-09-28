@@ -32,12 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (nextUser: User) => {
     setStatus("loading");
     try {
+      const localPreferences = loadUserPreferences();
       const preferences = await fetchOrCreateProfile(nextUser.id, String(nextUser.user_metadata?.["name"] ?? ""));
+      // Accent is currently a local appearance preference (the cloud profile has no accent column).
+      // Preserve the locally selected accent when the signed-in profile is refreshed on app launch.
+      const resolvedPreferences = { ...preferences, accent: localPreferences.accent };
       setPreferencesCloudUser(nextUser.id);
-      saveUserPreferences(preferences);
+      saveUserPreferences(resolvedPreferences);
       await loadCloudData(nextUser.id);
       await importStagedDemoData();
-      setOnboardingComplete(preferences.onboardingComplete);
+      setOnboardingComplete(resolvedPreferences.onboardingComplete);
       loadedFor.current = nextUser.id;
       setStatus("signedIn");
     } catch {
