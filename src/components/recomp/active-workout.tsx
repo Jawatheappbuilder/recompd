@@ -518,6 +518,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const data = useTrainingData();
   const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
+  const prExerciseIds = useMemo(() => new Set(sharePrs.map((pr) => pr.exerciseId)), [sharePrs]);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -533,17 +534,57 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
 
   if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
 
-  return <div className="animate-in fade-in slide-in-from-bottom-2 py-8 duration-500">
-    <div className="flex items-center gap-3">
-      <div className="grid size-11 place-items-center rounded-full bg-primary/10"><CircleCheck className="size-8 text-primary"/></div>
-      <div><p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-primary">Workout complete</p><h1 className="mt-0.5 max-w-full text-3xl font-extrabold leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1></div>
+  return <div className="animate-in fade-in pb-8 duration-500">
+    <section className="-mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
+      <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
+      <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
+      <h1 className="mt-1 max-w-full text-3xl font-black leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1>
+
+    </section>
+
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <SummaryMetric label="Duration" value={formatDuration(result.duration)} />
+      <SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length}`} />
+      <SummaryMetric label="Sets" value={String(result.totalSets)} />
+      <SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} />
     </div>
-    {sharePrs.length > 0 && <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.06] p-4"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.18em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><p className="mt-1 text-sm font-bold">{sharePrs.length === 1 ? "A new best performance." : `${sharePrs.length} new best performances.`}</p></div>}
-    <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border"><SummaryMetric label="Duration" value={formatDuration(result.duration)}/><SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length} completed`}/><SummaryMetric label="Sets" value={String(result.totalSets)}/><SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"}/></div>
-    {performed.length > 0 && <section className="mt-6"><h2 className="text-sm font-extrabold">Exercises performed</h2><div className="mt-2 divide-y divide-border rounded-2xl border border-border bg-card px-3">{performed.map(({ exercise, sets }) => <div key={exercise.key} className="py-3"><h3 className="text-sm font-extrabold">{exercise.name}</h3><div className="mt-1.5 space-y-0.5">{sets.map((set) => <div key={set.id} className="text-xs font-semibold tabular-nums text-muted-foreground">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</div>)}</div></div>)}</div></section>}
+
+    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><p className="mt-0.5 text-sm font-bold">{sharePrs.length} new best performance{sharePrs.length === 1 ? "" : "s"}.</p></div>}
+
+    {performed.length > 0 && <section className="mt-6">
+      <h2 className="text-base font-black">Exercises performed</h2>
+      <div className="mt-2 space-y-2">
+        {performed.map(({ exercise, sets }) => {
+          const hasPr = prExerciseIds.has(exercise.id);
+          let bestIndex = -1;
+          if (!isCardioExercise(exercise)) {
+            let bestScore = -1;
+            sets.forEach((set, index) => {
+              const score = (Number(set.weight) || 0) * (Number(set.reps) || 0);
+              if (score > bestScore) { bestScore = score; bestIndex = index; }
+            });
+          }
+          return <Card key={exercise.key} className="overflow-hidden p-0">
+            <div className="flex items-start justify-between gap-3 bg-primary/[0.10] px-4 py-3">
+              <div className="min-w-0"><h3 className="truncate text-sm font-extrabold">{exercise.name}</h3><p className="mt-0.5 truncate text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</p></div>
+              <span className="shrink-0 text-[0.65rem] font-bold text-primary">{sets.length} set{sets.length === 1 ? "" : "s"}</span>
+            </div>
+            <div className="px-4 py-2">
+              {sets.map((set, index) => <div key={set.id} className="grid min-h-9 grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 text-xs">
+                <span className="text-center font-bold tabular-nums text-muted-foreground">{index + 1}</span>
+                <span className="font-semibold tabular-nums">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</span>
+                <span className="flex items-center gap-1">{index === bestIndex && sets.length > 1 && <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary">Best set</span>}{hasPr && index === bestIndex && <span className="rounded-full bg-primary px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary-foreground">PR</span>}</span>
+              </div>)}
+            </div>
+          </Card>;
+        })}
+      </div>
+    </section>}
     {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}
   </div>;
 }
+
+function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-border bg-card p-4"><div className="text-xl font-black tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] font-medium text-muted-foreground">{label}</div></div>; }
 
 function WorkoutCompleteCelebration({ result, showStats, prs }: { result: FinishedWorkout; showStats: boolean; prs: number }) {
   const circumference = 2 * Math.PI * 54;
@@ -569,4 +610,4 @@ function WorkoutCompleteCelebration({ result, showStats, prs }: { result: Finish
 }
 
 function CelebrationStat({ value, label }: { value: string; label: string }) { return <div aria-label={`${label}: ${value}`} className="rounded-2xl border border-border bg-card/80 px-2 py-3 backdrop-blur"><div className="text-lg font-black tabular-nums">{value}</div><div className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</div></div>; }
-function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="bg-card p-4"><div className="text-lg font-extrabold tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] text-muted-foreground">{label}</div></div>; }
+
