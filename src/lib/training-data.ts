@@ -37,7 +37,7 @@ export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: numb
       tracking: exercise.tracking ?? "strength",
       ...(exercise.cardioMetrics ? { cardioMetrics: exercise.cardioMetrics } : {}),
       ...(exercise.supersetWith ? { supersetWith: exercise.supersetWith } : {}),
-      sets: exercise.sessionSets.filter((set) => set.completed).map((set) => exercise.tracking === "cardio" ? {
+      sets: exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").map((set) => exercise.tracking === "cardio" ? {
         kind: "cardio" as const, weight: 0, reps: 0,
         durationSeconds: Number(set.durationSeconds) || 0,
         ...(Number(set.distanceKm) > 0 ? { distanceKm: Number(set.distanceKm) } : {}),
