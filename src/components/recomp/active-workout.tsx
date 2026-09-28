@@ -431,13 +431,13 @@ function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }
     }
   };
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!canRemove || set.completed) return;
+    if (!canRemove || set.completed || active) return;
     const touch = event.touches[0]; if (!touch) return;
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setDragging(false);
   };
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!touchStart || !canRemove || set.completed) return;
+    if (!touchStart || !canRemove || set.completed || active) return;
     const touch = event.touches[0]; if (!touch) return;
     const dx = touch.clientX - touchStart.x;
     const dy = touch.clientY - touchStart.y;
@@ -452,8 +452,8 @@ function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }
     setTouchStart(null);
     setDragging(false);
   };
-  return <div className="relative overflow-hidden rounded-lg">
-    {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+  return <div className={cn("relative rounded-lg", active ? "overflow-visible" : "overflow-hidden")}>
+    {canRemove && !set.completed && !active && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
