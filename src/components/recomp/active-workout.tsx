@@ -116,7 +116,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length, 0);
   const strengthSets = workout.exercises.reduce((sum, exercise) => sum + (isCardioExercise(exercise) ? 0 : exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length), 0);
   const progress = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
-  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.every((set) => set.completed));
+  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
 
   useEffect(() => {
@@ -165,15 +165,15 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       ? { ...item, sessionSets: item.sessionSets.map((row) => row.id === set.id ? { ...row, completed: nextCompleted } : row) }
       : item);
     const updatedExercise = nextExercises.find((item) => item.key === exercise.key);
-    const completedExercise = updatedExercise?.sessionSets.every((row) => row.completed) ?? false;
+    const completedExercise = updatedExercise?.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed) ?? false;
     let currentKey = workout.currentKey;
-    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.every((row) => row.completed) : false;
+    const hasMoreSetsHere = updatedExercise ? !updatedExercise.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed) : false;
     let shouldRest = nextCompleted && !isCardioExercise(exercise) && hasMoreSetsHere;
     const partner = exercise.supersetWith ? nextExercises.find((item) => item.key === exercise.supersetWith) : undefined;
 
-    if (nextCompleted && updatedExercise && partner && !partner.sessionSets.every((row) => row.completed)) {
-      const completedHere = updatedExercise.sessionSets.filter((row) => row.completed).length;
-      const completedThere = partner.sessionSets.filter((row) => row.completed).length;
+    if (nextCompleted && updatedExercise && partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)) {
+      const completedHere = updatedExercise.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length;
+      const completedThere = partner.sessionSets.filter((row) => row.completed && row.kind !== "warmup").length;
       if (completedThere < completedHere) {
         currentKey = partner.key;
         shouldRest = false;
@@ -183,9 +183,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }
 
     if (completedExercise && currentKey === exercise.key) {
-      currentKey = partner && !partner.sessionSets.every((row) => row.completed)
+      currentKey = partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)
         ? partner.key
-        : nextExercises.find((item) => !item.sessionSets.every((row) => row.completed))?.key ?? exercise.key;
+        : nextExercises.find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
@@ -201,10 +201,10 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   };
 
   const startExercise = (key: string) => {
-    const completed = workout.exercises.filter((exercise) => exercise.sessionSets.every((set) => set.completed));
+    const completed = workout.exercises.filter((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
     const selected = workout.exercises.find((exercise) => exercise.key === key);
     if (!selected) return;
-    const remaining = workout.exercises.filter((exercise) => exercise.key !== key && !exercise.sessionSets.every((set) => set.completed));
+    const remaining = workout.exercises.filter((exercise) => exercise.key !== key && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
     onChange({ ...workout, currentKey: key, exercises: [...completed, selected, ...remaining] });
     setExpandedUpcoming(null);
   };
@@ -241,7 +241,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       const { supersetWith: _supersetWith, ...unpaired } = exercise;
       return unpaired;
     });
-    const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
+    const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
     onChange({ ...workout, currentKey, exercises: remaining });
     setRemoveKey(null);
   };
@@ -258,7 +258,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const result: FinishedWorkout = {
       workout,
       duration: elapsed,
-      completedExercises: workout.exercises.filter((exercise) => exercise.sessionSets.every((set) => set.completed)).length,
+      completedExercises: workout.exercises.filter((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).length,
       totalSets: strengthSets,
       volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
     };
@@ -279,7 +279,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
           <div className="mt-3 space-y-2">
             {workout.exercises.map((exercise, exerciseIndex) => {
-              const completed = exercise.sessionSets.every((set) => set.completed);
+              const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
               const current = exercise.key === workout.currentKey && !completed;
               const expanded = current || expandedUpcoming === exercise.key;
               return <SortableActiveExercise key={exercise.key} exercise={exercise} index={exerciseIndex}><ExerciseCard
@@ -305,12 +305,13 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           {draggingKey && (() => {
             const dragged = workout.exercises.find((exercise) => exercise.key === draggingKey);
             if (!dragged) return null;
-            const done = dragged.sessionSets.filter((set) => set.completed).length;
+            const draggedWorking = dragged.sessionSets.filter((set) => set.kind !== "warmup");
+            const done = draggedWorking.filter((set) => set.completed).length;
             return <Card className="w-[calc(100vw-2rem)] max-w-[398px] border-primary/35 bg-card px-3 py-3 shadow-xl">
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
                 <GripVertical className="size-4 text-muted-foreground" />
                 <div className="min-w-0"><div className="truncate text-sm font-extrabold">{dragged.name}</div><div className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{dragged.muscle} · {dragged.equipment}</div></div>
-                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{dragged.sessionSets.length}</span>
+                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{draggedWorking.length}</span>
               </div>
             </Card>;
           })()}
@@ -502,7 +503,7 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   return <>
     <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[30, 45, 60, 90, 120, 150, 180].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds} sec</Button>)}</div></DrawerContent></Drawer>
     <ExercisePicker open={sheet.kind === "add"} onClose={onClose} onSelect={onAdd} />
     <CardioPicker open={sheet.kind === "addCardio"} onClose={onClose} onSelect={onAdd} />
