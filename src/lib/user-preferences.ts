@@ -4,6 +4,7 @@ export type Gender = "Male" | "Female" | "Prefer not to say" | "";
 export type WeightUnit = "kg" | "lb";
 export type WeekStartsOn = "Monday" | "Sunday";
 export type ThemePreference = "system" | "dark" | "light";
+export type AccentPreference = "red" | "blue";
 export type TrainingGoal = "Build muscle" | "Get stronger" | "Lose fat" | "Improve fitness" | "General health";
 export type DefaultRepRange = "4–6" | "8–12";
 
@@ -24,11 +25,17 @@ export type UserPreferences = {
   weeklyWorkoutTarget: 2 | 3 | 4 | 5 | 6 | 7;
   weekStartsOn: WeekStartsOn;
   theme: ThemePreference;
+  accent: AccentPreference;
   goals: TrainingGoal[];
   onboardingComplete: boolean;
 };
 
 const PREFERENCES_KEY = "recomp-user-preferences-v1";
+
+export function applyAccentPreference(accent: AccentPreference) {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.accent = accent;
+}
 
 export function applyThemePreference(theme: ThemePreference) {
   if (typeof document === "undefined") return;
@@ -49,6 +56,7 @@ export const defaultUserPreferences: UserPreferences = {
   weeklyWorkoutTarget: 4,
   weekStartsOn: "Monday",
   theme: "system",
+  accent: "red",
   goals: [],
   onboardingComplete: false,
 };
@@ -72,12 +80,14 @@ export function loadUserPreferences(): UserPreferences {
 export function saveUserPreferences(preferences: UserPreferences) {
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   applyThemePreference(preferences.theme);
+  applyAccentPreference(preferences.accent);
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: preferences }));
 }
 
 export function clearUserPreferences() {
   localStorage.removeItem(PREFERENCES_KEY);
   applyThemePreference(defaultUserPreferences.theme);
+  applyAccentPreference(defaultUserPreferences.accent);
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: defaultUserPreferences }));
 }
 
