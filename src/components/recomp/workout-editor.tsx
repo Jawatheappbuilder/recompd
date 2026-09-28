@@ -115,7 +115,9 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   onReps={() => setSheet({ kind: "reps", key: exercise.key })}
                   onDuration={() => setSheet({ kind: "duration", key: exercise.key })}
                   onRemove={() => remove(exercise.key)}
-                  onSuperset={supersets ? () => setSheet({ kind: "superset", key: exercise.key }) : undefined}\n                  onGroup={supersets ? () => setSheet({ kind: "planGroup", key: exercise.key }) : undefined}\n                  onCircuit={supersets ? () => setSheet({ kind: "planCircuit", key: exercise.key }) : undefined}
+                  onSuperset={supersets ? () => setSheet({ kind: "superset", key: exercise.key }) : undefined}
+                  onGroup={supersets ? () => setSheet({ kind: "planGroup", key: exercise.key }) : undefined}
+                  onCircuit={supersets ? () => setSheet({ kind: "planCircuit", key: exercise.key }) : undefined}
                   partnerName={partnerOf(exercise)?.name}
                   linkedAbove={!!partnerOf(exercise) && workout[index - 1]?.key === exercise.supersetWith}
                   linkedBelow={!!partnerOf(exercise) && workout[index + 1]?.key === exercise.supersetWith}
