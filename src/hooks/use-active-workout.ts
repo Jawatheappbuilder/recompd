@@ -26,6 +26,7 @@ export type ActiveExercise = WorkoutExercise & {
   sessionSets: ActiveSet[];
   restSeconds: number;
   supersetWith?: string;
+  groupId?: string;
   circuitId?: string;
 };
 
@@ -37,6 +38,7 @@ export type ActiveWorkoutState = {
   currentKey: string;
   exercises: ActiveExercise[];
   scheduledId?: string;
+  exerciseGroups?: { id: string; memberKeys: string[]; restSeconds: number }[];
   circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
 };
 
