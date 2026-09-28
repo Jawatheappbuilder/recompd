@@ -15,7 +15,7 @@ import { AppShell } from "@/components/recomp/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { OnboardingProvider } from "@/components/recomp/onboarding-context";
 import { AuthProvider } from "@/components/recomp/auth-context";
-import { applyThemePreference, loadUserPreferences } from "@/lib/user-preferences";
+import { applyAccentPreference, applyThemePreference, loadUserPreferences } from "@/lib/user-preferences";
 
 function NotFoundComponent() {
   return (
@@ -113,7 +113,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem("recomp-user-preferences-v1"),p=s?JSON.parse(s):null,t=p&&p.theme||"system",d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches),e=document.documentElement;e.classList.toggle("dark",d);e.classList.toggle("light",!d);e.style.colorScheme=d?"dark":"light"}catch(e){}})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem("recomp-user-preferences-v1"),p=s?JSON.parse(s):null,t=p&&p.theme||"system",d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches),e=document.documentElement;e.classList.toggle("dark",d);e.classList.toggle("light",!d);e.style.colorScheme=d?"dark":"light";e.dataset.accent=p&&p.accent||"red"}catch(e){}})();` }} />
         <HeadContent />
       </head>
       <body>
@@ -137,7 +137,7 @@ function PwaHandler() {
 
 function ThemeHandler() {
   useEffect(() => {
-    const apply = () => applyThemePreference(loadUserPreferences().theme);
+    const apply = () => { const preferences = loadUserPreferences(); applyThemePreference(preferences.theme); applyAccentPreference(preferences.accent); };
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     apply();
     media.addEventListener("change", apply);
