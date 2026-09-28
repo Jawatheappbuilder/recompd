@@ -112,7 +112,7 @@ for (const [name, cardioMetrics] of cardio) {
 }
 export const exercises = [...byId.values()];
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string; targetDurationSeconds?: number };
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string; targetDurationSeconds?: number; groupId?: string; groupRestSeconds?: number; circuitId?: string; circuitWorkSeconds?: number; circuitRestSeconds?: number; circuitRounds?: number; circuitReps?: number };
 let seq = 0;
 const preferredDefaults = () => {
   if (typeof window === "undefined") return { restSeconds: 90, reps: "8–12" };

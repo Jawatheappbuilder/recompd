@@ -26,6 +26,7 @@ export type ActiveExercise = WorkoutExercise & {
   sessionSets: ActiveSet[];
   restSeconds: number;
   supersetWith?: string;
+  groupId?: string;
   circuitId?: string;
 };
 
@@ -37,6 +38,7 @@ export type ActiveWorkoutState = {
   currentKey: string;
   exercises: ActiveExercise[];
   scheduledId?: string;
+  exerciseGroups?: { id: string; memberKeys: string[]; restSeconds: number }[];
   circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
 };
 
@@ -49,12 +51,16 @@ export function createActiveWorkout(exercises: WorkoutExercise[], customName?: s
   if (!first) return null;
   const muscles = [...new Set(exercises.map((exercise) => exercise.muscle))];
   const name = customName?.trim() || (muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout");
+  const groupIds = [...new Set(exercises.map((e) => e.groupId).filter(Boolean))] as string[];
+  const circuitIds = [...new Set(exercises.map((e) => e.circuitId).filter(Boolean))] as string[];
   return {
     version: 1,
     id: `workout-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now()}`,
     name,
     startedAt: Date.now(),
     currentKey: first.key,
+    exerciseGroups: groupIds.map((id) => { const members=exercises.filter((e)=>e.groupId===id); return { id, memberKeys:members.map((e)=>e.key), restSeconds:members[0]?.groupRestSeconds ?? 90 }; }),
+    circuits: circuitIds.map((id) => { const members=exercises.filter((e)=>e.circuitId===id); return { id, workSeconds:members[0]?.circuitWorkSeconds ?? 300, restSeconds:members[0]?.circuitRestSeconds ?? 90, rounds:members[0]?.circuitRounds ?? 3, reps:Object.fromEntries(members.map((e)=>[e.key,e.circuitReps ?? 10])) }; }),
     exercises: exercises.map((exercise) => ({
       ...exercise,
       restSeconds: exercise.restSeconds ?? (exercise.type === "Compound" ? 120 : 90),
