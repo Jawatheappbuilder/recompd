@@ -1,5 +1,11 @@
-const CACHE_NAME = "recompd-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/recompd-icon-v4-192.png", "/recompd-icon-v4-512.png", "/recompd-icon-v4-maskable-512.png"];
+const CACHE_NAME = "recompd-shell-v2";
+const APP_SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/recompd-icon-v6-192.png",
+  "/recompd-icon-v6-512.png",
+  "/recompd-icon-v6-maskable-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -8,7 +14,11 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
+      ),
   );
   self.clients.claim();
 });
@@ -27,6 +37,6 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/")))
+      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/"))),
   );
 });

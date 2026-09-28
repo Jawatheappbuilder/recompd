@@ -69,7 +69,7 @@ jobs:
           cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           cat > android/app/src/main/res/values/recompd_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <resources><color name="recompd_launcher_background">#FAF1EC</color></resources>
+          <resources><color name="recompd_launcher_background">#000000</color></resources>
           EOF
           for spec in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
             set -- $spec
