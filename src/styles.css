@@ -146,3 +146,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Optional brand accent. Semantic success/destructive colours remain unchanged. */
+:root[data-accent="blue"] {
+  --primary: oklch(0.62 0.19 252);
+  --primary-foreground: oklch(0.99 0.006 250);
+  --accent: oklch(0.92 0.045 252);
+  --accent-foreground: oklch(0.48 0.15 252);
+  --ring: oklch(0.62 0.19 252);
+  --elevated: oklch(0.92 0.035 252);
+  --soft: oklch(0.76 0.09 252);
+}
+
+.dark[data-accent="blue"] {
+  --primary: oklch(0.72 0.17 252);
+  --primary-foreground: oklch(0.15 0.03 252);
+  --accent: oklch(0.72 0.17 252 / 0.12);
+  --accent-foreground: oklch(0.82 0.12 252);
+  --ring: oklch(0.72 0.17 252);
+  --elevated: oklch(0.23 0.035 252);
+  --soft: oklch(0.62 0.10 252);
+}
