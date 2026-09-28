@@ -37,7 +37,7 @@ export type ActiveWorkoutState = {
   currentKey: string;
   exercises: ActiveExercise[];
   scheduledId?: string;
-  circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number }[];
+  circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
 };
 
 const repsFromTarget = (target: string) => target.match(/\d+/)?.[0] ?? "10";
