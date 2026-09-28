@@ -539,11 +539,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
       <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
       <h1 className="mt-1 max-w-full text-3xl font-black leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1>
-      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-primary-foreground/90">
-        <span className="flex items-center gap-1.5"><Clock3 className="size-4" />{formatDuration(result.duration)}</span>
-        <span>{result.totalSets} sets</span>
-        <span>{result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} volume</span>
-      </div>
+
     </section>
 
     <div className="mt-4 grid grid-cols-2 gap-2">
