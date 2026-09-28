@@ -392,7 +392,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
         {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
         <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
-        <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
+        <div className="space-y-1">{exercise.sessionSets.map((set, index) => <SetRow key={set.id} set={set} number={index + 1} active={current && index === exercise.sessionSets.findIndex((row) => !row.completed)} canRemove={exercise.sessionSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />)}</div>
         <div className="mt-2 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
         <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
       </>}
@@ -409,7 +409,7 @@ function CardioFields({ exercise, set: session, onChange, onToggle }: { exercise
   return <div><div className="grid min-w-0 grid-cols-1 gap-x-2 gap-y-2 min-[390px]:grid-cols-2"><label className="block min-w-0 w-full text-[0.62rem] font-bold uppercase text-muted-foreground"><span className="mb-1 block">Duration (min)</span><input inputMode="decimal" value={session.durationSeconds ? Math.round(Number(session.durationSeconds) / 60) : ""} onChange={(event) => onChange({ durationSeconds: String((Number(event.target.value) || 0) * 60) })} className={cardioInput} /></label>{field("distance", "Distance (km)", "distanceKm")}{field("speed", "Speed (km/h)", "speedKph")}{field("pace", "Pace (/km)", "pace")}{field("incline", "Incline (%)", "incline")}{field("level", "Level", "level", "numeric")}{field("floors", "Floors", "floors", "numeric")}{field("steps", "Steps", "steps", "numeric")}{field("pace500m", "Pace /500m", "pace500m")}</div><Button variant={session.completed ? "primary" : "surface"} className="mt-3 w-full" onClick={onToggle}><Check />{session.completed ? "Cardio completed" : "Complete cardio"}</Button></div>;
 }
 
-function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
+function SetRow({ set, number, active, canRemove, onChange, onToggle, onRemove }: { set: ActiveSet; number: number; active: boolean; canRemove: boolean; onChange: (patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggle: () => void; onRemove: () => void }) {
   const [cleared, setCleared] = useState<{ field: "weight" | "reps"; previous: string } | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -431,13 +431,13 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
     }
   };
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!canRemove || set.completed) return;
+    if (!canRemove || set.completed || active) return;
     const touch = event.touches[0]; if (!touch) return;
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setDragging(false);
   };
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!touchStart || !canRemove || set.completed) return;
+    if (!touchStart || !canRemove || set.completed || active) return;
     const touch = event.touches[0]; if (!touch) return;
     const dx = touch.clientX - touchStart.x;
     const dy = touch.clientY - touchStart.y;
@@ -452,20 +452,20 @@ function SetRow({ set, number, canRemove, onChange, onToggle, onRemove }: { set:
     setTouchStart(null);
     setDragging(false);
   };
-  return <div className="relative overflow-hidden rounded-lg">
-    {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+  return <div className={cn("relative rounded-lg", active ? "overflow-visible" : "overflow-hidden")}>
+    {canRemove && !set.completed && !active && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1", set.completed && "bg-accent set-success-pulse", !dragging && "transition-transform duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] scale-[1.018] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", !dragging && "duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
-      <span className="text-center text-xs font-bold text-muted-foreground">{number}</span>
+      <span className={cn("text-center text-xs font-bold transition-colors", active ? "text-primary" : "text-muted-foreground")}>{number}</span>
       <input inputMode="decimal" aria-label={`Weight for set ${number}`} value={cleared?.field === "weight" ? "" : set.weight} placeholder="—" onFocus={() => focusField("weight")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ weight: event.target.value, weightEdited: true }, true); }} className="h-9 min-w-0 rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary" />
       <div className="grid grid-cols-[2rem_minmax(2rem,1fr)_2rem] items-center"><button type="button" aria-label={`Decrease reps for set ${number}`} onClick={() => onChange({ reps: String(Math.max(0, (Number(set.reps) || 0) - 1)) })} className="grid size-9 place-items-center text-muted-foreground"><Minus className="size-3.5" /></button><input inputMode="numeric" aria-label={`Reps for set ${number}`} value={cleared?.field === "reps" ? "" : set.reps} onFocus={() => focusField("reps")} onBlur={blurField} onChange={(event) => { setCleared(null); onChange({ reps: event.target.value }); }} className="h-9 min-w-0 bg-transparent text-center text-sm font-bold tabular-nums outline-none" /><button type="button" aria-label={`Increase reps for set ${number}`} onClick={() => onChange({ reps: String((Number(set.reps) || 0) + 1) })} className="grid size-9 place-items-center text-muted-foreground"><Plus className="size-3.5" /></button></div>
-      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-primary bg-primary text-primary-foreground check-pop" : "border-border text-muted-foreground")}><span className={cn("block text-lg font-black leading-none transition-all duration-200", set.completed ? "scale-100 opacity-100" : "scale-75 opacity-25")} aria-hidden="true">✓</span></button>
+      <button type="button" aria-label={`${set.completed ? "Reopen" : "Complete"} set ${number}`} onClick={onToggle} className={cn("grid size-9 place-items-center rounded-full border transition-all duration-300", set.completed ? "border-emerald-600 bg-emerald-600 text-white check-pop dark:border-emerald-500 dark:bg-emerald-500" : "border-border text-muted-foreground")}><span className={cn("block text-lg font-black leading-none transition-all duration-200", set.completed ? "scale-100 opacity-100" : "scale-75 opacity-25")} aria-hidden="true">✓</span></button>
     </div>
   </div>;
 }
