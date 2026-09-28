@@ -168,3 +168,24 @@
   --elevated: oklch(0.23 0.03 252);
   --soft: oklch(0.61 0.085 252);
 }
+
+
+:root[data-accent="black"] {
+  --primary: oklch(0.20 0.01 40);
+  --primary-foreground: oklch(0.99 0.006 65);
+  --accent: oklch(0.90 0.008 40);
+  --accent-foreground: oklch(0.24 0.012 40);
+  --ring: oklch(0.20 0.01 40);
+  --elevated: oklch(0.91 0.008 40);
+  --soft: oklch(0.56 0.012 40);
+}
+
+.dark[data-accent="black"] {
+  --primary: oklch(0.88 0.008 150);
+  --primary-foreground: oklch(0.14 0.01 148);
+  --accent: oklch(0.88 0.008 150 / 0.10);
+  --accent-foreground: oklch(0.90 0.008 150);
+  --ring: oklch(0.88 0.008 150);
+  --elevated: oklch(0.225 0.012 148);
+  --soft: oklch(0.58 0.012 150);
+}
