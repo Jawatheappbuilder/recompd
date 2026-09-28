@@ -31,6 +31,15 @@ export type UserPreferences = {
 };
 
 const PREFERENCES_KEY = "recomp-user-preferences-v1";
+const ACCENT_CHOICE_KEY = "recomp-accent-choice-complete-v1";
+
+export function hasCompletedAccentChoice() {
+  return typeof window !== "undefined" && localStorage.getItem(ACCENT_CHOICE_KEY) === "1";
+}
+
+export function completeAccentChoice() {
+  if (typeof window !== "undefined") localStorage.setItem(ACCENT_CHOICE_KEY, "1");
+}
 
 export function applyAccentPreference(accent: AccentPreference) {
   if (typeof document === "undefined") return;
@@ -86,6 +95,7 @@ export function saveUserPreferences(preferences: UserPreferences) {
 
 export function clearUserPreferences() {
   localStorage.removeItem(PREFERENCES_KEY);
+  localStorage.removeItem(ACCENT_CHOICE_KEY);
   applyThemePreference(defaultUserPreferences.theme);
   applyAccentPreference(defaultUserPreferences.accent);
   window.dispatchEvent(new CustomEvent("recomp-preferences-changed", { detail: defaultUserPreferences }));
