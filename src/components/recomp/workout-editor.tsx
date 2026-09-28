@@ -116,8 +116,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   onDuration={() => setSheet({ kind: "duration", key: exercise.key })}
                   onRemove={() => remove(exercise.key)}
                   onSuperset={supersets ? () => setSheet({ kind: "superset", key: exercise.key }) : undefined}
-                  onGroup={supersets ? () => setSheet({ kind: "planGroup", key: exercise.key }) : undefined}
-                  onCircuit={supersets ? () => setSheet({ kind: "planCircuit", key: exercise.key }) : undefined}
+                  onActions={supersets ? () => setSheet({ kind: "actions", key: exercise.key }) : undefined}
                   partnerName={partnerOf(exercise)?.name}
                   linkedAbove={!!partnerOf(exercise) && workout[index - 1]?.key === exercise.supersetWith}
                   linkedBelow={!!partnerOf(exercise) && workout[index + 1]?.key === exercise.supersetWith}
@@ -172,8 +171,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
 
 function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onActions, partnerName, linkedAbove, linkedBelow }: {
   onSuperset: (() => void) | undefined;
-  onGroup: (() => void) | undefined;
-  onCircuit: (() => void) | undefined;
+  onActions: (() => void) | undefined;
   partnerName: string | undefined;
   linkedAbove: boolean;
   linkedBelow: boolean;
