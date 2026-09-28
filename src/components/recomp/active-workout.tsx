@@ -116,6 +116,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed).length, 0);
   const strengthSets = workout.exercises.reduce((sum, exercise) => sum + (isCardioExercise(exercise) ? 0 : exercise.sessionSets.filter((set) => set.completed).length), 0);
   const progress = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
+  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.every((set) => set.completed));
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
 
   useEffect(() => {
@@ -314,6 +315,10 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           })()}
         </DragOverlay>
       </DndContext>
+      {allExercisesCompleted && <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/[0.08] p-3">
+        <div className="mb-2 px-1"><p className="text-sm font-extrabold">Workout complete</p><p className="mt-0.5 text-[0.7rem] text-muted-foreground">All exercises are done. Finish to save your workout.</p></div>
+        <Button className="h-14 w-full bg-primary text-base font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={finishWorkout}><CircleCheck className="size-5" /> Finish workout</Button>
+      </div>}
       <Button variant="surface" className="mt-3 w-full" onClick={() => setSheet({ kind: "add" })}><Plus /> Add exercise</Button>
       <Button variant="surface" className="mt-2 w-full" onClick={() => setSheet({ kind: "addCardio" })}><Plus /> Add cardio</Button>
       <Button variant="ghost" size="sm" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>Cancel workout</Button>
