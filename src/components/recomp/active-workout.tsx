@@ -66,6 +66,7 @@ type Sheet =
   | { kind: "actions"; key: string }
   | { kind: "replace"; key: string }
   | { kind: "superset"; key: string }
+  | { kind: "circuit"; key: string }
   | { kind: "rest"; key: string }
   | { kind: "add" }
   | { kind: "addCardio" };
@@ -98,6 +99,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean } | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const [circuitRun, setCircuitRun] = useState<{ id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null>(null);
   const restAudioRef = useRef<AudioContext | null>(null);
   const restWasActiveRef = useRef(false);
   const reorderSensors = useSensors(
@@ -271,6 +273,12 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
   if (finished) return <WorkoutSummary result={finished} />;
 
+  if (circuitRun) {
+    const circuit = workout.circuits?.find((item) => item.id === circuitRun.id);
+    const members = workout.exercises.filter((exercise) => exercise.circuitId === circuitRun.id);
+    if (circuit) return <CircuitMode circuit={circuit} members={members} run={circuitRun} now={now} onRun={setCircuitRun} onExit={() => setCircuitRun(null)} />;
+  }
+
   return (
     <>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
@@ -297,6 +305,8 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
                 onRest={() => setSheet({ kind: "rest", key: exercise.key })}
                 onActions={() => setSheet({ kind: "actions", key: exercise.key })}
+                circuit={workout.circuits?.find((item) => item.id === exercise.circuitId)}
+                onStartCircuit={exercise.circuitId ? () => setCircuitRun({ id: exercise.circuitId!, phase: "countdown", round: 1, endsAt: Date.now() + 3000 }) : undefined}
               /></SortableActiveExercise>;
             })}
           </div>
@@ -332,7 +342,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       </AlertDialog>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onReplace={replaceExercise} onPair={pairSuperset} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
+      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
         if (active) onChange({ ...workout, exercises: [...workout.exercises, active] });
@@ -380,9 +390,9 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
   </div>;
 }
 
-function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions }: {
+function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
   exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined;
-  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void;
+  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number }; onStartCircuit?: () => void;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
   const warmupSets = exercise.sessionSets.filter((set) => set.kind === "warmup");
@@ -393,6 +403,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
       <span className="flex items-center gap-2"><span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{workingSets.length}</span>{!current && (expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />)}</span>
     </button>
+    {circuit && <div className="flex items-center justify-between border-t border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs"><span className="font-bold">Circuit · {formatClock(circuit.workSeconds)} × {circuit.rounds} rounds</span>{onStartCircuit && <Button size="sm" onClick={onStartCircuit}>Start circuit</Button>}</div>}
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
         {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
@@ -489,7 +500,7 @@ function MinimizedRestTimer({ seconds, onExpand, onAdjust, onSkip }: { seconds: 
   return <div className="sticky top-[5.7rem] z-10 mt-2 flex h-12 items-center rounded-xl border border-primary/30 bg-elevated px-2 shadow-sm"><button type="button" className="flex min-w-0 flex-1 items-center gap-2 px-1 text-left" onClick={onExpand}><Clock3 className="size-4 text-primary" /><span className="text-xs font-bold">Rest</span><span className="text-sm font-extrabold tabular-nums text-primary">{formatClock(seconds)}</span></button><button type="button" onClick={() => onAdjust(-15)} className="grid size-9 place-items-center text-muted-foreground" aria-label="Subtract 15 seconds"><Minus className="size-4" /></button><button type="button" onClick={() => onAdjust(15)} className="grid size-9 place-items-center text-muted-foreground" aria-label="Add 15 seconds"><Plus className="size-4" /></button><button type="button" onClick={onSkip} className="grid size-9 place-items-center text-muted-foreground" aria-label="End rest"><X className="size-4" /></button></div>;
 }
 
-function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSuperset, onReplace, onPair, onRemovePair, onRemove, onRest, onAdd }: { sheet: Sheet; workout: ActiveWorkoutState; onClose: () => void; onShowReplace: (key: string) => void; onShowSuperset: (key: string) => void; onReplace: (key: string, exercise: Exercise) => void; onPair: (key: string, partner: string) => void; onRemovePair: (key: string) => void; onRemove: (key: string) => void; onRest: (key: string, seconds: number) => void; onAdd: (exercise: Exercise) => void }) {
+function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSuperset, onShowCircuit, onReplace, onPair, onCreateCircuit, onRemovePair, onRemove, onRest, onAdd }: { sheet: Sheet; workout: ActiveWorkoutState; onClose: () => void; onShowReplace: (key: string) => void; onShowSuperset: (key: string) => void; onShowCircuit: (key: string) => void; onReplace: (key: string, exercise: Exercise) => void; onPair: (key: string, partner: string) => void; onCreateCircuit: (key: string, memberKeys: string[], workSeconds: number, restSeconds: number, rounds: number) => void; onRemovePair: (key: string) => void; onRemove: (key: string) => void; onRest: (key: string, seconds: number) => void; onAdd: (exercise: Exercise) => void }) {
   const key = "key" in sheet ? sheet.key : undefined;
   const current = workout.exercises.find((exercise) => exercise.key === key);
   const used = new Set(workout.exercises.map((exercise) => exercise.id));
@@ -501,9 +512,11 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
     return aSameMuscle - bSameMuscle || a.name.localeCompare(b.name);
   }) : [];
   return <>
-    <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <><Button variant="ghost" className="w-full justify-start" onClick={() => onShowSuperset(key)}><Link2 />Superset</Button><Button variant="ghost" className="w-full justify-start" onClick={() => onShowCircuit(key)}><Clock3 />Create timed circuit</Button></>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
+
+    <Drawer open={sheet.kind === "circuit"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Create timed circuit</DrawerTitle></DrawerHeader>{key && <CircuitSetup workout={workout} anchorKey={key} onCreate={(members, work, rest, rounds) => onCreateCircuit(key, members, work, rest, rounds)} />}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "rest"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Rest between sets</DrawerTitle></DrawerHeader><div className="grid grid-cols-4 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{[30, 45, 60, 90, 120, 150, 180].map((seconds) => <Button key={seconds} variant={current?.restSeconds === seconds ? "choiceActive" : "choice"} onClick={() => key && onRest(key, seconds)}>{seconds} sec</Button>)}</div></DrawerContent></Drawer>
     <ExercisePicker open={sheet.kind === "add"} onClose={onClose} onSelect={onAdd} />
     <CardioPicker open={sheet.kind === "addCardio"} onClose={onClose} onSelect={onAdd} />
@@ -627,3 +640,18 @@ function WorkoutCompleteCelebration({ result, showStats, prs }: { result: Finish
 
 function CelebrationStat({ value, label }: { value: string; label: string }) { return <div aria-label={`${label}: ${value}`} className="rounded-2xl border border-border bg-card/80 px-2 py-3 backdrop-blur"><div className="text-lg font-black tabular-nums">{value}</div><div className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-muted-foreground">{label}</div></div>; }
 
+
+
+function CircuitSetup({ workout, anchorKey, onCreate }: { workout: ActiveWorkoutState; anchorKey: string; onCreate: (members: string[], work: number, rest: number, rounds: number) => void }) {
+  const [members, setMembers] = useState<string[]>([anchorKey]); const [work, setWork] = useState(300); const [rest, setRest] = useState(90); const [rounds, setRounds] = useState(3);
+  const eligible = workout.exercises.filter((e) => !isCardioExercise(e) && !e.circuitId);
+  return <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="mb-3 space-y-1">{eligible.map((e) => <button key={e.key} type="button" onClick={() => e.key !== anchorKey && setMembers((v) => v.includes(e.key) ? v.filter((k) => k !== e.key) : [...v,e.key])} className="flex min-h-11 w-full items-center justify-between rounded-xl bg-secondary px-3 text-sm font-bold"><span>{e.name}</span><span>{members.includes(e.key) ? "✓" : "○"}</span></button>)}</div><div className="grid grid-cols-3 gap-2">{[["Work",work,setWork,60],["Rest",rest,setRest,15],["Rounds",rounds,setRounds,1]].map(([label,value,setter,step]: any) => <div key={label} className="rounded-xl bg-secondary p-2 text-center"><div className="text-[0.62rem] font-bold uppercase text-muted-foreground">{label}</div><div className="my-1 font-extrabold">{label === "Rounds" ? value : formatClock(value)}</div><div className="flex justify-center gap-2"><button onClick={() => setter(Math.max(step, value-step))}>−</button><button onClick={() => setter(value+step)}>+</button></div></div>)}</div><Button className="mt-4 w-full" disabled={members.length < 2} onClick={() => onCreate(members,work,rest,rounds)}>Create circuit</Button></div>;
+}
+
+function CircuitMode({ circuit, members, run, now, onRun, onExit }: { circuit: { id: string; workSeconds: number; restSeconds: number; rounds: number }; members: ActiveExercise[]; run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number }; now: number; onRun: (run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null) => void; onExit: () => void }) {
+  const remaining = Math.max(0, Math.ceil((run.endsAt-now)/1000));
+  useEffect(() => { if (remaining > 0) return; if (run.phase === "countdown") onRun({ ...run, phase:"work", endsAt:Date.now()+circuit.workSeconds*1000 }); else if (run.phase === "work") onRun({ ...run, phase:"rest", endsAt:Date.now()+circuit.restSeconds*1000 }); else if (run.round >= circuit.rounds) onExit(); else onRun({ ...run, phase:"work", round:run.round+1, endsAt:Date.now()+circuit.workSeconds*1000 }); }, [remaining, run.phase, run.round]);
+  const countdown = run.phase === "countdown" ? remaining : run.phase === "rest" && remaining <= 3 ? remaining : null;
+  if (countdown !== null) return <div className="fixed inset-0 z-[100] grid place-items-center bg-background"><button className="absolute right-5 top-5 text-muted-foreground" onClick={onExit}><X /></button><div key={countdown} className="circuit-count-pop text-[10rem] font-black leading-none text-primary">{countdown || "GO"}</div><style>{`@keyframes circuitCountPop{0%{opacity:0;transform:scale(.45)}35%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}.circuit-count-pop{animation:circuitCountPop .75s cubic-bezier(.16,1,.3,1)}`}</style></div>;
+  return <div className="fixed inset-0 z-[100] flex flex-col bg-background px-5 pb-8 pt-[calc(1rem+env(safe-area-inset-top))]"><div className="flex justify-between"><button onClick={onExit}><X /></button><span className="text-xs font-extrabold">ROUND {run.round}/{circuit.rounds}</span></div><div className="flex flex-1 flex-col items-center justify-center"><div className="text-xs font-black uppercase tracking-[.25em] text-muted-foreground">{run.phase === "rest" ? "Rest" : "Circuit"}</div><div className="mt-3 text-7xl font-black tabular-nums">{formatClock(remaining)}</div>{run.phase === "work" ? <div className="mt-10 w-full max-w-sm space-y-3">{members.map((e,i) => <div key={e.key} className="text-center"><div className="text-xl font-extrabold">{e.name}</div>{i < members.length-1 && <div className="mt-2 text-muted-foreground">↓</div>}</div>)}<p className="pt-4 text-center text-xs font-semibold text-muted-foreground">Keep cycling until time</p></div> : <div className="mt-8 text-center text-sm font-bold text-muted-foreground">Next: Round {Math.min(run.round+1,circuit.rounds)}</div>}</div>{run.phase === "rest" && <Button variant="surface" onClick={() => onRun({ ...run, phase:"work", round:Math.min(run.round+1,circuit.rounds), endsAt:Date.now()+circuit.workSeconds*1000 })}>Skip rest</Button>}</div>;
+}
