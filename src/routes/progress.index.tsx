@@ -1,9 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Dumbbell } from "lucide-react";
+import { ChevronRight, Dumbbell, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Header, Screen, SectionHeading } from "@/components/recomp/core";
+import { Screen, SectionHeading } from "@/components/recomp/core";
 import { BodyweightCard } from "@/components/recomp/progress/bodyweight";
 import { PeriodSelector, PersonalRecordsCard, TrainingCalendar, TrainingPriorityBars, TrainingSummary, WorkoutRow } from "@/components/recomp/progress/progress-widgets";
 import { periodLabel, personalRecords, since, trainingPriority, trainingSummary, useTrainingData, type Period } from "@/lib/training-data";
@@ -25,10 +25,17 @@ function ProgressPage() {
 
   return (
     <Screen>
-      <Header title="Progress" />
+      <div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
+        <div aria-hidden className="pointer-events-none absolute -right-12 top-4 size-40 rounded-full bg-white/[0.09] blur-3xl" />
+        <div className="relative flex items-center justify-between gap-4">
+          <div className="wordmark text-primary-foreground">RECOMP'D</div>
+          <Link to="/settings" aria-label="Settings" className="grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Settings className="size-5" /></Link>
+        </div>
+        <h1 className="relative mt-4 text-[1.7rem] font-extrabold leading-tight">Progress</h1>
+      </div>
       {data && summary && (
-        <div className="-mt-2 space-y-5">
-          <PeriodSelector value={period} options={periods} onChange={setPeriod} />
+        <div className="relative z-10 -mt-5 space-y-5">
+          <PeriodSelector value={period} options={periods} onChange={setPeriod} className="relative z-10 border-primary/15 bg-card p-1 shadow-sm" />
           {data.workouts.length ? (
             <>
               <TrainingSummary label={periodLabel[period]} workouts={summary.workouts} sets={summary.sets} durationSec={summary.durationSec} />
