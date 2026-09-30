@@ -107,7 +107,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [removeKey, setRemoveKey] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
-  const [rest, setRest] = useState<{ endsAt: number; expanded: boolean } | null>(null);
+  const [rest, setRest] = useState<{ endsAt: number; expanded: boolean; duration: number } | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [circuitRun, setCircuitRun] = useState<{ id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null>(null);
   const [circuitMinimized, setCircuitMinimized] = useState(false);
@@ -238,7 +238,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         restAudioRef.current = audio;
         if (audio.state === "suspended") void audio.resume();
       }
-      window.setTimeout(() => setRest({ endsAt: Date.now() + (exerciseGroup?.restSeconds ?? exercise.restSeconds) * 1000, expanded: true }), 650);
+      window.setTimeout(() => setRest({ endsAt: Date.now() + (exerciseGroup?.restSeconds ?? exercise.restSeconds) * 1000, expanded: true, duration: exerciseGroup?.restSeconds ?? exercise.restSeconds }), 650);
     }
   };
 
@@ -329,7 +329,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     <>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {circuitRun && circuitMinimized && (() => { const circuit = workout.circuits?.find((item) => item.id === circuitRun.id); const remaining = Math.max(0, Math.ceil((circuitRun.endsAt - now) / 1000)); return circuit ? <button type="button" onClick={() => setCircuitMinimized(false)} className="sticky top-0 z-40 mt-2 w-full rounded-xl border border-primary/20 bg-card px-3 py-2 text-left shadow-sm"><span className="flex items-center gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10"><Clock3 className="size-4 text-primary"/></span><span className="min-w-0 flex-1"><span className="flex items-baseline justify-between gap-3"><span className="text-[0.68rem] font-black uppercase tracking-wider text-primary">{circuitRun.phase === "rest" ? "Rest" : "Circuit"}</span><span className="text-lg font-black tabular-nums">{formatClock(remaining)}</span></span><span className="mt-0.5 flex justify-between text-[0.68rem] font-semibold text-muted-foreground"><span>Round {circuitRun.round} of {circuit.rounds}</span><span>Tap to resume</span></span></span></span></button> : null; })()}
-      {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
+      {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000, duration: Math.max(1, rest.duration + amount) })} onSkip={() => setRest(null)} />}
       <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
           <div className="mt-3 space-y-2">
@@ -405,7 +405,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         </AlertDialogContent>
       </AlertDialog>
 
-      {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
+      {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} duration={rest.duration} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
       <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
@@ -553,13 +553,22 @@ function SetRow({ set, number, active, timed = false, attention = false, canRemo
   </div>;
 }
 
-function RestTimer({ seconds, onMinimize, onAdjust, onSkip }: { seconds: number; onMinimize: () => void; onAdjust: (seconds: number) => void; onSkip: () => void }) {
-  const total = 120;
-  const stroke = 2 * Math.PI * 74;
+function RestTimer({ seconds, duration, onMinimize, onAdjust, onSkip }: { seconds: number; duration: number; onMinimize: () => void; onAdjust: (seconds: number) => void; onSkip: () => void }) {
+  const segments = 60;
+  const active = Math.ceil(segments * Math.min(1, seconds / Math.max(1, duration)));
   return <div role="dialog" aria-label="Rest timer" className="fixed inset-0 z-[60] mx-auto flex max-w-[430px] -translate-y-12 flex-col items-center justify-center bg-background/95 px-5 backdrop-blur-xl" onClick={onMinimize}>
     <button type="button" aria-label="Minimize rest timer" className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] grid size-11 place-items-center text-muted-foreground"><ChevronDown /></button>
-    <div className="relative size-48" onClick={(event) => event.stopPropagation()}><svg viewBox="0 0 168 168" className="size-full -rotate-90"><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-track)" strokeWidth="7"/><circle cx="84" cy="84" r="74" fill="none" stroke="var(--color-primary)" strokeWidth="7" strokeLinecap="round" strokeDasharray={stroke} strokeDashoffset={stroke * (1 - Math.min(seconds / total, 1))}/></svg><div className="absolute inset-x-0 top-12 text-center text-[0.7rem] font-bold uppercase text-muted-foreground">Rest</div><div className="absolute inset-0 grid place-items-center text-5xl font-extrabold tabular-nums">{formatClock(seconds)}</div></div>
-    <div className="mt-7 flex items-center gap-3" onClick={(event) => event.stopPropagation()}><Button variant="surface" onClick={() => onAdjust(-15)}>−15 sec</Button><Button variant="surface" onClick={onSkip}>Skip</Button><Button variant="surface" onClick={() => onAdjust(15)}>+15 sec</Button></div>
+    <div className="relative size-64" onClick={(event) => event.stopPropagation()}>
+      <div aria-hidden className="pointer-events-none absolute inset-6 rounded-full bg-primary/[0.06] blur-2xl" />
+      <svg viewBox="0 0 200 200" aria-hidden="true" className={cn("relative size-full", seconds <= 10 && "motion-safe:animate-pulse")}>
+        {Array.from({ length: segments }, (_, i) => <line key={i} x1="100" y1="9" x2="100" y2="21" transform={`rotate(${i * 360 / segments} 100 100)`} stroke={i < active ? "var(--color-primary)" : "var(--color-track)"} strokeWidth="5.5" strokeLinecap="round" className="transition-colors duration-300 motion-reduce:transition-none" />)}
+      </svg>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+        <span className="mb-1 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Rest</span>
+        <span className="text-6xl font-extrabold tabular-nums">{formatClock(seconds)}</span>
+      </div>
+    </div>
+    <div className="mt-7 flex items-center gap-3" onClick={(event) => event.stopPropagation()}><Button variant="surface" onClick={() => onAdjust(-15)}>−15 sec</Button><Button variant="primary" className="px-6" onClick={onSkip}>Skip</Button><Button variant="surface" onClick={() => onAdjust(15)}>+15 sec</Button></div>
   </div>;
 }
 
