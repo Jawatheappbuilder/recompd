@@ -13,17 +13,17 @@ import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
 
-const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-accent text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent");
+const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15" : "border-border bg-card text-muted-foreground hover:bg-accent");
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" aria-pressed={active} onClick={onClick} className={chip(active)}>{children}</button>;
 }
 
-export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "generate" | "manual" }) {
+export function WorkoutBuilder({ initialMode = "generate", floatingSelector = false }: { initialMode?: "generate" | "manual"; floatingSelector?: boolean }) {
   const [mode, setMode] = useState(initialMode);
   return <div className="space-y-4">
-    <div className="grid grid-cols-2 rounded-xl border border-border bg-secondary p-1">
-      {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} onClick={() => setMode(value)}>{label}</Button>)}
+    <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
+      {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn(mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
     {mode === "generate" ? <GenerateMode /> : <ManualMode />}
   </div>;
@@ -41,14 +41,14 @@ function GenerateMode() {
     <section>
       <SectionHeading>Muscles</SectionHeading>
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
-      <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} onClick={() => toggle(m)} className="h-9 justify-between px-3">{m}{a && <Check />}</Button>; })}</div>
+      <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} aria-pressed={a} onClick={() => toggle(m)} className={cn("h-9 justify-between px-3 transition-all", a && "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15")}>{m}{a && <Check />}</Button>; })}</div>
     </section>
     <section>
       <SectionHeading>Exercises</SectionHeading>
-      <div className="grid grid-cols-6 gap-1.5 rounded-xl border border-border bg-secondary p-1">{[3, 4, 5, 6, 7, 8].map((n) => <Button key={n} variant={count === n ? "segmentActive" : "segment"} className={cn("tabular-nums", count === n && "text-primary")} onClick={() => setCount(n)}>{n}</Button>)}</div>
+      <div className="grid grid-cols-6 gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.045] p-1">{[3, 4, 5, 6, 7, 8].map((n) => <Button key={n} variant={count === n ? "segmentActive" : "segment"} className={cn("tabular-nums", count === n && "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90")} onClick={() => setCount(n)}>{n}</Button>)}</div>
       <p className="mt-1.5 truncate text-[0.7rem] font-semibold text-muted-foreground">{summary}</p>
     </section>
-    <Button variant="primary" size="lg" className="w-full" disabled={!selected.length} onClick={() => void navigate({ to: "/generated-workout", search: { muscles: selected.join(","), count, seed: Date.now() } })}>
+    <Button variant="primary" size="lg" className="w-full shadow-sm" disabled={!selected.length} onClick={() => void navigate({ to: "/generated-workout", search: { muscles: selected.join(","), count, seed: Date.now() } })}>
       <Sparkles />Generate workout
     </Button>
   </>;
