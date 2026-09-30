@@ -114,20 +114,28 @@ function Stat({ value, label, accent }: { value: string; label: string; accent?:
   return <div className="px-3"><div className={cn("font-display whitespace-nowrap text-[1.75rem] font-extrabold leading-none tabular-nums", accent && "text-primary")}>{value}</div><div className="mt-1 text-[0.7rem] font-medium text-muted-foreground">{label}</div></div>;
 }
 
+const muscleColors: Record<string, string> = {
+  chest: "#db666a", back: "#688ec0", legs: "#75ac8e", shoulders: "#d8a54e",
+  arms: "#9878c3", core: "#64aeb8", glutes: "#dc8c9f", calves: "#9b83c6",
+  quads: "#87949c", hamstrings: "#b18b6d",
+};
+const colorForMuscle = (name: string) =>
+  Object.entries(muscleColors).find(([key]) => name.toLowerCase().includes(key))?.[1] ?? "var(--primary)";
+
 const levelStyle: Record<WorkloadLevel, { bar: string; text: string }> = {
   "High workload": { bar: "bg-primary", text: "text-primary" },
   "Moderate workload": { bar: "bg-soft", text: "text-foreground" },
   "Low workload": { bar: "bg-soft/40", text: "text-muted-foreground" },
 };
 
-function AnimatedPriorityBar({ item, delay }: { item: { ratio: number; level: WorkloadLevel; score: number }; delay: number }) {
+function AnimatedPriorityBar({ item, delay }: { item: { muscle: string; ratio: number; level: WorkloadLevel; score: number }; delay: number }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(frame);
   }, []);
   const target = Math.max(item.ratio * 100, item.score ? 4 : 0);
-  return <div className="h-1.5 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none", levelStyle[item.level].bar)} style={{ width: visible ? `${target}%` : "0%", transitionDelay: `${delay}ms` }} /></div>;
+  return <div className="h-1.5 overflow-hidden rounded-full bg-track"><div className="h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: visible ? `${target}%` : "0%", transitionDelay: `${delay}ms`, background: `linear-gradient(90deg, color-mix(in srgb, ${colorForMuscle(item.muscle)} 70%, white), ${colorForMuscle(item.muscle)})` }} /></div>;
 }
 
 export function TrainingPriorityBars({ items }: { items: { muscle: string; ratio: number; level: WorkloadLevel; score: number }[] }) {
@@ -136,7 +144,7 @@ export function TrainingPriorityBars({ items }: { items: { muscle: string; ratio
     <Card className="space-y-1.5 p-4">
       {items.map((item, index) => (
         <div key={item.muscle} className="grid grid-cols-[5.5rem_minmax(0,1fr)_7.25rem] items-center gap-2">
-          <span className="text-xs font-bold">{item.muscle}</span>
+          <span className="flex items-center gap-1.5 text-xs font-bold"><span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: colorForMuscle(item.muscle) }} />{item.muscle}</span>
           <AnimatedPriorityBar item={item} delay={index * 55} />
           <span className={cn("text-right text-[0.68rem] font-bold", levelStyle[item.level].text)}>{item.level}</span>
         </div>
