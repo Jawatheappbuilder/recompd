@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarPlus, Dumbbell, Hammer, LogIn, Sparkles, UserPlus } from "lucide-react";
+import { CalendarPlus, Dumbbell, Hammer, LogIn, Settings, Sparkles, UserPlus } from "lucide-react";
 import { completeAccentChoice, hasCompletedAccentChoice, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
-import { Card, Header, Screen } from "@/components/recomp/core";
+import { Card, Screen } from "@/components/recomp/core";
 import { TodayWorkoutCard, UpcomingWorkoutCard } from "@/components/recomp/scheduled-cards";
 import { localDateKey, useUpcomingWorkouts } from "@/lib/workout-storage";
 import { BodyweightSummary, TrainingPriority, WeeklyTraining, WorkoutSummary } from "@/components/recomp/training-widgets";
@@ -32,7 +32,24 @@ function HomePage() {
   const upcoming = useUpcomingWorkouts();
   const today = upcoming.find((w) => w.date === localDateKey());
   const next = upcoming.find((w) => w !== today);
-  return <Screen><Header accent/>{showAccentChoice && <AccentChoiceCard accent={preferences.accent} onPreview={(accent) => setPreferences({ ...preferences, accent })} onSave={() => { completeAccentChoice(); setShowAccentChoice(false); }} />}<div className="mb-4"><p className="text-sm font-medium text-muted-foreground">{firstName ? `Hey, ${firstName}` : "Hey"}</p><h1 className="mt-0.5 text-2xl font-extrabold">Ready to train?</h1></div>{status === "demo" && <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-3.5"><div className="flex items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"><UserPlus className="size-[1.05rem]"/></span><span className="min-w-0 flex-1"><span className="block text-sm font-extrabold">Save your progress</span><span className="mt-0.5 block text-xs text-muted-foreground">Create an account or log in.</span></span></div><div className="mt-3 grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-10 text-xs"><Link to="/create-account"><UserPlus/>Create account</Link></Button><Button asChild variant="surface" className="h-10 text-xs"><Link to="/login"><LogIn/>Log in</Link></Button></div></div>}{today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action mb-4 overflow-hidden p-3.5"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}{next && <UpcomingWorkoutCard workout={next} className="mb-4 block"/>}<div className="space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
+  return <Screen><div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-12 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
+    <div aria-hidden className="pointer-events-none absolute -right-16 top-12 size-56 rounded-full bg-white/[0.10] blur-3xl" />
+    <div aria-hidden className="pointer-events-none absolute -left-12 bottom-0 size-40 rounded-full bg-white/[0.05] blur-3xl" />
+    <header className="relative flex items-center justify-between gap-4">
+      <div className="wordmark text-primary-foreground">RECOMP'D</div>
+      <Link to="/settings" aria-label="Settings" className="grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Settings className="size-5" /></Link>
+    </header>
+    <div className="relative mt-7">
+      <p className="text-sm font-semibold text-primary-foreground/75">{firstName ? `Hey, ${firstName}` : "Hey"}</p>
+      <h1 className="mt-1 text-[1.7rem] font-extrabold leading-tight">Ready to train?</h1>
+    </div>
+  </div>
+  {showAccentChoice && <div className="relative z-10 mt-3"><AccentChoiceCard accent={preferences.accent} onPreview={(accent) => setPreferences({ ...preferences, accent })} onSave={() => { completeAccentChoice(); setShowAccentChoice(false); }} /></div>}
+  <div className="relative z-10 -mt-7 space-y-3">{status === "demo" && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm">
+    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><UserPlus className="size-4" /></span>
+    <div className="min-w-[100px] flex-1"><div className="text-xs font-extrabold">Save your progress</div><div className="text-[0.65rem] text-muted-foreground">Create an account or log in</div></div>
+    <div className="flex gap-1.5"><Button asChild variant="primary" size="sm" className="h-8 px-2.5 text-[0.68rem]"><Link to="/create-account">Sign up</Link></Button><Button asChild variant="surface" size="sm" className="h-8 px-2.5 text-[0.68rem]"><Link to="/login"><LogIn className="size-3.5" />Log in</Link></Button></div>
+  </div>}{today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action overflow-hidden border-primary/15 bg-card p-3.5 shadow-[0_10px_32px_-22px_var(--primary)]"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}</div>{next && <UpcomingWorkoutCard workout={next} className="mb-4 block"/>}<div className="mt-4 space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
 }
 
 function AccentChoiceCard({ accent, onPreview, onSave }: { accent: AccentPreference; onPreview: (accent: AccentPreference) => void; onSave: () => void }) {
