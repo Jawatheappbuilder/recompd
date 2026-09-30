@@ -81,17 +81,25 @@ type FinishedWorkout = {
   volume: number;
 };
 
-const previousPerformance: Partial<Record<string, string>> = {
-  "bench-press": "30kg × 10",
-  "lat-pulldown": "55kg × 10",
-  "back-squat": "90kg × 8",
-  "barbell-row": "60kg × 8",
-};
+// Previous performance comes from account history, not sample exercise values.
 
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 const formatDuration = (seconds: number) => seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 
 export function ActiveWorkout({ workout, onChange, onCancel }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onCancel: () => void }) {
+  const trainingData = useTrainingData();
+  const previousPerformance = useMemo(() => {
+    const history: Record<string, string> = {};
+    const workouts = [...(trainingData?.workouts ?? [])].filter((w) => w.startedAt < workout.startedAt).sort((a, b) => b.startedAt - a.startedAt);
+    for (const previous of workouts) {
+      for (const exercise of previous.exercises) {
+        if (history[exercise.exerciseId]) continue;
+        const lastSet = [...exercise.sets].reverse().find((set) => set.kind !== "cardio");
+        if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} reps`;
+      }
+    }
+    return history;
+  }, [trainingData, workout.startedAt]);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
@@ -219,7 +227,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     if (completedExercise && currentKey === exercise.key) {
       currentKey = partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)
         ? partner.key
-        : nextExercises.find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
+        : [...nextExercises.slice(nextExercises.findIndex((item) => item.key === exercise.key) + 1), ...nextExercises.slice(0, nextExercises.findIndex((item) => item.key === exercise.key))].find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
@@ -285,7 +293,13 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const from = workout.exercises.findIndex((exercise) => exercise.key === active.id);
     const to = workout.exercises.findIndex((exercise) => exercise.key === over.id);
     if (from < 0 || to < 0) return;
-    onChange({ ...workout, exercises: arrayMove(workout.exercises, from, to) });
+    const currentIndex = workout.exercises.findIndex((exercise) => exercise.key === workout.currentKey);
+    const moved = arrayMove(workout.exercises, from, to);
+    // Only switch focus when the dragged exercise takes the current exercise's slot.
+    // Reordering future exercises must not interrupt the set in progress.
+    const replacingCurrent = to === currentIndex && from !== currentIndex;
+    onChange({ ...workout, exercises: moved, currentKey: replacingCurrent ? String(active.id) : workout.currentKey });
+    setExpandedUpcoming(null);
   };
 
   const finishWorkout = () => {
@@ -345,6 +359,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 completed={completed}
                 expanded={expanded}
                 pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
+                previous={previousPerformance[exercise.id]}
                 onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
                 onStart={() => startExercise(exercise.key)}
                 onSetChange={(setId, patch, propagate) => updateSet(exercise.key, setId, patch, propagate)}
@@ -439,8 +454,8 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
   </div>;
 }
 
-function ExerciseCard({ exercise, current, completed, expanded, pairedName, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
-  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined;
+function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
+  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string;
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number }; onStartCircuit?: () => void;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
@@ -455,7 +470,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, onTo
     {circuit && <div className="flex items-center justify-between border-t border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs"><span className="font-bold">Circuit · {formatClock(circuit.workSeconds)} × {circuit.rounds} rounds</span>{onStartCircuit && <Button size="sm" onClick={onStartCircuit}>Start circuit</Button>}</div>}
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
-        {previousPerformance[exercise.id] && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previousPerformance[exercise.id]}</p>}
+        {previous && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previous}</p>}
         <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">reps</span><span /></div>
         <div className="space-y-1">{warmupSets.length > 0 && workingStarted && <div className="mb-1 rounded-lg bg-secondary/60 px-2 py-2 text-[0.68rem] font-bold text-muted-foreground">✓ {warmupSets.filter((set) => set.completed).length} of {warmupSets.length} warm-up sets</div>}{exercise.sessionSets.map((set) => { const isWarmup = set.kind === "warmup"; const warmupIndex = warmupSets.findIndex((row) => row.id === set.id); const workingIndex = workingSets.findIndex((row) => row.id === set.id); if (isWarmup && workingStarted) return null; return <SetRow key={set.id} set={set} number={isWarmup ? `W${warmupIndex + 1}` : workingIndex + 1} active={current && set.id === exercise.sessionSets.find((row) => !row.completed)?.id} canRemove={!isWarmup && workingSets.length > 1} onChange={(patch, propagate) => onSetChange(set.id, patch, propagate)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />; })}</div>
         <div className="mt-2 flex items-center justify-between gap-2"><div className="flex items-center gap-1"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddWarmup}><Plus /> Warm-up</Button></div><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
@@ -499,13 +514,13 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     }
   };
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!canRemove || set.completed || active) return;
+    if (!canRemove || set.completed) return;
     const touch = event.touches[0]; if (!touch) return;
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setDragging(false);
   };
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!touchStart || !canRemove || set.completed || active) return;
+    if (!touchStart || !canRemove || set.completed) return;
     const touch = event.touches[0]; if (!touch) return;
     const dx = touch.clientX - touchStart.x;
     const dy = touch.clientY - touchStart.y;
@@ -520,14 +535,14 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     setTouchStart(null);
     setDragging(false);
   };
-  return <div ref={rowRef} className={cn("relative rounded-lg", active ? "overflow-visible" : "overflow-hidden", attention && "next-set-attention")}>
-    {canRemove && !set.completed && !active && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+  return <div ref={rowRef} className={cn("relative overflow-hidden rounded-lg", attention && "next-set-attention")}>
+    {canRemove && !set.completed && swipeX < -8 && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] scale-[1.018] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", set.kind === "warmup" && !set.completed && "bg-secondary/45 opacity-90", !dragging && "duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", set.kind === "warmup" && !set.completed && "bg-secondary/45 opacity-90", !dragging && "duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
       <span className={cn("text-center text-xs font-bold transition-colors", active ? "text-primary" : "text-muted-foreground")}>{number}</span>
@@ -655,7 +670,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
               {sets.map((set, index) => <div key={set.id} className="grid min-h-9 grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 text-xs">
                 <span className="text-center font-bold tabular-nums text-muted-foreground">{index + 1}</span>
                 <span className="font-semibold tabular-nums">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</span>
-                <span className="flex items-center gap-1">{index === bestIndex && sets.length > 1 && <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary">Best set</span>}{hasPr && index === bestIndex && <span className="rounded-full bg-primary px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary-foreground">PR</span>}</span>
+                <span className="flex items-center gap-1">{index === bestIndex && sets.length > 1 && <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary">Best set</span>}{hasPr && index === bestIndex && <span className="rounded-full bg-primary px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-amber-950" style={{ backgroundColor: "#F4C542" }}>PR</span>}</span>
               </div>)}
             </div>
           </Card>;
