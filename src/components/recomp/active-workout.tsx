@@ -95,7 +95,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       for (const exercise of previous.exercises) {
         if (history[exercise.exerciseId]) continue;
         const lastSet = [...exercise.sets].reverse().find((set) => set.kind !== "cardio");
-        if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} reps`;
+        if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
       }
     }
     return history;
@@ -669,7 +669,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
             <div className="px-4 py-2">
               {sets.map((set, index) => <div key={set.id} className="grid min-h-9 grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 text-xs">
                 <span className="text-center font-bold tabular-nums text-muted-foreground">{index + 1}</span>
-                <span className="font-semibold tabular-nums">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}</span>
+                <span className="font-semibold tabular-nums">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} ${isTimedHold(exercise) ? "sec" : "reps"}` : `${set.weight} kg × ${set.reps}${isTimedHold(exercise) ? " sec" : ""}`}</span>
                 <span className="flex items-center gap-1">{index === bestIndex && sets.length > 1 && <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary">Best set</span>}{hasPr && index === bestIndex && <span className="rounded-full bg-primary px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-amber-950" style={{ backgroundColor: "#F4C542" }}>PR</span>}</span>
               </div>)}
             </div>
