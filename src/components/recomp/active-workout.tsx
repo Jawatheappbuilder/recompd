@@ -227,7 +227,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     if (completedExercise && currentKey === exercise.key) {
       currentKey = partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)
         ? partner.key
-        : nextExercises.find((item) => item.key !== exercise.key && !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
+        : [...nextExercises.slice(nextExercises.findIndex((item) => item.key === exercise.key) + 1), ...nextExercises.slice(0, nextExercises.findIndex((item) => item.key === exercise.key))].find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
@@ -293,10 +293,12 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const from = workout.exercises.findIndex((exercise) => exercise.key === active.id);
     const to = workout.exercises.findIndex((exercise) => exercise.key === over.id);
     if (from < 0 || to < 0) return;
-    // The newly dragged exercise is also the one the user intends to work on next.
-    // Keep currentKey aligned with the visual order to avoid jumping to its old neighbour.
+    const currentIndex = workout.exercises.findIndex((exercise) => exercise.key === workout.currentKey);
     const moved = arrayMove(workout.exercises, from, to);
-    onChange({ ...workout, exercises: moved, currentKey: String(active.id) });
+    // Only switch focus when the dragged exercise takes the current exercise's slot.
+    // Reordering future exercises must not interrupt the set in progress.
+    const replacingCurrent = to === currentIndex && from !== currentIndex;
+    onChange({ ...workout, exercises: moved, currentKey: replacingCurrent ? String(active.id) : workout.currentKey });
     setExpandedUpcoming(null);
   };
 
