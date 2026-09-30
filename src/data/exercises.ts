@@ -8,6 +8,8 @@ export type Exercise = {
   id: string; name: string; muscle: Muscle; equipment: Equipment; type: ExerciseType;
   muscles?: Muscle[]; custom?: boolean; tracking?: "strength" | "cardio"; cardioMetrics?: CardioMetric[];
 };
+/** Static holds are recorded by elapsed seconds, not repetitions. */
+export const isTimedHold = (exercise: Pick<Exercise, "name">) => /\b(plank|wall sit|isometric hold|dead hang|l-sit|hollow hold|glute bridge hold|static hold)\b/i.test(exercise.name);
 export const isCardioExercise = (exercise: Pick<Exercise, "tracking" | "type">) => exercise.tracking === "cardio" || exercise.type === "Cardio";
 export const muscleLabel = (exercise: Pick<Exercise, "muscle" | "muscles" | "tracking">) => exercise.tracking === "cardio" ? "Cardio" : (exercise.muscles?.length ? exercise.muscles : [exercise.muscle]).join(" + ");
 export const exerciseLabel = (exercise: Pick<Exercise, "muscle" | "muscles" | "tracking" | "equipment">) => `${muscleLabel(exercise)} · ${exercise.equipment}`;
@@ -127,7 +129,7 @@ const preferredRestSeconds = () => {
 };
 export const toWorkoutExercise = (exercise: Exercise): WorkoutExercise => isCardioExercise(exercise)
   ? { ...exercise, key: `${exercise.id}-${seq++}`, sets: 1, reps: "", targetDurationSeconds: 1200, restSeconds: 0 }
-  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: preferredDefaults().reps, restSeconds: preferredRestSeconds() };
+  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: isTimedHold(exercise) ? "30" : preferredDefaults().reps, restSeconds: preferredRestSeconds() };
 
 const shuffle = <T,>(items: T[], random: () => number = Math.random) => {
   const result = [...items];

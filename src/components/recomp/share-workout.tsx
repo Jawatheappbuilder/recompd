@@ -3,16 +3,17 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { isTimedHold } from "@/data/exercises";
 import { formatDuration, formatKg, formatLongDay, formatPerformance, isCardioSet, setCount, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 
 type Pr = { exerciseId: string; set: CompletedSet };
 
 /* ---------- formatting ---------- */
 
-const setLabel = (set: CompletedSet) => set.weight > 0 ? `${formatKg(set.weight)} × ${set.reps}` : `${set.reps} reps`;
+const setLabel = (set: CompletedSet, timed = false) => timed ? `${set.reps} sec` : set.weight > 0 ? `${formatKg(set.weight)} × ${set.reps}` : `${set.reps} reps`;
 
 /** Condenses consecutive identical sets: "80 kg × 8 × 3 sets". */
-export function condensedSets(sets: CompletedSet[]) {
+export function condensedSets(sets: CompletedSet[], timed = false) {
   if (sets.some(isCardioSet)) return sets.map(formatPerformance);
   const groups: { set: CompletedSet; count: number }[] = [];
   for (const set of sets) {
@@ -20,11 +21,11 @@ export function condensedSets(sets: CompletedSet[]) {
     if (last && last.set.weight === set.weight && last.set.reps === set.reps) last.count += 1;
     else groups.push({ set, count: 1 });
   }
-  return groups.map(({ set, count }) => count > 1 ? `${setLabel(set)} × ${count} sets` : setLabel(set));
+  return groups.map(({ set, count }) => count > 1 ? `${setLabel(set, timed)} × ${count} sets` : setLabel(set, timed));
 }
 
 export function workoutShareText(workout: CompletedWorkout) {
-  const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map(formatPerformance).join(", ")}`).join("\n");
+  const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map((set) => isTimedHold(e) ? setLabel(set, true) : formatPerformance(set)).join(", ")}`).join("\n");
   return `${workout.name}\n${formatDuration(workout.durationSec)}\n\n${details}\n\nTracked with RECOMP'D`;
 }
 
@@ -98,7 +99,7 @@ function layout(ctx: CanvasRenderingContext2D, workout: CompletedWorkout, prs: P
     ctx.font = `700 ${NAME_SIZE}px ${SANS}`;
     const name = wrap(ctx, e.name, inner - (pr ? 110 : 0));
     ctx.font = `600 ${SET_SIZE}px ${SANS}`;
-    const sets = wrapChips(ctx, condensedSets(e.sets), inner);
+    const sets = wrapChips(ctx, condensedSets(e.sets, isTimedHold(e)), inner);
     return { name, sets, pr };
   });
   const header = 230 + title.length * titleSize * 0.95 + 100;

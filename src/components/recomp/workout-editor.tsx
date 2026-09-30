@@ -27,6 +27,7 @@ import {
   muscleGroups,
   muscleLabel,
   isCardioExercise,
+  isTimedHold,
   toWorkoutExercise,
   type Equipment,
   type Exercise,
@@ -148,6 +149,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
       {supersets && <PlanCircuitDrawer exercise={sheet.kind==="planCircuit"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,work,rest,rounds)=>{ const id=`circuit-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,circuitId:id,circuitWorkSeconds:work,circuitRestSeconds:rest,circuitRounds:rounds,circuitReps:10}:e)); setSheet({kind:"closed"}); }}/>}
       <RepDrawer
         open={sheet.kind === "reps"}
+        timed={sheet.kind === "reps" && isTimedHold(workout.find((item) => item.key === sheet.key) ?? { name: "" })}
         value={sheet.kind === "reps" ? workout.find((item) => item.key === sheet.key)?.reps : undefined}
         onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(reps) => { if (sheet.kind === "reps") update(sheet.key, { reps }); setSheet({ kind: "closed" }); }}
@@ -215,7 +217,7 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDurati
             <span className="w-12 text-center text-[0.7rem] font-bold tabular-nums">{exercise.sets} sets</span>
             <Button variant="ghost" size="icon" className="size-8" aria-label={`More sets for ${exercise.name}`} onClick={() => onSets(Math.min(10, exercise.sets + 1))}><Plus /></Button>
           </div>}
-          {isCardioExercise(exercise) ? <Button variant="surface" size="sm" className="h-9 px-3 text-[0.7rem] tabular-nums" onClick={onDuration}>{Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min target</Button> : <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{exercise.reps} reps</Button>}
+          {isCardioExercise(exercise) ? <Button variant="surface" size="sm" className="h-9 px-3 text-[0.7rem] tabular-nums" onClick={onDuration}>{Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min target</Button> : <Button variant="surface" size="sm" className="h-9 px-2.5 text-[0.7rem] tabular-nums" onClick={onReps}>{isTimedHold(exercise) ? `${exercise.reps} sec` : `${exercise.reps} reps`}</Button>}
           <div className="flex items-center">
             {onActions && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", (exercise.groupId||exercise.circuitId||partnerName) && "text-primary")} aria-label={`Options for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button>}{!onActions && onSuperset && <Button variant="ghost" size="icon" className={cn("size-9 text-muted-foreground", partnerName && "text-primary")} aria-label={`Superset ${exercise.name}`} onClick={onSuperset}><Link2 /></Button>}
             <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Replace ${exercise.name}`} onClick={onReplace}><Shuffle /></Button>
@@ -293,13 +295,13 @@ function SupersetDrawer({ exercise, workout, onClose, onPair, onUnlink }: {
   );
 }
 
-function RepDrawer({ open, value, onOpenChange, onSelect }: { open: boolean; value: string | undefined; onOpenChange: (open: boolean) => void; onSelect: (value: string) => void }) {
+function RepDrawer({ open, timed = false, value, onOpenChange, onSelect }: { open: boolean; timed?: boolean; value: string | undefined; onOpenChange: (open: boolean) => void; onSelect: (value: string) => void }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover">
-        <DrawerHeader className="pb-2 text-left"><DrawerTitle>Target reps</DrawerTitle></DrawerHeader>
+        <DrawerHeader className="pb-2 text-left"><DrawerTitle>{timed ? "Target hold (seconds)" : "Target reps"}</DrawerTitle></DrawerHeader>
         <div className="grid grid-cols-2 gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          {repRanges.map((range) => <Button key={range} variant={value === range ? "choiceActive" : "choice"} className="h-11 tabular-nums" onClick={() => onSelect(range)}>{range} reps</Button>)}
+          {(timed ? ["15", "20", "30", "45", "60", "90", "120", "180"] : repRanges).map((range) => <Button key={range} variant={value === range ? "choiceActive" : "choice"} className="h-11 tabular-nums" onClick={() => onSelect(range)}>{range} {timed ? "sec" : "reps"}</Button>)}
         </div>
       </DrawerContent>
     </Drawer>
