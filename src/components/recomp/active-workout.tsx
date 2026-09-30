@@ -219,7 +219,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     if (completedExercise && currentKey === exercise.key) {
       currentKey = partner && !partner.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed)
         ? partner.key
-        : nextExercises.find((item) => !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
+        : nextExercises.find((item) => item.key !== exercise.key && !item.sessionSets.filter((row) => row.kind !== "warmup").every((row) => row.completed))?.key ?? exercise.key;
     }
     onChange({ ...workout, exercises: nextExercises, currentKey });
     setExpandedUpcoming(null);
@@ -285,7 +285,11 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const from = workout.exercises.findIndex((exercise) => exercise.key === active.id);
     const to = workout.exercises.findIndex((exercise) => exercise.key === over.id);
     if (from < 0 || to < 0) return;
-    onChange({ ...workout, exercises: arrayMove(workout.exercises, from, to) });
+    // The newly dragged exercise is also the one the user intends to work on next.
+    // Keep currentKey aligned with the visual order to avoid jumping to its old neighbour.
+    const moved = arrayMove(workout.exercises, from, to);
+    onChange({ ...workout, exercises: moved, currentKey: String(active.id) });
+    setExpandedUpcoming(null);
   };
 
   const finishWorkout = () => {
@@ -499,13 +503,13 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     }
   };
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!canRemove || set.completed || active) return;
+    if (!canRemove || set.completed) return;
     const touch = event.touches[0]; if (!touch) return;
     setTouchStart({ x: touch.clientX, y: touch.clientY });
     setDragging(false);
   };
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!touchStart || !canRemove || set.completed || active) return;
+    if (!touchStart || !canRemove || set.completed) return;
     const touch = event.touches[0]; if (!touch) return;
     const dx = touch.clientX - touchStart.x;
     const dy = touch.clientY - touchStart.y;
@@ -520,8 +524,8 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     setTouchStart(null);
     setDragging(false);
   };
-  return <div ref={rowRef} className={cn("relative rounded-lg", active ? "overflow-visible" : "overflow-hidden", attention && "next-set-attention")}>
-    {canRemove && !set.completed && !active && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+  return <div ref={rowRef} className={cn("relative rounded-lg", swipeX === 0 && active ? "overflow-visible" : "overflow-hidden", attention && "next-set-attention")}>
+    {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
