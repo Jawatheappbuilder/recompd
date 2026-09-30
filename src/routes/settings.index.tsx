@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CircleUserRound, Cloud, Dumbbell, FileText, Info, LogIn, Mail, Palette, RefreshCcw, Shield, SlidersHorizontal, UserPlus } from "lucide-react";
+import { BookOpen, CircleUserRound, Cloud, Dumbbell, FileText, Info, LogIn, Mail, Palette, RefreshCcw, Shield, SlidersHorizontal, UserPlus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { Screen } from "@/components/recomp/core";
 import { SettingsHeader, SettingsLink, SettingsRow, SettingsSection } from "@/components/recomp/settings-ui";
@@ -18,7 +18,7 @@ function SettingsPage() {
   return <Screen><SettingsHeader title="Settings" /><div className="space-y-5">
     <SettingsSection title="Profile"><SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} /></SettingsSection>
     <SettingsSection title="Training"><SettingsLink to="/settings/training" icon={SlidersHorizontal} label="Training preferences" value={`${preferences.weightUnit} · ${preferences.defaultRestSeconds}s`} /></SettingsSection>
-    <SettingsSection title="Exercises"><SettingsLink to="/settings/exercises" icon={Dumbbell} label="Manage custom exercises" /></SettingsSection>
+    <SettingsSection title="Exercises"><SettingsLink to="/settings/glossary" icon={BookOpen} label="Exercise glossary" value="Browse movements" /><SettingsLink to="/settings/exercises" icon={Dumbbell} label="Manage custom exercises" /></SettingsSection>
     <SettingsSection title="Appearance"><SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={`${theme} · ${preferences.accent === "blue" ? "Blue" : preferences.accent === "black" ? "Black" : "Red"}`} /></SettingsSection>
     <SettingsSection title="Account">{status === "demo" ? <><SettingsRow icon={UserPlus} label="Create account" value="Save your progress" onClick={() => void navigate({ to: "/create-account" })} /><SettingsRow icon={LogIn} label="Log in" value="Use an existing account" onClick={() => void navigate({ to: "/login" })} /></> : <SettingsLink to="/settings/account" icon={CircleUserRound} label="Account" value={user?.email ?? "Account"} />}</SettingsSection>
     <SettingsSection title="Data"><SettingsRow icon={Cloud} label="Export data" value="Coming later" disabled /></SettingsSection>
