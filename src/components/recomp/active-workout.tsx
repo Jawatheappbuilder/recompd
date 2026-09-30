@@ -133,17 +133,23 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       if (restWasActiveRef.current) {
         const audio = restAudioRef.current;
         if (audio && audio.state === "running") {
-          const oscillator = audio.createOscillator();
-          const gain = audio.createGain();
-          oscillator.type = "sine";
-          oscillator.frequency.setValueAtTime(660, audio.currentTime);
-          gain.gain.setValueAtTime(0.0001, audio.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.08, audio.currentTime + 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.28);
-          oscillator.connect(gain);
-          gain.connect(audio.destination);
-          oscillator.start();
-          oscillator.stop(audio.currentTime + 0.3);
+          // A short two-strike gym-timer bell: much easier to notice than the old single beep.
+          [0, 0.32].forEach((delay, index) => {
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+            const start = audio.currentTime + delay;
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(index === 0 ? 880 : 1040, start);
+            oscillator.frequency.exponentialRampToValueAtTime(index === 0 ? 660 : 780, start + 0.42);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.18, start + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start(start);
+            oscillator.stop(start + 0.52);
+          });
+          navigator.vibrate?.([120, 70, 120]);
         }
       }
       restWasActiveRef.current = false;
