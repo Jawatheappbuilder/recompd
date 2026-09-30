@@ -61,7 +61,7 @@ export function WeeklyTraining() {
   const end = start + 7 * DAY_MS;
   const scheduledByDay = new Map(scheduled.filter((item) => !item.completedAt).map((item) => [item.date, item.id]));
   const scheduledThisWeek = scheduled.filter((item) => !item.completedAt && (() => { const [y, m, d] = item.date.split("-").map(Number); const ts = new Date(y!, m! - 1, d!).getTime(); return ts >= start && ts < end; })()).length;
-  return <section><SectionHeading>This week</SectionHeading><Card className="p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><CountUpMetric value={summary.workouts} label="Completed" accent/><CountUpMetric value={scheduledThisWeek} label="Scheduled"/><TrainingTimeMetric seconds={summary.durationSec}/></div></Card></section>;
+  return <section><SectionHeading>This week</SectionHeading><Card className="relative overflow-hidden p-3.5"><div aria-hidden className="pointer-events-none absolute -right-10 -top-14 size-32 rounded-full bg-primary/[0.07] blur-3xl" /><div className="relative grid grid-cols-[76px_minmax(0,1fr)] items-center gap-2.5"><ProgressRing size={76} current={summary.workouts} target={target} value={Math.min(100, (summary.workouts / target) * 100)}/><div className="min-w-0"><WeekTracker start={start} startsOn={preferences.weekStartsOn} trainedDays={new Set(week.map((workout) => dayKey(workout.startedAt)))} scheduledByDay={scheduledByDay} /></div></div><div className="mt-3 grid grid-cols-3 border-t border-border pt-2.5"><CountUpMetric value={summary.workouts} label="Completed" accent/><CountUpMetric value={scheduledThisWeek} label="Scheduled"/><TrainingTimeMetric seconds={summary.durationSec}/></div></Card></section>;
 }
 
 function CountUpMetric({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
@@ -123,19 +123,22 @@ function TrainingTimeMetric({ seconds }: { seconds: number }) {
   return <div ref={element} role="img" aria-label={`Training time ${formatDuration(seconds)}`}><div aria-hidden="true"><Metric value={formatDuration(displaySeconds)} label="Training time"/></div></div>;
 }
 
-function WorkloadBar({ ratio, low, delay }: { ratio: number; low: boolean; delay: number }) {
+const homeMuscleColors: Record<string, string> = { shoulders: "#d8a54e", hamstrings: "#b18b6d", back: "#688ec0", chest: "#db666a", legs: "#75ac8e", arms: "#9878c3", core: "#64aeb8", glutes: "#dc8c9f", calves: "#9b83c6", quads: "#87949c" };
+const homeMuscleColor = (muscle: string) => Object.entries(homeMuscleColors).find(([name]) => muscle.toLowerCase().includes(name))?.[1] ?? "var(--primary)";
+
+function WorkloadBar({ ratio, low, delay, color }: { ratio: number; low: boolean; delay: number; color: string }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <div className="h-1 overflow-hidden rounded-full bg-track"><div className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none", low ? "bg-muted-foreground" : "bg-primary")} style={{ width: visible ? `${Math.round(ratio * 100)}%` : "0%", transitionDelay: `${delay}ms` }} /></div>;
+  return <div className="h-1 overflow-hidden rounded-full bg-track"><div className="h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: visible ? `${Math.round(ratio * 100)}%` : "0%", transitionDelay: `${delay}ms`, background: low ? `color-mix(in srgb, ${color} 65%, var(--background))` : `linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white), ${color})` }} /></div>;
 }
 
 export function TrainingPriority({ compact = false }: { compact?: boolean }) {
   const data = useTrainingData();
   const items = trainingPriority(data?.workouts ?? [], since("4W")).filter((item) => item.score > 0).slice(0, compact ? 3 : undefined);
-  return <section><SectionHeading>Muscle workload · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{items.length ? items.map((item, index) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="font-semibold">{item.muscle}</span><span className={cn("shrink-0 font-bold", item.level === "High workload" ? "text-primary" : "text-muted-foreground")}>{item.level}</span></div><WorkloadBar ratio={item.ratio} low={item.level === "Low workload"} delay={index * 55} /></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle workload.</p>}</Card></section>;
+  return <section><SectionHeading>Muscle workload · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{items.length ? items.map((item, index) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="flex items-center gap-1.5 font-semibold"><span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: homeMuscleColor(item.muscle) }} />{item.muscle}</span><span className="shrink-0 font-bold text-muted-foreground">{item.level}</span></div><WorkloadBar ratio={item.ratio} low={item.level === "Low workload"} delay={index * 55} color={homeMuscleColor(item.muscle)} /></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle workload.</p>}</Card></section>;
 }
 
 function relativeDay(ts: number) {
@@ -154,7 +157,7 @@ export function BodyweightSummary() {
   const recent = entries.slice(-7); const min = Math.min(...recent.map((e) => e.kg)); const max = Math.max(...recent.map((e) => e.kg));
   if (!latest) return <section><SectionHeading>Bodyweight</SectionHeading><Card className="p-4"><Link to="/progress/bodyweight" className="text-xs text-muted-foreground">No bodyweight logged yet. <span className="font-semibold text-primary">Log weight</span></Link></Card></section>;
   const Trend = change && change.delta > 0 ? TrendingUp : TrendingDown;
-  return <section><SectionHeading>Bodyweight</SectionHeading><Card className="flex items-center justify-between p-4"><div><div className="text-2xl font-black tabular-nums">{formatKg(latest.kg).replace(" kg", "")} <span className="text-sm text-muted-foreground">kg</span></div>{change ? <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-primary"><Trend className="size-3.5"/>{formatKg(Math.abs(Math.round(change.delta * 10) / 10))} <span className="font-medium text-muted-foreground">over {change.days} days</span></div> : <div className="mt-1 text-xs text-muted-foreground">{formatDay(latest.loggedAt)}</div>}</div><div className="flex h-10 items-end gap-1" aria-hidden="true">{recent.map((entry) => <span key={entry.id} className="w-1 rounded-full bg-primary/70" style={{ height: max === min ? 20 : 10 + ((entry.kg - min) / (max - min)) * 30 }} />)}</div></Card></section>;
+  return <section><SectionHeading>Bodyweight</SectionHeading><Card className="flex items-center justify-between overflow-hidden p-4"><div><div className="text-2xl font-black tabular-nums">{formatKg(latest.kg).replace(" kg", "")} <span className="text-sm text-muted-foreground">kg</span></div>{change ? <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-primary"><Trend className="size-3.5"/>{formatKg(Math.abs(Math.round(change.delta * 10) / 10))} <span className="font-medium text-muted-foreground">over {change.days} days</span></div> : <div className="mt-1 text-xs text-muted-foreground">{formatDay(latest.loggedAt)}</div>}</div><div className="flex h-10 items-end gap-1" aria-hidden="true">{recent.map((entry) => <span key={entry.id} className="w-1.5 rounded-full bg-primary/75" style={{ height: max === min ? 20 : 10 + ((entry.kg - min) / (max - min)) * 30 }} />)}</div></Card></section>;
 }
 
 export function StatChip({ icon: Icon = Flame, value, label }: { icon?: typeof Flame; value: string; label: string }) {
