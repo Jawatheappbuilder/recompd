@@ -536,7 +536,7 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     setDragging(false);
   };
   return <div ref={rowRef} className={cn("relative overflow-hidden rounded-lg", attention && "next-set-attention")}>
-    {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
+    {canRemove && !set.completed && swipeX < -8 && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
