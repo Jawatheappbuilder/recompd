@@ -129,7 +129,7 @@ const preferredRestSeconds = () => {
 };
 export const toWorkoutExercise = (exercise: Exercise): WorkoutExercise => isCardioExercise(exercise)
   ? { ...exercise, key: `${exercise.id}-${seq++}`, sets: 1, reps: "", targetDurationSeconds: 1200, restSeconds: 0 }
-  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: preferredDefaults().reps, restSeconds: preferredRestSeconds() };
+  : { ...exercise, key: `${exercise.id}-${seq++}`, sets: exercise.type === "Compound" ? 4 : 3, reps: isTimedHold(exercise) ? "30" : preferredDefaults().reps, restSeconds: preferredRestSeconds() };
 
 const shuffle = <T,>(items: T[], random: () => number = Math.random) => {
   const result = [...items];
