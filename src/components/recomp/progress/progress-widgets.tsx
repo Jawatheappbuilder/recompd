@@ -17,7 +17,7 @@ export function PeriodSelector<T extends Period>({ value, options, onChange, cla
     <div role="radiogroup" className={cn("inline-flex rounded-lg border border-border bg-secondary p-0.5", className)}>
       {options.map((option) => (
         <button key={option} type="button" role="radio" aria-checked={value === option} onClick={() => onChange(option)}
-          className={cn("h-7 min-w-10 rounded-md px-2 text-[0.68rem] font-bold tabular-nums transition-colors", value === option ? "bg-elevated text-primary" : "text-muted-foreground hover:text-foreground")}>
+          className={cn("h-7 min-w-10 rounded-md px-2 text-[0.68rem] font-bold tabular-nums transition-colors", value === option ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15" : "text-muted-foreground hover:text-foreground")}>
           {option}
         </button>
       ))}
@@ -99,12 +99,12 @@ function CountUpDurationStat({ seconds, label }: { seconds: number; label: strin
 
 export function TrainingSummary({ label, workouts, sets, durationSec }: { label: string; workouts: number; sets: number; durationSec: number }) {
   return (
-    <Card className="relative overflow-hidden p-4">
+    <Card className="relative overflow-hidden border-primary/10 p-4">
       <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-36 rounded-full bg-primary/10 blur-3xl" />
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.13em] text-muted-foreground">{label}</p>
       <div className="mt-2 grid grid-cols-3 divide-x divide-border">
         <CountUpStat value={workouts} label="workouts" accent />
-        <CountUpStat value={sets} label="sets" />
+        <CountUpStat value={sets} label="sets" accent />
         <CountUpDurationStat seconds={durationSec} label="trained" />
       </div>
     </Card>
