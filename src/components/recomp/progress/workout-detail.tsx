@@ -1,6 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Minus, Pencil, Plus, Trash2, Trophy, X } from "lucide-react";
+import { BookmarkPlus, Minus, Pencil, Plus, Trash2, Trophy, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
+import { saveWorkout } from "@/lib/workout-storage";
+import { ShareLinkButton } from "../share-link-button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -14,12 +18,39 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(workout.name);
+  const templateExercises = () => workout.exercises.map((item) => {
+    const original = exercises.find((exercise) => exercise.id === item.exerciseId);
+    const base: Exercise = original ?? {
+      id: item.exerciseId, name: item.name, muscle: item.muscles[0] ?? "Core",
+      muscles: item.muscles, equipment: item.equipment,
+      type: item.tracking === "cardio" ? "Cardio" as const : "Isolation" as const,
+      tracking: item.tracking, cardioMetrics: item.cardioMetrics, custom: true,
+    };
+    const plan = toWorkoutExercise(base);
+    return { ...plan, key: crypto.randomUUID(), sets: item.sets.length || plan.sets };
+  });
+  const saveTemplate = () => {
+    if (!workout.exercises.length) return toast.error("No exercises to save");
+    saveWorkout({ id: crypto.randomUUID(), name: workout.name, exercises: templateExercises(), createdAt: Date.now() });
+    toast.success("Saved to your workouts");
+  };
+  const saveName = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return toast.error("Enter a workout name");
+    updateWorkout({ ...workout, name: trimmed.slice(0, 120) });
+    setRenaming(false);
+    toast.success("Workout renamed");
+  };
   if (editing) return <WorkoutEditForm workout={workout} onDone={() => setEditing(false)} />;
   const volume = volumeOf(workout);
 
   return (
     <>
       <SubHeader title={workout.name} subtitle={formatLongDay(workout.startedAt)} action={<Button variant="surface" size="icon" className="size-10" aria-label="Edit workout" onClick={() => setEditing(true)}><Pencil /></Button>} />
+      {renaming && <Card className="mb-3 flex items-center gap-2 p-3"><input aria-label="Workout name" autoFocus maxLength={120} value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") saveName(); if (event.key === "Escape") setRenaming(false); }} className="min-w-0 flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm" /><Button onClick={saveName}>Save</Button><Button variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></Card>}
+      {!renaming && <Button variant="ghost" size="sm" className="mb-3" onClick={() => { setName(workout.name); setRenaming(true); }}><Pencil />Rename workout</Button>}
       <Card className="grid grid-cols-3 divide-x divide-border p-4">
         {[[formatDuration(workout.durationSec), "duration"], [String(setCount(workout)), "sets"], [volume ? `${Math.round(volume).toLocaleString()}` : "—", volume ? "kg volume" : "volume"]].map(([value, label]) => (
           <div key={label} className="px-3 first:pl-0"><div className="font-display text-2xl font-extrabold tabular-nums">{value}</div><div className="text-[0.7rem] text-muted-foreground">{label}</div></div>
@@ -41,6 +72,8 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           );
         })}
       </div>
+      <Button variant="surface" className="mt-4 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
+      <ShareLinkButton name={workout.name} exercises={templateExercises()} className="mt-2 w-full" />
       <ShareWorkoutButton workout={workout} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
       <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
@@ -64,7 +97,7 @@ function WorkoutEditForm({ workout, onDone }: { workout: CompletedWorkout; onDon
     exercises: current.exercises.map((exercise) => exercise.key === exerciseKey ? { ...exercise, sets: exercise.sets.map((set, i) => i === index ? { ...set, ...patch } : set) } : exercise),
   }));
   const editSets = (exerciseKey: string, fn: (sets: CompletedSet[]) => CompletedSet[]) => setDraft((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.key === exerciseKey ? { ...exercise, sets: fn(exercise.sets) } : exercise) }));
-  const save = () => { updateWorkout({ ...draft, exercises: draft.exercises.filter((exercise) => exercise.sets.length) }); onDone(); };
+  const save = () => { if (!draft.name.trim()) return; updateWorkout({ ...draft, name: draft.name.trim(), exercises: draft.exercises.filter((exercise) => exercise.sets.length) }); onDone(); };
 
   return (
     <>
@@ -73,6 +106,7 @@ function WorkoutEditForm({ workout, onDone }: { workout: CompletedWorkout; onDon
         <h1 className="text-base font-extrabold">Edit workout</h1>
         <Button variant="ghost" onClick={save} className="px-2 text-primary">Save</Button>
       </header>
+      <Card className="mb-3 p-4"><label className="mb-2 block text-sm font-bold" htmlFor="history-workout-name">Workout name</label><input id="history-workout-name" maxLength={120} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm" /></Card>
       <Card className="flex items-center justify-between gap-3 p-4">
         <div><div className="text-sm font-bold">Duration</div><div className="text-[0.7rem] text-muted-foreground">{formatDuration(draft.durationSec)}</div></div>
         <div className="flex items-center gap-1">
