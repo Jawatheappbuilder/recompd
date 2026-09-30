@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { BookmarkPlus, Minus, Pencil, Plus, Trash2, Trophy, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { exercises, toWorkoutExercise } from "@/data/exercises";
+import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { saveWorkout } from "@/lib/workout-storage";
 import { ShareLinkButton } from "../share-link-button";
 import {
@@ -22,7 +22,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
   const [name, setName] = useState(workout.name);
   const templateExercises = () => workout.exercises.map((item) => {
     const original = exercises.find((exercise) => exercise.id === item.exerciseId);
-    const base = original ?? {
+    const base: Exercise = original ?? {
       id: item.exerciseId, name: item.name, muscle: item.muscles[0] ?? "Core",
       muscles: item.muscles, equipment: item.equipment,
       type: item.tracking === "cardio" ? "Cardio" as const : "Isolation" as const,
