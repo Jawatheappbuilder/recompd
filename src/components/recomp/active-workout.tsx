@@ -133,17 +133,28 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       if (restWasActiveRef.current) {
         const audio = restAudioRef.current;
         if (audio && audio.state === "running") {
-          const oscillator = audio.createOscillator();
-          const gain = audio.createGain();
-          oscillator.type = "sine";
-          oscillator.frequency.setValueAtTime(660, audio.currentTime);
-          gain.gain.setValueAtTime(0.0001, audio.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.08, audio.currentTime + 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.28);
-          oscillator.connect(gain);
-          gain.connect(audio.destination);
-          oscillator.start();
-          oscillator.stop(audio.currentTime + 0.3);
+          // Loud double boxing-bell strike with metallic overtones and a natural ring-out.
+          [0, 0.48].forEach((delay) => {
+            const start = audio.currentTime + delay;
+            const master = audio.createGain();
+            master.gain.setValueAtTime(0.0001, start);
+            master.gain.exponentialRampToValueAtTime(0.42, start + 0.008);
+            master.gain.exponentialRampToValueAtTime(0.0001, start + 0.82);
+            master.connect(audio.destination);
+            [720, 1080, 1510, 2160].forEach((frequency, index) => {
+              const oscillator = audio.createOscillator();
+              const partial = audio.createGain();
+              oscillator.type = index < 2 ? "triangle" : "sine";
+              oscillator.frequency.setValueAtTime(frequency, start);
+              oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.94, start + 0.7);
+              partial.gain.value = [0.7, 0.42, 0.24, 0.12][index];
+              oscillator.connect(partial);
+              partial.connect(master);
+              oscillator.start(start);
+              oscillator.stop(start + 0.84);
+            });
+          });
+          navigator.vibrate?.([150, 90, 150]);
         }
       }
       restWasActiveRef.current = false;
