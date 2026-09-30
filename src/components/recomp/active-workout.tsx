@@ -535,14 +535,14 @@ function SetRow({ set, number, active, attention = false, canRemove, onChange, o
     setTouchStart(null);
     setDragging(false);
   };
-  return <div ref={rowRef} className={cn("relative rounded-lg", swipeX === 0 && active ? "overflow-visible" : "overflow-hidden", attention && "next-set-attention")}>
+  return <div ref={rowRef} className={cn("relative overflow-hidden rounded-lg", attention && "next-set-attention")}>
     {canRemove && !set.completed && <button type="button" aria-label={`Delete set ${number}`} onClick={() => { setSwipeX(0); onRemove(); }} className="absolute inset-y-0 right-0 flex w-[72px] items-center justify-center bg-destructive text-xs font-extrabold text-destructive-foreground"><Trash2 className="mr-1 size-4" />Delete</button>}
     <div
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={() => { setTouchStart(null); setDragging(false); setSwipeX(0); }}
-      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] scale-[1.018] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", set.kind === "warmup" && !set.completed && "bg-secondary/45 opacity-90", !dragging && "duration-200 ease-out")}
+      className={cn("relative grid min-h-11 grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1.25fr)_2.5rem] items-center gap-2 rounded-lg bg-card px-1 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out", active && !dragging && "z-[1] border border-primary/30 bg-primary/[0.07] shadow-[0_8px_22px_rgba(0,0,0,0.12)] dark:bg-primary/[0.10] dark:shadow-[0_10px_24px_rgba(0,0,0,0.28)]", set.completed && "border border-emerald-500/25 bg-emerald-500/[0.12] set-success-pulse dark:border-emerald-400/20 dark:bg-emerald-400/[0.12]", set.kind === "warmup" && !set.completed && "bg-secondary/45 opacity-90", !dragging && "duration-200 ease-out")}
       style={{ transform: `translateX(${swipeX}px)`, touchAction: "pan-y" }}
     >
       <span className={cn("text-center text-xs font-bold transition-colors", active ? "text-primary" : "text-muted-foreground")}>{number}</span>
