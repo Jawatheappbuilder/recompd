@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useId, useMemo, useState } from "react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/recomp/core";
 import { estimate1RM, exerciseHistory, formatDay, formatPerformance, type CompletedWorkout } from "@/lib/training-data";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type Metric = "Weight" | "e1RM" | "Volume" | "Reps" | "Duration" | "Distance";
 
 export function ExerciseProgress({ workouts, exerciseId }: { workouts: CompletedWorkout[]; exerciseId: string }) {
+  const chartId = useId().replace(/:/g, "");
   const history = useMemo(() => exerciseHistory(workouts, exerciseId), [workouts, exerciseId]);
   const cardio = history.some((session) => session.tracking === "cardio");
   const weighted = history.some((session) => session.sets.some((set) => set.weight > 0));
@@ -40,14 +41,15 @@ export function ExerciseProgress({ workouts, exerciseId }: { workouts: Completed
           <div className="-mx-1 mt-2 h-44">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 8, right: 6, bottom: 0, left: 0 }}>
-                <defs><linearGradient id="ex-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--soft)" stopOpacity={0.35} /><stop offset="100%" stopColor="var(--soft)" stopOpacity={0} /></linearGradient></defs>
+                <defs><linearGradient id={`ex-fill-${chartId}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity={0.28} /><stop offset="100%" stopColor="var(--primary)" stopOpacity={0.015} /></linearGradient></defs>
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.55} strokeDasharray="3 4" />
                 <XAxis dataKey="x" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(value: number) => formatDay(value)} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={24} />
                 <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} width={36} tickCount={4} />
                 <Tooltip cursor={{ stroke: "var(--border)" }} content={({ active: on, payload }) => {
                   const point = payload?.[0]?.payload as { x: number; value: number } | undefined;
                   return on && point ? <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5"><div className="text-sm font-extrabold tabular-nums">{point.value.toLocaleString()} {unit}</div><div className="text-[0.65rem] text-muted-foreground">{formatDay(point.x)}</div></div> : null;
                 }} />
-                <Area type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} fill="url(#ex-fill)" dot={{ r: 2.5, fill: "var(--primary)", strokeWidth: 0 }} activeDot={{ r: 5, fill: "var(--primary)", stroke: "var(--background)", strokeWidth: 2 }} />
+                <Area type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2.5} fill={`url(#ex-fill-${chartId})`} dot={{ r: 3.5, fill: "var(--primary)", stroke: "var(--background)", strokeWidth: 1.5 }} activeDot={{ r: 6, fill: "var(--primary)", stroke: "var(--background)", strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
