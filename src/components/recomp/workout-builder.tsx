@@ -19,10 +19,10 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   return <button type="button" aria-pressed={active} onClick={onClick} className={chip(active)}>{children}</button>;
 }
 
-export function WorkoutBuilder({ initialMode = "generate" }: { initialMode?: "generate" | "manual" }) {
+export function WorkoutBuilder({ initialMode = "generate", floatingSelector = false }: { initialMode?: "generate" | "manual"; floatingSelector?: boolean }) {
   const [mode, setMode] = useState(initialMode);
   return <div className="space-y-4">
-    <div className="grid grid-cols-2 rounded-xl border border-primary/15 bg-primary/[0.055] p-1">
+    <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
       {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn(mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
     {mode === "generate" ? <GenerateMode /> : <ManualMode />}
