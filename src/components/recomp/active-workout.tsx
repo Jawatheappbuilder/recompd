@@ -133,23 +133,28 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       if (restWasActiveRef.current) {
         const audio = restAudioRef.current;
         if (audio && audio.state === "running") {
-          // A short two-strike gym-timer bell: much easier to notice than the old single beep.
-          [0, 0.32].forEach((delay, index) => {
-            const oscillator = audio.createOscillator();
-            const gain = audio.createGain();
+          // Loud double boxing-bell strike with metallic overtones and a natural ring-out.
+          [0, 0.48].forEach((delay) => {
             const start = audio.currentTime + delay;
-            oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(index === 0 ? 880 : 1040, start);
-            oscillator.frequency.exponentialRampToValueAtTime(index === 0 ? 660 : 780, start + 0.42);
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.exponentialRampToValueAtTime(0.18, start + 0.012);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
-            oscillator.connect(gain);
-            gain.connect(audio.destination);
-            oscillator.start(start);
-            oscillator.stop(start + 0.52);
+            const master = audio.createGain();
+            master.gain.setValueAtTime(0.0001, start);
+            master.gain.exponentialRampToValueAtTime(0.42, start + 0.008);
+            master.gain.exponentialRampToValueAtTime(0.0001, start + 0.82);
+            master.connect(audio.destination);
+            [720, 1080, 1510, 2160].forEach((frequency, index) => {
+              const oscillator = audio.createOscillator();
+              const partial = audio.createGain();
+              oscillator.type = index < 2 ? "triangle" : "sine";
+              oscillator.frequency.setValueAtTime(frequency, start);
+              oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.94, start + 0.7);
+              partial.gain.value = [0.7, 0.42, 0.24, 0.12][index];
+              oscillator.connect(partial);
+              partial.connect(master);
+              oscillator.start(start);
+              oscillator.stop(start + 0.84);
+            });
           });
-          navigator.vibrate?.([120, 70, 120]);
+          navigator.vibrate?.([150, 90, 150]);
         }
       }
       restWasActiveRef.current = false;
