@@ -9,6 +9,7 @@ import { TodayWorkoutCard, UpcomingWorkoutCard } from "@/components/recomp/sched
 import { localDateKey, useUpcomingWorkouts } from "@/lib/workout-storage";
 import { BodyweightSummary, TrainingPriority, WeeklyTraining, WorkoutSummary } from "@/components/recomp/training-widgets";
 import { useAuth } from "@/components/recomp/auth-context";
+import { StepsCard } from "@/components/recomp/steps-card";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -53,7 +54,7 @@ function HomePage() {
     <span aria-hidden className="text-muted-foreground/40">·</span>
     <Link to="/login" className="text-[0.7rem] font-bold text-foreground">Log in</Link>
   </div>}
-  {next && <UpcomingWorkoutCard workout={next} className="mt-4 block"/>}<div className="mt-6 space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
+  {next && <UpcomingWorkoutCard workout={next} className="mt-4 block"/>}<div className="mt-6 space-y-4"><StepsCard/><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
 }
 
 function AccentChoiceCard({ accent, onPreview, onSave }: { accent: AccentPreference; onPreview: (accent: AccentPreference) => void; onSave: () => void }) {
