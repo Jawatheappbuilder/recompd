@@ -69,8 +69,8 @@ export async function requestWorkoutCaloriesAccess() {
   try {
     const available = await Health.isAvailable();
     if (!available.available) return false;
-    const auth = await Health.requestAuthorization({ read: ["steps", "workouts", "calories"], write: [] });
-    return auth.readAuthorized.includes("workouts") && auth.readAuthorized.includes("calories");
+    const auth = await Health.requestAuthorization({ read: ["steps", "workouts", "calories", "totalCalories"], write: [] });
+    return auth.readAuthorized.includes("workouts") && (auth.readAuthorized.includes("calories") || auth.readAuthorized.includes("totalCalories"));
   } catch {
     return false;
   }
@@ -82,8 +82,8 @@ export async function readWorkoutCalories(startedAt: number, durationSec: number
   try {
     const available = await Health.isAvailable();
     if (!available.available) return { status: "unavailable" };
-    const auth = await Health.checkAuthorization({ read: ["workouts", "calories"], write: [] });
-    if (!auth.readAuthorized.includes("workouts") || !auth.readAuthorized.includes("calories")) return { status: "disconnected" };
+    const auth = await Health.checkAuthorization({ read: ["workouts", "calories", "totalCalories"], write: [] });
+    if (!auth.readAuthorized.includes("workouts") || (!auth.readAuthorized.includes("calories") && !auth.readAuthorized.includes("totalCalories"))) return { status: "disconnected" };
 
     const workoutEnd = startedAt + durationSec * 1000;
     const padding = 30 * 60 * 1000;
@@ -105,18 +105,22 @@ export async function readWorkoutCalories(startedAt: number, durationSec: number
 
     const match = scored[0]?.candidate;
     if (!match) return { status: "no-match" };
-    const direct = Number(match.totalEnergyBurned);
-    if (Number.isFinite(direct) && direct > 0) return { status: "connected", calories: Math.round(direct) };
-
-    const samples = await Health.readSamples({
-      dataType: "calories",
-      startDate: match.startDate,
-      endDate: match.endDate,
-      limit: 500,
-      ascending: true,
-    });
-    const calories = Math.round(samples.samples.reduce((sum, sample) => sum + (Number(sample.value) || 0), 0));
-    return calories > 0 ? { status: "connected", calories } : { status: "no-match" };
+    // Health Connect exercise sessions and calorie records are separate on Android.
+    // Sum calorie records across the matched watch session; prefer active calories because
+    // this aligns with the exercise calorie figure shown by Samsung Health.
+    const calorieTypes = auth.readAuthorized.includes("calories") ? ["calories"] as const : ["totalCalories"] as const;
+    for (const dataType of calorieTypes) {
+      const samples = await Health.readSamples({
+        dataType,
+        startDate: match.startDate,
+        endDate: match.endDate,
+        limit: 500,
+        ascending: true,
+      });
+      const calories = Math.round(samples.samples.reduce((sum, sample) => sum + (Number(sample.value) || 0), 0));
+      if (calories > 0) return { status: "connected", calories };
+    }
+    return { status: "no-match" };
   } catch {
     return { status: "error" };
   }
