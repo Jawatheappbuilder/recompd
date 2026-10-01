@@ -137,6 +137,18 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     }, 80);
   }, [workout.currentKey]);
 
+  useEffect(() => {
+    if (!expandedGroup) return;
+    const group = workout.exerciseGroups?.find((item) => item.id === expandedGroup);
+    if (!group || group.memberKeys.length !== 3) return;
+    const complete = group.memberKeys.every((key) => {
+      const exercise = workout.exercises.find((item) => item.key === key);
+      const workingSets = exercise?.sessionSets.filter((set) => set.kind !== "warmup") ?? [];
+      return workingSets.length > 0 && workingSets.every((set) => set.completed);
+    });
+    if (complete) setExpandedGroup(null);
+  }, [expandedGroup, workout.exerciseGroups, workout.exercises]);
+
   const elapsed = Math.max(0, Math.floor((now - workout.startedAt) / 1000));
   const totalSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.kind !== "warmup").length, 0);
   const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length, 0);
