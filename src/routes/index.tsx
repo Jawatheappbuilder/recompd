@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { CalendarPlus, Dumbbell, Hammer, Settings, Sparkles, UserPlus } from "lucide-react";
 import { completeAccentChoice, hasCompletedAccentChoice, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
@@ -10,6 +11,7 @@ import { localDateKey, useUpcomingWorkouts } from "@/lib/workout-storage";
 import { BodyweightSummary, TrainingPriority, WeeklyTraining, WorkoutSummary } from "@/components/recomp/training-widgets";
 import { useAuth } from "@/components/recomp/auth-context";
 import { StepsCard } from "@/components/recomp/steps-card";
+import { LogWeightSheet } from "@/components/recomp/progress/bodyweight";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const [preferences, setPreferences] = useUserPreferences();
   const [showAccentChoice, setShowAccentChoice] = useState(false);
+  const [logWeightOpen, setLogWeightOpen] = useState(false);
   useEffect(() => { setShowAccentChoice(!hasCompletedAccentChoice()); }, []);
   const { status } = useAuth();
   const firstName = preferences.name.trim().split(/\s+/)[0];
@@ -54,7 +57,7 @@ function HomePage() {
     <span aria-hidden className="text-muted-foreground/40">·</span>
     <Link to="/login" className="text-[0.7rem] font-bold text-foreground">Log in</Link>
   </div>}
-  {next && <UpcomingWorkoutCard workout={next} className="mt-4 block"/>}<div className="mt-6 space-y-4"><StepsCard/><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/></div></Screen>;
+  {next && <UpcomingWorkoutCard workout={next} className="mt-4 block"/>}<Button variant="surface" className="mt-4 w-full justify-start" onClick={() => setLogWeightOpen(true)}><Plus />Log weight</Button><LogWeightSheet open={logWeightOpen} onOpenChange={setLogWeightOpen} /><div className="mt-6 space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/><StepsCard/></div></Screen>;
 }
 
 function AccentChoiceCard({ accent, onPreview, onSave }: { accent: AccentPreference; onPreview: (accent: AccentPreference) => void; onSave: () => void }) {
