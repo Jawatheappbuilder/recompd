@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { deleteWorkout, formatDuration, formatLongDay, formatPerformance, formatSet, isCardioSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 import { ShareWorkoutButton } from "../share-workout";
+import { WorkoutCalories } from "../workout-calories";
 import { SubHeader } from "./progress-widgets";
 
 export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs: { exerciseId: string; set: CompletedSet }[] }) {
@@ -56,6 +57,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           <div key={label} className="px-3 first:pl-0"><div className="font-display text-2xl font-extrabold tabular-nums">{value}</div><div className="text-[0.7rem] text-muted-foreground">{label}</div></div>
         ))}
       </Card>
+      <WorkoutCalories startedAt={workout.startedAt} durationSec={workout.durationSec} />
       <div className="mt-3 space-y-2">
         {workout.exercises.map((exercise) => {
           const pr = prs.find((item) => item.exerciseId === exercise.exerciseId);
