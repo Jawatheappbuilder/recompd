@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { CalendarPlus, Dumbbell, Hammer, Settings, Sparkles, UserPlus } from "lucide-react";
+import { CalendarPlus, Dumbbell, Hammer, Plus, Settings, Sparkles, UserPlus } from "lucide-react";
 import { completeAccentChoice, hasCompletedAccentChoice, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
