@@ -106,6 +106,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
   const [removeKey, setRemoveKey] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [restApply, setRestApply] = useState<{ key: string; seconds: number } | null>(null);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean; duration: number } | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [completedCircuits, setCompletedCircuits] = useState<string[]>([]);
   const restAudioRef = useRef<AudioContext | null>(null);
+  const previousCurrentKeyRef = useRef(workout.currentKey);
   const restWasActiveRef = useRef(false);
   const reorderSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
@@ -126,6 +128,14 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (previousCurrentKeyRef.current === workout.currentKey) return;
+    previousCurrentKeyRef.current = workout.currentKey;
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-workout-exercise-key="${CSS.escape(workout.currentKey)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  }, [workout.currentKey]);
 
   const elapsed = Math.max(0, Math.floor((now - workout.startedAt) / 1000));
   const totalSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.kind !== "warmup").length, 0);
@@ -406,13 +416,19 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       </AlertDialog>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} duration={rest.duration} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
+      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); setRestApply({ key, seconds }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
         if (active) onChange({ ...workout, exercises: [...workout.exercises, active] });
         setSheet({ kind: "closed" });
       }} />
-      <AlertDialog open={Boolean(removeKey)} onOpenChange={(open) => { if (!open) setRemoveKey(null); }}>
+      <AlertDialog open={Boolean(restApply)} onOpenChange={(open) => { if (!open) setRestApply(null); }}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
+          <AlertDialogHeader><AlertDialogTitle>Use this rest time for all exercises?</AlertDialogTitle><AlertDialogDescription>Apply {restApply?.seconds ?? 0} seconds to the other strength exercises in this workout?</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel onClick={() => setRestApply(null)}>Just this exercise</AlertDialogCancel><AlertDialogAction onClick={() => { if (!restApply) return; onChange({ ...workout, exercises: workout.exercises.map((exercise) => isCardioExercise(exercise) ? exercise : { ...exercise, restSeconds: restApply.seconds }) }); setRestApply(null); }}>Apply to all</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+            <AlertDialog open={Boolean(removeKey)} onOpenChange={(open) => { if (!open) setRemoveKey(null); }}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
           <AlertDialogHeader><AlertDialogTitle>Remove exercise?</AlertDialogTitle><AlertDialogDescription>Entered sets for this exercise will be removed.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={removeExercise}>Remove</AlertDialogAction></AlertDialogFooter>
