@@ -363,7 +363,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
               const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
               const current = exercise.key === workout.currentKey && !completed;
               const expanded = current || expandedUpcoming === exercise.key;
-              return <SortableActiveExercise key={exercise.key} exercise={exercise} index={exerciseIndex}><ExerciseCard
+              return <div key={exercise.key} data-workout-exercise-key={exercise.key}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseCard
                 exercise={exercise}
                 current={current}
                 completed={completed}
@@ -381,7 +381,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 onActions={() => setSheet({ kind: "actions", key: exercise.key })}
                 circuit={workout.circuits?.find((item) => item.id === exercise.circuitId)}
                 onStartCircuit={exercise.circuitId ? () => setCircuitRun({ id: exercise.circuitId!, phase: "countdown", round: 1, endsAt: Date.now() + 3000 }) : undefined}
-              /></SortableActiveExercise>;
+              /></SortableActiveExercise></div>;
             })}
           </div>
         </SortableContext>
