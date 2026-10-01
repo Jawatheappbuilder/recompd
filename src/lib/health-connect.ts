@@ -60,3 +60,64 @@ export async function readSteps(): Promise<StepsSnapshot> {
 export async function openHealthConnectSettings() {
   if (isNativeHealthAvailable()) await Health.openHealthConnectSettings();
 }
+
+
+export type WorkoutCaloriesResult = { status: "web" | "unavailable" | "disconnected" | "connected" | "no-match" | "error"; calories?: number };
+
+export async function requestWorkoutCaloriesAccess() {
+  if (!isNativeHealthAvailable()) return false;
+  try {
+    const available = await Health.isAvailable();
+    if (!available.available) return false;
+    const auth = await Health.requestAuthorization({ read: ["steps", "workouts", "calories"], write: [] });
+    return auth.readAuthorized.includes("workouts") && auth.readAuthorized.includes("calories");
+  } catch {
+    return false;
+  }
+}
+
+/** Match a RECOMP'D session to a Health Connect workout by time overlap, then use its calorie total. */
+export async function readWorkoutCalories(startedAt: number, durationSec: number): Promise<WorkoutCaloriesResult> {
+  if (!isNativeHealthAvailable()) return { status: "web" };
+  try {
+    const available = await Health.isAvailable();
+    if (!available.available) return { status: "unavailable" };
+    const auth = await Health.checkAuthorization({ read: ["workouts", "calories"], write: [] });
+    if (!auth.readAuthorized.includes("workouts") || !auth.readAuthorized.includes("calories")) return { status: "disconnected" };
+
+    const workoutEnd = startedAt + durationSec * 1000;
+    const padding = 30 * 60 * 1000;
+    const result = await Health.queryWorkouts({
+      startDate: new Date(startedAt - padding).toISOString(),
+      endDate: new Date(workoutEnd + padding).toISOString(),
+      limit: 50,
+      ascending: true,
+    });
+
+    const scored = result.workouts.map((candidate) => {
+      const start = Date.parse(candidate.startDate);
+      const end = Date.parse(candidate.endDate);
+      const overlap = Math.max(0, Math.min(workoutEnd, end) - Math.max(startedAt, start));
+      const union = Math.max(workoutEnd, end) - Math.min(startedAt, start);
+      return { candidate, score: union > 0 ? overlap / union : 0, overlap };
+    }).filter((item) => item.overlap >= Math.min(durationSec * 1000 * 0.35, 15 * 60 * 1000))
+      .sort((a, b) => b.score - a.score);
+
+    const match = scored[0]?.candidate;
+    if (!match) return { status: "no-match" };
+    const direct = Number(match.totalEnergyBurned);
+    if (Number.isFinite(direct) && direct > 0) return { status: "connected", calories: Math.round(direct) };
+
+    const samples = await Health.readSamples({
+      dataType: "calories",
+      startDate: match.startDate,
+      endDate: match.endDate,
+      limit: 500,
+      ascending: true,
+    });
+    const calories = Math.round(samples.samples.reduce((sum, sample) => sum + (Number(sample.value) || 0), 0));
+    return calories > 0 ? { status: "connected", calories } : { status: "no-match" };
+  } catch {
+    return { status: "error" };
+  }
+}
