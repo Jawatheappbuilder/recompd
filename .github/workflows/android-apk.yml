@@ -53,6 +53,13 @@ jobs:
           echo '<!doctype html><html><body></body></html>' > dist/index.html
           npx cap sync android
 
+      - name: Set Android minimum SDK for Health Connect
+        run: sed -i 's/minSdkVersion = 24/minSdkVersion = 26/' android/variables.gradle
+
+      - name: Configure Health Connect privacy policy
+        run: |
+          sed -i 's#</resources>#    <string name="health_connect_privacy_policy_url">https://recompd.vercel.app/privacy</string>\n</resources>#' android/app/src/main/res/values/strings.xml
+
       - name: Apply RECOMP'D launcher icon
         run: |
           sudo apt-get update -qq
