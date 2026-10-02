@@ -89,7 +89,7 @@ function ManualMode() {
   return <>
     <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name (optional)" enterKeyHint="done" autoComplete="off" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
     {suggestions.length > 0 && <div className="rounded-xl border border-border bg-card px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2"><span className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Suggested today</span><span className="text-[0.62rem] text-muted-foreground">Based on last 4 weeks</span></div>
+      <div className="flex items-center justify-between gap-2"><span className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Suggested today</span><span className="text-[0.62rem] text-muted-foreground">Lower workload over the last 4 weeks</span></div>
       <div className="mt-2 flex gap-1.5 overflow-x-auto">{suggestions.map((item) => <button key={item.muscle} type="button" className="shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1.5 text-xs font-bold text-primary" onClick={() => { setSuggestedMuscle(item.muscle); setPickerOpen(true); }}>{item.muscle}</button>)}</div>
     </div>}
     {!workout.length && <button type="button" onClick={() => setPickerOpen(true)} className="grid h-28 w-full place-items-center rounded-2xl border border-dashed border-primary/40 bg-card text-primary transition-colors hover:bg-accent">
