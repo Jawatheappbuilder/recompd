@@ -12,7 +12,7 @@ function SocialPage() {
   const { user } = useAuth();
   const [tab,setTab]=useState<"feed"|"friends">("feed");
   const [username,setUsernameInput]=useState("");
-  const [needsUsername,setNeedsUsername]=useState(false);
+  const [needsUsername,setNeedsUsername]=useState<boolean|null>(null);
   const [checking,setChecking]=useState(false);
   const [available,setAvailable]=useState<boolean|null>(null);
   const [query,setQuery]=useState("");
@@ -45,7 +45,7 @@ function SocialPage() {
   const doSearch=async(value:string)=>{setQuery(value);if(!user)return;setResults(await searchPeople(value,user.id))};
   const reply=async(id:string,accept:boolean)=>{await respondToFriendRequest(id,accept);await refresh()};
 
-  if(needsUsername)return <Screen><div className="mx-auto flex min-h-[78dvh] max-w-sm flex-col justify-center">
+  if(needsUsername===null)return <Screen><div className="grid min-h-[70dvh] place-items-center text-sm text-muted-foreground">Loading social…</div></Screen>;\n\n  if(needsUsername)return <Screen><div className="mx-auto flex min-h-[78dvh] max-w-sm flex-col justify-center">
     <div className="mb-5 grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground"><Users className="size-7"/></div>
     <div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">New in RECOMP'D</div>
     <h1 className="mt-2 text-3xl font-black tracking-tight">Training is better together.</h1>
