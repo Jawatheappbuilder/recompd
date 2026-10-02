@@ -38,7 +38,7 @@ const SHARE_ACCENTS = {
 } as const;
 const C = { bg: "#080B09", surface: "#101311", border: "#252C27", text: "#F3F7F4", muted: "#8D9690" };
 function shareAccent() {
-  const id = typeof document !== "undefined" ? document.documentElement.dataset.accent : undefined;
+  const id = typeof document !== "undefined" ? document.documentElement.dataset["accent"] : undefined;
   return SHARE_ACCENTS[id === "blue" || id === "black" ? id : "red"];
 }
 const DISPLAY = "'Barlow Condensed', ui-sans-serif, system-ui, sans-serif";

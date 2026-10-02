@@ -25,9 +25,9 @@ export type ActiveSet = {
 export type ActiveExercise = WorkoutExercise & {
   sessionSets: ActiveSet[];
   restSeconds: number;
-  supersetWith?: string;
-  groupId?: string;
-  circuitId?: string;
+  supersetWith?: string | undefined;
+  groupId?: string | undefined;
+  circuitId?: string | undefined;
 };
 
 export type ActiveWorkoutState = {
