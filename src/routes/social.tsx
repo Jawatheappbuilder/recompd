@@ -64,6 +64,25 @@ function SocialPage() {
     setNeedsUsername(false);
   }
 
+  async function runSearch(value: string) {
+    setQuery(value);
+    if (!user) return;
+    const clean = cleanUsername(value);
+    if (clean.length < 2) { setResults([]); return; }
+    try { setResults(await searchPeople(clean, user.id)); } catch { setResults([]); }
+  }
+
+  async function addFriend(receiverId: string) {
+    if (!user) return;
+    await sendFriendRequest(user.id, receiverId);
+    setSent((current) => [...current, receiverId]);
+  }
+
+  async function reply(id: string, accept: boolean) {
+    await respondToFriendRequest(id, accept);
+    setRequests((current) => current.filter((request) => request.id !== id));
+  }
+
   if (needsUsername === null) {
     return <Screen><div className="grid min-h-[70dvh] place-items-center text-sm text-muted-foreground">Loading social...</div></Screen>;
   }
