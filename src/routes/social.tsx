@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Users } from "lucide-react";
+import { Check, Search, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/recomp/auth-context";
-import { cleanUsername, getMySocialProfile, setUsername, usernameAvailable } from "@/lib/social";
+import { cleanUsername, getFriendRequests, getMySocialProfile, searchPeople, sendFriendRequest, setUsername, usernameAvailable, respondToFriendRequest, type FriendRequest, type SocialProfile } from "@/lib/social";
 
 export const Route = createFileRoute("/social")({
   component: SocialPage,
@@ -15,14 +15,14 @@ function SocialPage() {
   const [username, setUsernameInput] = useState("");
   const [needsUsername, setNeedsUsername] = useState<boolean | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [checking, setChecking] = useState(false);\n  const [query, setQuery] = useState("");\n  const [results, setResults] = useState<SocialProfile[]>([]);\n  const [requests, setRequests] = useState<Array<FriendRequest & { profile: SocialProfile }>>([]);\n  const [sent, setSent] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
     void getMySocialProfile(user.id)
       .then((profile) => {
         setNeedsUsername(!profile.username);
-        if (profile.username) setUsernameInput(profile.username);
+        if (profile.username) setUsernameInput(profile.username);\n        return getFriendRequests(user.id);\n      })\n      .then((items) => {\n        if (items) setRequests(items);
       })
       .catch((error) => {
         console.error("[social] profile load failed", error);
@@ -88,10 +88,29 @@ function SocialPage() {
         <div><div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">RECOMP'D</div><h1 className="text-2xl font-black">Social</h1></div>
         <div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Users className="size-5" /></div>
       </div>
-      <div className="mt-6 rounded-2xl border border-border bg-card p-5">
-        <div className="font-extrabold">You're in.</div>
-        <p className="mt-1 text-sm text-muted-foreground">Feed and friend discovery are coming next in this preview. Your username setup is working first.</p>
+      <div className="mt-5 rounded-xl border border-border bg-card px-3">
+        <div className="flex items-center gap-2">
+          <Search className="size-4 text-muted-foreground" />
+          <input value={query} onChange={(event) => void runSearch(event.target.value)} placeholder="Search @username" className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none" />
+        </div>
       </div>
+      {requests.length > 0 ? <section className="mt-5">
+        <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Friend requests</div>
+        <div className="space-y-2">{requests.map((request) => <div key={request.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+          <Avatar profile={request.profile} />
+          <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{request.profile.name}</div><div className="truncate text-xs text-muted-foreground">@{request.profile.username}</div></div>
+          <button type="button" aria-label="Accept" onClick={() => void reply(request.id, true)} className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground"><Check className="size-4" /></button>
+          <button type="button" aria-label="Decline" onClick={() => void reply(request.id, false)} className="grid size-9 place-items-center rounded-lg bg-secondary"><X className="size-4" /></button>
+        </div>)}</div>
+      </section> : null}
+      <section className="mt-5">
+        {query.trim().length >= 2 ? <div className="space-y-2">{results.length ? results.map((profile) => <div key={profile.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+          <Avatar profile={profile} />
+          <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{profile.name}</div><div className="truncate text-xs text-muted-foreground">@{profile.username}</div></div>
+          <Button size="sm" variant={sent.includes(profile.id) ? "surface" : "primary"} disabled={sent.includes(profile.id)} onClick={() => void addFriend(profile.id)}>{sent.includes(profile.id) ? "Sent" : <><UserPlus className="size-4" /> Add</>}</Button>
+        </div>) : <div className="py-10 text-center text-sm text-muted-foreground">No usernames found.</div>}</div> : <div className="py-12 text-center"><div className="font-extrabold">Find your people</div><p className="mt-1 text-sm text-muted-foreground">Search for a RECOMP'D username to send a friend request.</p></div>}
+      </section>
     </Screen>
   );
 }
+\nfunction Avatar({ profile }: { profile: SocialProfile }) {\n  return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile.name?.[0]?.toUpperCase() || "R"}</div>;\n}\n
