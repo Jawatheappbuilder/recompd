@@ -30,7 +30,7 @@ function SocialPage() {
       if(profile.username)setUsernameInput(profile.username);
       const [r,f]=await Promise.all([getFriendRequests(user.id),getSocialFeed(user.id)]);
       setRequests(r); setFeed(f);
-    } finally { setLoading(false); }
+    } catch (error) {\n      console.error("[social] Failed to load social profile", error);\n      setNeedsUsername(true);\n    } finally { setLoading(false); }
   };
   useEffect(()=>{void refresh()},[user?.id]);
   useEffect(()=>{
