@@ -27,19 +27,19 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
       id: item.exerciseId, name: item.name, muscle: item.muscles[0] ?? "Core",
       muscles: item.muscles, equipment: item.equipment,
       type: item.tracking === "cardio" ? "Cardio" as const : "Isolation" as const,
-      tracking: item.tracking, cardioMetrics: item.cardioMetrics, custom: true,
+      tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics ?? [], custom: true,
     };
     const plan = toWorkoutExercise(base);
     return { ...plan, key: crypto.randomUUID(), sets: item.sets.length || plan.sets };
   });
   const saveTemplate = () => {
-    if (!workout.exercises.length) return toast.error("No exercises to save");
+    if (!workout.exercises.length) { toast.error("No exercises to save"); return; }
     saveWorkout({ id: crypto.randomUUID(), name: workout.name, exercises: templateExercises(), createdAt: Date.now() });
     toast.success("Saved to your workouts");
   };
   const saveName = () => {
     const trimmed = name.trim();
-    if (!trimmed) return toast.error("Enter a workout name");
+    if (!trimmed) { toast.error("Enter a workout name"); return; }
     updateWorkout({ ...workout, name: trimmed.slice(0, 120) });
     setRenaming(false);
     toast.success("Workout renamed");

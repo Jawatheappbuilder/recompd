@@ -65,6 +65,30 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -74,10 +98,10 @@ export type Database = {
           height_cm: number | null
           id: string
           name: string
-          username: string | null
           onboarding_completed: boolean
           theme: string
           updated_at: string
+          username: string | null
           week_starts_on: string
           weekly_workout_target: number
           weight_unit: string
@@ -90,10 +114,10 @@ export type Database = {
           height_cm?: number | null
           id: string
           name?: string
-          username?: string | null
           onboarding_completed?: boolean
           theme?: string
           updated_at?: string
+          username?: string | null
           week_starts_on?: string
           weekly_workout_target?: number
           weight_unit?: string
@@ -106,20 +130,14 @@ export type Database = {
           height_cm?: number | null
           id?: string
           name?: string
-          username?: string | null
           onboarding_completed?: boolean
           theme?: string
           updated_at?: string
+          username?: string | null
           week_starts_on?: string
           weekly_workout_target?: number
           weight_unit?: string
         }
-        Relationships: []
-      }
-      friendships: {
-        Row: { created_at: string; id: string; receiver_id: string; sender_id: string; status: string }
-        Insert: { created_at?: string; id?: string; receiver_id: string; sender_id: string; status?: string }
-        Update: { created_at?: string; id?: string; receiver_id?: string; sender_id?: string; status?: string }
         Relationships: []
       }
       saved_workouts: {

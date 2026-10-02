@@ -29,6 +29,13 @@
       "when": 1790290893997,
       "tag": "0003_shared_workouts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790948659307,
+      "tag": "0004_social_v1",
+      "breakpoints": true
     }
   ]
 }

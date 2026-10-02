@@ -43,7 +43,7 @@ export function completeAccentChoice() {
 
 export function applyAccentPreference(accent: AccentPreference) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.accent = accent;
+  document.documentElement.dataset["accent"] = accent;
 }
 
 export function applyThemePreference(theme: ThemePreference) {
