@@ -113,6 +113,12 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: { created_at: string; id: string; receiver_id: string; sender_id: string; status: string }
+        Insert: { created_at?: string; id?: string; receiver_id: string; sender_id: string; status?: string }
+        Update: { created_at?: string; id?: string; receiver_id?: string; sender_id?: string; status?: string }
+        Relationships: []
+      }
       saved_workouts: {
         Row: {
           created_at: string
