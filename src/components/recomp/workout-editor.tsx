@@ -53,12 +53,13 @@ function useLibrary() {
 }
 
 /** Shared editor used by both generated and manually built workouts. */
-export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange, supersets = false }: {
+export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange, initialPickerMuscle, supersets = false }: {
   supersets?: boolean | undefined;
   workout: WorkoutExercise[];
   setWorkout: Dispatch<SetStateAction<WorkoutExercise[]>>;
   pickerOpen?: boolean | undefined;
   onPickerOpenChange?: ((open: boolean) => void) | undefined;
+  initialPickerMuscle?: Muscle | null | undefined;
 }) {
   const [sheet, setSheet] = useState<SheetState>({ kind: "closed" });
   const library = useLibrary();
@@ -164,6 +165,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         open={addOpen}
         library={library.all}
         onCreateCustom={library.addCustom}
+        initialMuscle={initialPickerMuscle}
         onOpenChange={setAddOpen}
         onAdd={(picked) => { setWorkout((current) => [...current, ...picked.map(toWorkoutExercise)]); setAddOpen(false); }}
       />
@@ -317,12 +319,13 @@ function ExerciseText({ exercise, active }: { exercise: Exercise; active?: boole
 }
 
 /** Shared multi-select exercise library with custom exercise creation. */
-export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCustom }: {
+export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCustom, initialMuscle }: {
   open: boolean;
   library: Exercise[];
   onOpenChange: (open: boolean) => void;
   onAdd: (exercises: Exercise[]) => void;
   onCreateCustom: (exercise: Exercise) => void;
+  initialMuscle?: Muscle | null | undefined;
 }) {
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState<Muscle | null>(null);
@@ -334,6 +337,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
   const [customEquipment, setCustomEquipment] = useState<Equipment>("Dumbbell");
 
   useEffect(() => { if (!open) { setPicked([]); setCreating(false); setQuery(""); } }, [open]);
+  useEffect(() => { if (open && initialMuscle) setMuscle(initialMuscle); }, [open, initialMuscle]);
 
   const results = [...library.filter((exercise) => (!muscle || matchesMuscle(exercise, muscle)) && (!equipment || exercise.equipment === equipment) && exercise.name.toLowerCase().includes(query.toLowerCase()))].sort((a, b) => a.name.localeCompare(b.name));
   const toggle = (exercise: Exercise) => setPicked((current) => current.some((item) => item.id === exercise.id) ? current.filter((item) => item.id !== exercise.id) : [...current, exercise]);

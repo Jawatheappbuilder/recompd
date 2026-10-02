@@ -9,9 +9,16 @@ import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@
 import { newId } from "@/lib/cloud-data";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
+import { since, trainingPriority, useTrainingData } from "@/lib/training-data";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
+
+const DRAFT_KEY = "recomp-workout-builder-draft";
+type BuilderDraft = { mode?: "generate" | "manual"; selected?: Muscle[]; count?: number; name?: string; workout?: WorkoutExercise[]; savedId?: string | null };
+function readDraft(): BuilderDraft { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "{}") as BuilderDraft; } catch { return {}; } }
+function patchDraft(patch: Partial<BuilderDraft>) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...readDraft(), ...patch })); } catch {} }
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
 
 const chip = (active: boolean) => cn("h-8 shrink-0 rounded-full border px-3 text-[0.7rem] font-bold transition-colors", active ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15" : "border-border bg-card text-muted-foreground hover:bg-accent");
 
@@ -20,7 +27,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 
 export function WorkoutBuilder({ initialMode = "generate", floatingSelector = false }: { initialMode?: "generate" | "manual"; floatingSelector?: boolean }) {
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState<"generate" | "manual">(() => readDraft().mode ?? initialMode);
+  useEffect(() => { patchDraft({ mode }); }, [mode]);
   return <div className="space-y-4">
     <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
       {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn(mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
@@ -31,8 +39,11 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
 
 function GenerateMode() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<Muscle[]>([]);
-  const [count, setCount] = useState(6);
+  const training = useTrainingData();
+  const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
+  const [selected, setSelected] = useState<Muscle[]>(() => readDraft().selected ?? []);
+  const [count, setCount] = useState(() => readDraft().count ?? 6);
+  useEffect(() => { patchDraft({ selected, count }); }, [selected, count]);
   const toggle = (m: Muscle) => setSelected((c) => c.includes(m) ? c.filter((x) => x !== m) : [...c, m]);
   const quick = (muscles: Muscle[]) => setSelected((c) => muscles.every((m) => c.includes(m)) ? c.filter((m) => !muscles.includes(m)) : [...c, ...muscles.filter((m) => !c.includes(m))]);
   const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
@@ -40,6 +51,7 @@ function GenerateMode() {
   return <>
     <section>
       <SectionHeading>Muscles</SectionHeading>
+      {suggestions.length > 0 && <p className="-mt-1 mb-2 text-[0.66rem] leading-snug text-muted-foreground"><span className="font-semibold text-foreground">Suggested:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="opacity-80">· lower 4-week workload</span></p>}
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
       <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} aria-pressed={a} onClick={() => toggle(m)} className={cn("h-9 justify-between px-3 transition-all", a && "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15")}>{m}{a && <Check />}</Button>; })}</div>
     </section>
@@ -56,29 +68,38 @@ function GenerateMode() {
 
 function ManualMode() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [workout, setWorkout] = useState<WorkoutExercise[]>([]);
+  const draft = readDraft();
+  const [name, setName] = useState(() => draft.name ?? "");
+  const [workout, setWorkout] = useState<WorkoutExercise[]>(() => draft.workout ?? []);
   const [pickerOpen, setPickerOpen] = useState(false);
   const saved = useSavedWorkouts();
-  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(() => draft.savedId ?? null);
+  const training = useTrainingData();
+  const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
+  const [suggestedMuscle, setSuggestedMuscle] = useState<Muscle | null>(null);
+  useEffect(() => { patchDraft({ name, workout, savedId }); }, [name, workout, savedId]);
   const [scheduling, setScheduling] = useState(false);
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const estimate = workoutTimeEstimate(workout);
-  const start = () => { handOffWorkout({ name: finalName, exercises: workout }); void navigate({ to: "/workout" }); };
+  const start = () => { handOffWorkout({ name: finalName, exercises: workout }); clearDraft(); void navigate({ to: "/workout" }); };
   const save = () => {
     const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
-    saveWorkout(entry); setSavedId(entry.id); toast.success("Workout saved");
+    saveWorkout(entry); setSavedId(entry.id); clearDraft(); toast.success("Workout saved");
   };
   const load = (item: SavedWorkout) => { setName(item.name); setWorkout(item.exercises.map((exercise) => ({ ...exercise }))); setSavedId(item.id); };
 
   return <>
     <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name (optional)" enterKeyHint="done" autoComplete="off" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
+    {suggestions.length > 0 && <div className="rounded-xl border border-border bg-card px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2"><span className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Suggested today</span><span className="text-[0.62rem] text-muted-foreground">Lower workload over the last 4 weeks</span></div>
+      <div className="mt-2 flex gap-1.5 overflow-x-auto">{suggestions.map((item) => <button key={item.muscle} type="button" className="shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1.5 text-xs font-bold text-primary" onClick={() => { setSuggestedMuscle(item.muscle); setPickerOpen(true); }}>{item.muscle}</button>)}</div>
+    </div>}
     {!workout.length && <button type="button" onClick={() => setPickerOpen(true)} className="grid h-28 w-full place-items-center rounded-2xl border border-dashed border-primary/40 bg-card text-primary transition-colors hover:bg-accent">
       <span className="flex items-center gap-2 font-display text-xl font-extrabold uppercase tracking-wide"><Plus className="size-5" />Add exercise</span>
     </button>}
     <div>
-      <WorkoutEditor supersets workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={setPickerOpen} />
+      <WorkoutEditor supersets workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={(open) => { setPickerOpen(open); if (!open) setSuggestedMuscle(null); }} initialPickerMuscle={suggestedMuscle} />
     </div>
     {workout.length > 0 && <div className="space-y-2">
       <Button variant="primary" size="xl" className="w-full" onClick={start}>Start workout</Button>
@@ -87,7 +108,7 @@ function ManualMode() {
         <Button variant="surface" onClick={save}><Bookmark />Save</Button>
       </div>
     </div>}
-    <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={finalName} onConfirm={(value) => { scheduleNewWorkout(value, workout, savedId ?? undefined); void navigate({ to: "/" }); }} />
+    <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={finalName} onConfirm={(value) => { scheduleNewWorkout(value, workout, savedId ?? undefined); clearDraft(); void navigate({ to: "/" }); }} />
     {saved.length > 0 && <section>
       <SectionHeading>Saved</SectionHeading>
       <Card className="divide-y divide-border px-3">{saved.map((item) => <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
