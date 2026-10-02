@@ -74,6 +74,7 @@ export type Database = {
           height_cm: number | null
           id: string
           name: string
+          username: string | null
           onboarding_completed: boolean
           theme: string
           updated_at: string
@@ -89,6 +90,7 @@ export type Database = {
           height_cm?: number | null
           id: string
           name?: string
+          username?: string | null
           onboarding_completed?: boolean
           theme?: string
           updated_at?: string
@@ -104,6 +106,7 @@ export type Database = {
           height_cm?: number | null
           id?: string
           name?: string
+          username?: string | null
           onboarding_completed?: boolean
           theme?: string
           updated_at?: string
