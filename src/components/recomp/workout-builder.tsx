@@ -49,9 +49,9 @@ function GenerateMode() {
   const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
 
   return <>
-    {suggestions.length > 0 && <p className="-mb-1 text-[0.68rem] text-muted-foreground"><span className="font-bold text-foreground">Suggested today:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="whitespace-nowrap">— lower workload over the last 4 weeks</span></p>}
     <section>
       <SectionHeading>Muscles</SectionHeading>
+      {suggestions.length > 0 && <p className="-mt-1 mb-2 text-[0.66rem] leading-snug text-muted-foreground"><span className="font-semibold text-foreground">Suggested:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="opacity-80">· lower 4-week workload</span></p>}
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
       <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} aria-pressed={a} onClick={() => toggle(m)} className={cn("h-9 justify-between px-3 transition-all", a && "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15")}>{m}{a && <Check />}</Button>; })}</div>
     </section>
