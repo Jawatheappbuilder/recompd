@@ -39,6 +39,8 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
 
 function GenerateMode() {
   const navigate = useNavigate();
+  const training = useTrainingData();
+  const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
   const [selected, setSelected] = useState<Muscle[]>(() => readDraft().selected ?? []);
   const [count, setCount] = useState(() => readDraft().count ?? 6);
   useEffect(() => { patchDraft({ selected, count }); }, [selected, count]);
@@ -47,6 +49,7 @@ function GenerateMode() {
   const summary = selected.length ? `${count} exercises • ${selected.slice(0, 3).join(" + ")}${selected.length > 3 ? ` +${selected.length - 3} more` : ""}` : `${count} exercises • choose muscles`;
 
   return <>
+    {suggestions.length > 0 && <p className="-mb-1 text-[0.68rem] text-muted-foreground"><span className="font-bold text-foreground">Suggested today:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="whitespace-nowrap">— lower workload over the last 4 weeks</span></p>}
     <section>
       <SectionHeading>Muscles</SectionHeading>
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
