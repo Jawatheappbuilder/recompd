@@ -15,14 +15,22 @@ function SocialPage() {
   const [username, setUsernameInput] = useState("");
   const [needsUsername, setNeedsUsername] = useState<boolean | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(false);\n  const [query, setQuery] = useState("");\n  const [results, setResults] = useState<SocialProfile[]>([]);\n  const [requests, setRequests] = useState<Array<FriendRequest & { profile: SocialProfile }>>([]);\n  const [sent, setSent] = useState<string[]>([]);
+  const [checking, setChecking] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SocialProfile[]>([]);
+  const [requests, setRequests] = useState<Array<FriendRequest & { profile: SocialProfile }>>([]);
+  const [sent, setSent] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
     void getMySocialProfile(user.id)
       .then((profile) => {
         setNeedsUsername(!profile.username);
-        if (profile.username) setUsernameInput(profile.username);\n        return getFriendRequests(user.id);\n      })\n      .then((items) => {\n        if (items) setRequests(items);
+        if (profile.username) setUsernameInput(profile.username);
+        return getFriendRequests(user.id);
+      })
+      .then((items) => {
+        if (items) setRequests(items);
       })
       .catch((error) => {
         console.error("[social] profile load failed", error);
@@ -113,4 +121,7 @@ function SocialPage() {
     </Screen>
   );
 }
-\nfunction Avatar({ profile }: { profile: SocialProfile }) {\n  return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile.name?.[0]?.toUpperCase() || "R"}</div>;\n}\n
+
+function Avatar({ profile }: { profile: SocialProfile }) {
+  return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile.name?.[0]?.toUpperCase() || "R"}</div>;
+}
