@@ -27,7 +27,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
       id: item.exerciseId, name: item.name, muscle: item.muscles[0] ?? "Core",
       muscles: item.muscles, equipment: item.equipment,
       type: item.tracking === "cardio" ? "Cardio" as const : "Isolation" as const,
-      tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics, custom: true,
+      tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics ?? [], custom: true,
     };
     const plan = toWorkoutExercise(base);
     return { ...plan, key: crypto.randomUUID(), sets: item.sets.length || plan.sets };

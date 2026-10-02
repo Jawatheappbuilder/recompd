@@ -485,7 +485,7 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
 
 function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
   exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined;
-  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number }; onStartCircuit?: () => void;
+  onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> } | undefined; onStartCircuit?: (() => void) | undefined;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
   const warmupSets = exercise.sessionSets.filter((set) => set.kind === "warmup");
