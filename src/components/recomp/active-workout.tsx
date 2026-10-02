@@ -133,7 +133,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     if (previousCurrentKeyRef.current === workout.currentKey) return;
     previousCurrentKeyRef.current = workout.currentKey;
     window.setTimeout(() => {
-      document.querySelector<HTMLElement>(`[data-workout-group-member-key="${CSS.escape(workout.currentKey)}"], [data-workout-exercise-key="${CSS.escape(workout.currentKey)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.querySelector<HTMLElement>(`[data-workout-group-member-key="${cssEscape(workout.currentKey)}"], [data-workout-exercise-key="${cssEscape(workout.currentKey)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
   }, [workout.currentKey]);
 
@@ -177,7 +177,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
               oscillator.type = index < 2 ? "triangle" : "sine";
               oscillator.frequency.setValueAtTime(frequency, start);
               oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.94, start + 0.7);
-              partial.gain.value = [0.7, 0.42, 0.24, 0.12][index];
+              partial.gain.value = [0.7, 0.42, 0.24, 0.12][index] ?? 0.1;
               oscillator.connect(partial);
               partial.connect(master);
               oscillator.start(start);
@@ -483,7 +483,7 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
 }
 
 function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
-  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string;
+  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined;
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagate?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number }; onStartCircuit?: () => void;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
@@ -611,8 +611,8 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   const [replaceQuery, setReplaceQuery] = useState("");
   useEffect(() => { if (sheet.kind !== "replace") setReplaceQuery(""); }, [sheet.kind]);
   const alternatives = current ? [...exercises.filter((exercise) => isCardioExercise(exercise) === isCardioExercise(current) && !used.has(exercise.id) && (!replaceQuery.trim() || exercise.name.toLowerCase().includes(replaceQuery.trim().toLowerCase())))].sort((a, b) => {
-    const aSameMuscle = a.muscle === current.muscle || a.secondaryMuscles?.includes(current.muscle) ? 0 : 1;
-    const bSameMuscle = b.muscle === current.muscle || b.secondaryMuscles?.includes(current.muscle) ? 0 : 1;
+    const aSameMuscle = a.muscle === current.muscle || a.muscles?.includes(current.muscle) ? 0 : 1;
+    const bSameMuscle = b.muscle === current.muscle || b.muscles?.includes(current.muscle) ? 0 : 1;
     return aSameMuscle - bSameMuscle || a.name.localeCompare(b.name);
   }) : [];
   return <>
