@@ -21,6 +21,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SocialRouteImport } from './routes/social'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WelcomeRouteImport } from './routes/welcome'
@@ -38,6 +39,7 @@ import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
 import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
+import { Route as SettingsHealthRouteImport } from './routes/settings.health'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTrainingRouteImport } from './routes/settings.training'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
@@ -103,6 +105,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SocialRoute = SocialRouteImport.update({
+  id: '/social',
+  path: '/social',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SupportRoute = SupportRouteImport.update({
@@ -190,6 +197,11 @@ const SettingsExercisesRoute = SettingsExercisesRouteImport.update({
   path: '/exercises',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsHealthRoute = SettingsHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -234,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/social': typeof SocialRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -248,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/health': typeof SettingsHealthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/share/$token': typeof ShareTokenRoute
@@ -269,6 +283,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/social': typeof SocialRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -283,6 +298,7 @@ export interface FileRoutesByTo {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/health': typeof SettingsHealthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/share/$token': typeof ShareTokenRoute
@@ -307,6 +323,7 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/social': typeof SocialRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -321,6 +338,7 @@ export interface FileRoutesById {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
+  '/settings/health': typeof SettingsHealthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/training': typeof SettingsTrainingRoute
   '/share/$token': typeof ShareTokenRoute
@@ -346,6 +364,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/reset-password'
     | '/settings'
+    | '/social'
     | '/support'
     | '/terms'
     | '/welcome'
@@ -360,6 +379,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
+    | '/settings/health'
     | '/settings/profile'
     | '/settings/training'
     | '/share/$token'
@@ -381,6 +401,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/privacy'
     | '/reset-password'
+    | '/social'
     | '/support'
     | '/terms'
     | '/welcome'
@@ -395,6 +416,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
+    | '/settings/health'
     | '/settings/profile'
     | '/settings/training'
     | '/share/$token'
@@ -418,6 +440,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/reset-password'
     | '/settings'
+    | '/social'
     | '/support'
     | '/terms'
     | '/welcome'
@@ -432,6 +455,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/exercises'
+    | '/settings/health'
     | '/settings/profile'
     | '/settings/training'
     | '/share/$token'
@@ -456,6 +480,7 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  SocialRoute: typeof SocialRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
@@ -551,6 +576,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/social': {
+      id: '/social'
+      path: '/social'
+      fullPath: '/social'
+      preLoaderRoute: typeof SocialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/support': {
@@ -672,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsExercisesRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/health': {
+      id: '/settings/health'
+      path: '/health'
+      fullPath: '/settings/health'
+      preLoaderRoute: typeof SettingsHealthRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/profile': {
       id: '/settings/profile'
       path: '/profile'
@@ -757,6 +796,7 @@ interface SettingsRouteChildren {
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsExercisesRoute: typeof SettingsExercisesRoute
+  SettingsHealthRoute: typeof SettingsHealthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTrainingRoute: typeof SettingsTrainingRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -766,6 +806,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsExercisesRoute: SettingsExercisesRoute,
+  SettingsHealthRoute: SettingsHealthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTrainingRoute: SettingsTrainingRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -788,6 +829,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  SocialRoute: SocialRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
