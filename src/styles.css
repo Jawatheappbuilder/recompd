@@ -189,3 +189,20 @@
   --elevated: oklch(0.225 0.012 148);
   --soft: oklch(0.58 0.012 150);
 }
+
+
+/* Private accent previews: only exposed to the two allowed accounts in Appearance settings. */
+:root[data-accent="pink"] {
+  --background: oklch(0.965 0.025 350); --card: oklch(0.985 0.016 350); --popover: oklch(0.992 0.012 350);
+  --primary: oklch(0.68 0.19 350); --primary-foreground: oklch(0.99 0.006 350); --secondary: oklch(0.94 0.035 350);
+  --muted: oklch(0.94 0.025 350); --accent: oklch(0.91 0.07 350); --accent-foreground: oklch(0.48 0.16 350);
+  --border: oklch(0.87 0.035 350); --input: oklch(0.85 0.04 350); --ring: oklch(0.68 0.19 350); --elevated: oklch(0.92 0.05 350);
+  --track: oklch(0.88 0.035 350); --soft: oklch(0.77 0.10 350); --nav: oklch(0.98 0.018 350); --app-canvas: oklch(0.93 0.035 350);
+}
+:root[data-accent="purple"] {
+  --background: oklch(0.965 0.025 295); --card: oklch(0.985 0.016 295); --popover: oklch(0.992 0.012 295);
+  --primary: oklch(0.62 0.20 295); --primary-foreground: oklch(0.99 0.006 295); --secondary: oklch(0.94 0.035 295);
+  --muted: oklch(0.94 0.025 295); --accent: oklch(0.91 0.07 295); --accent-foreground: oklch(0.46 0.17 295);
+  --border: oklch(0.87 0.035 295); --input: oklch(0.85 0.04 295); --ring: oklch(0.62 0.20 295); --elevated: oklch(0.92 0.05 295);
+  --track: oklch(0.88 0.035 295); --soft: oklch(0.75 0.10 295); --nav: oklch(0.98 0.018 295); --app-canvas: oklch(0.93 0.035 295);
+}
