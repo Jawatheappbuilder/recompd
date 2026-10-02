@@ -83,6 +83,7 @@ type FinishedWorkout = {
 
 // Previous performance comes from account history, not sample exercise values.
 
+const cssEscape = (value: string) => (CSS as unknown as { escape: (v: string) => string }).escape(value);
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 const formatDuration = (seconds: number) => seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 
