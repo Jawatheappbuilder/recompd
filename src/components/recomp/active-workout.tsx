@@ -106,6 +106,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
   const [removeKey, setRemoveKey] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [restApply, setRestApply] = useState<{ key: string; seconds: number } | null>(null);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; expanded: boolean; duration: number } | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [completedCircuits, setCompletedCircuits] = useState<string[]>([]);
   const restAudioRef = useRef<AudioContext | null>(null);
+  const previousCurrentKeyRef = useRef(workout.currentKey);
   const restWasActiveRef = useRef(false);
   const reorderSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
@@ -126,6 +128,26 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (previousCurrentKeyRef.current === workout.currentKey) return;
+    previousCurrentKeyRef.current = workout.currentKey;
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-workout-group-member-key="${CSS.escape(workout.currentKey)}"], [data-workout-exercise-key="${CSS.escape(workout.currentKey)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  }, [workout.currentKey]);
+
+  useEffect(() => {
+    if (!expandedGroup) return;
+    const group = workout.exerciseGroups?.find((item) => item.id === expandedGroup);
+    if (!group || group.memberKeys.length !== 3) return;
+    const complete = group.memberKeys.every((key) => {
+      const exercise = workout.exercises.find((item) => item.key === key);
+      const workingSets = exercise?.sessionSets.filter((set) => set.kind !== "warmup") ?? [];
+      return workingSets.length > 0 && workingSets.every((set) => set.completed);
+    });
+    if (complete) setExpandedGroup(null);
+  }, [expandedGroup, workout.exerciseGroups, workout.exercises]);
 
   const elapsed = Math.max(0, Math.floor((now - workout.startedAt) / 1000));
   const totalSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.kind !== "warmup").length, 0);
@@ -340,7 +362,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 if (group && firstMember?.key !== exercise.key) return null;
                 if (group) {
                   const members = group.memberKeys.map((key) => workout.exercises.find((item) => item.key === key)).filter(Boolean) as ActiveExercise[];
-                  return <SortableActiveExercise key={group.id} exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise>;
+                  return <div key={group.id}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise></div>;
                 }
               }
               if (exercise.circuitId) {
@@ -353,7 +375,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
               const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
               const current = exercise.key === workout.currentKey && !completed;
               const expanded = current || expandedUpcoming === exercise.key;
-              return <SortableActiveExercise key={exercise.key} exercise={exercise} index={exerciseIndex}><ExerciseCard
+              return <div key={exercise.key} data-workout-exercise-key={exercise.key}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseCard
                 exercise={exercise}
                 current={current}
                 completed={completed}
@@ -371,7 +393,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 onActions={() => setSheet({ kind: "actions", key: exercise.key })}
                 circuit={workout.circuits?.find((item) => item.id === exercise.circuitId)}
                 onStartCircuit={exercise.circuitId ? () => setCircuitRun({ id: exercise.circuitId!, phase: "countdown", round: 1, endsAt: Date.now() + 3000 }) : undefined}
-              /></SortableActiveExercise>;
+              /></SortableActiveExercise></div>;
             })}
           </div>
         </SortableContext>
@@ -406,13 +428,19 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       </AlertDialog>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} duration={rest.duration} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); }} onAdd={(exercise) => {
+      <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); setRestApply({ key, seconds }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
         if (active) onChange({ ...workout, exercises: [...workout.exercises, active] });
         setSheet({ kind: "closed" });
       }} />
-      <AlertDialog open={Boolean(removeKey)} onOpenChange={(open) => { if (!open) setRemoveKey(null); }}>
+      <AlertDialog open={Boolean(restApply)} onOpenChange={(open) => { if (!open) setRestApply(null); }}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
+          <AlertDialogHeader><AlertDialogTitle>Use this rest time for all exercises?</AlertDialogTitle><AlertDialogDescription>Apply {restApply?.seconds ?? 0} seconds to the other strength exercises in this workout?</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel onClick={() => setRestApply(null)}>Just this exercise</AlertDialogCancel><AlertDialogAction onClick={() => { if (!restApply) return; onChange({ ...workout, exercises: workout.exercises.map((exercise) => isCardioExercise(exercise) ? exercise : { ...exercise, restSeconds: restApply.seconds }) }); setRestApply(null); }}>Apply to all</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+            <AlertDialog open={Boolean(removeKey)} onOpenChange={(open) => { if (!open) setRemoveKey(null); }}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
           <AlertDialogHeader><AlertDialogTitle>Remove exercise?</AlertDialogTitle><AlertDialogDescription>Entered sets for this exercise will be removed.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={removeExercise}>Remove</AlertDialogAction></AlertDialogFooter>
@@ -743,4 +771,4 @@ function CircuitWorkoutCard({ circuit, members, expanded, run, now, onToggle, on
 
 function ExerciseGroupSetup({ workout, anchorKey, onCreate }: { workout:ActiveWorkoutState; anchorKey:string; onCreate:(keys:string[],rest:number)=>void }) { const [keys,setKeys]=useState<string[]>([anchorKey]); const [rest,setRest]=useState(90); const eligible=workout.exercises.filter(e=>!isCardioExercise(e)&&!e.circuitId&&!e.groupId); return <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="space-y-1">{eligible.map(e=><button key={e.key} type="button" className="flex min-h-12 w-full items-center justify-between rounded-xl bg-secondary px-3 text-sm font-bold" onClick={()=>e.key!==anchorKey&&setKeys(v=>v.includes(e.key)?v.filter(k=>k!==e.key):v.length<3?[...v,e.key]:v)}><span>{e.name}</span><span>{keys.includes(e.key)?"✓":"○"}</span></button>)}</div><div className="mt-3 flex items-center justify-between rounded-xl bg-secondary px-3 py-2"><span className="text-xs font-bold">Rest after round</span><div className="flex items-center gap-4"><button className="size-9 text-lg" onClick={()=>setRest(v=>Math.max(15,v-15))}>−</button><span className="min-w-12 text-center text-sm font-black">{rest}s</span><button className="size-9 text-lg" onClick={()=>setRest(v=>v+15)}>+</button></div></div><Button className="mt-4 w-full" disabled={keys.length<2} onClick={()=>onCreate(keys,rest)}>Create {keys.length===3?"tri-set":"superset"}</Button></div> }
 
-function ExerciseGroupCard({ group,members,expanded,onToggle,onSetChange,onToggleSet,onActions }: { group:{id:string;memberKeys:string[];restSeconds:number}; members:ActiveExercise[]; expanded:boolean; onToggle:()=>void; onSetChange:(exerciseKey:string,setId:string,patch:Partial<ActiveSet>,propagateWeight?:boolean)=>void; onToggleSet:(exercise:ActiveExercise,set:ActiveSet)=>void; onActions:()=>void }) { const total=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup").length,0); const done=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup"&&s.completed).length,0); const complete=total>0&&done===total; const label=members.length===3?"TRI-SET":"SUPERSET"; return <Card className={cn("overflow-hidden border p-0",complete&&"border-emerald-500/25 bg-emerald-500/[0.08]")}><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 py-3 pl-11 pr-3 text-left"><span className="min-w-0"><span className={cn("text-xs font-black tracking-wide",complete&&"text-emerald-600")}>{complete&&"✓ "}{label}</span><span className="mt-2 block space-y-1">{members.map(e=><span key={e.key} className="block truncate text-sm font-bold">{e.name}</span>)}</span><span className="mt-2 block text-[0.68rem] text-muted-foreground">{Math.max(...members.map(e=>e.sessionSets.filter(s=>s.kind!=="warmup").length))} rounds · {group.restSeconds}s rest</span></span><span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">{done}/{total}{expanded?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}</span></button>{expanded&&<div className="border-t border-border px-3 pb-3 pt-2"><div className="space-y-4">{members.map(e=><div key={e.key}><div className="mb-1 text-sm font-extrabold">{e.name}</div><div className="space-y-1">{e.sessionSets.filter(s=>s.kind!=="warmup").map((s,i)=>{ const completedBefore=members.slice(0,members.indexOf(e)).reduce((n,m)=>n+(m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed?1:0),0); const priorRounds=members.every(m=>m.sessionSets.filter(x=>x.kind!=="warmup").slice(0,i).every(x=>x.completed)); const isNext=!s.completed&&priorRounds&&completedBefore===members.indexOf(e)&&members.slice(0,members.indexOf(e)).every(m=>m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed); return <SetRow key={s.id} set={s} number={i+1} active={isNext} attention={isNext} canRemove={false} onChange={(patch,propagate)=>onSetChange(e.key,s.id,patch,propagate)} onToggle={()=>onToggleSet(e,s)} onRemove={()=>{}}/>; })}</div></div>)}</div><Button variant="ghost" size="sm" className="mt-2 w-full" onClick={onActions}><Ellipsis className="size-4"/> Group actions</Button></div>}</Card> }
+function ExerciseGroupCard({ group,members,expanded,onToggle,onSetChange,onToggleSet,onActions }: { group:{id:string;memberKeys:string[];restSeconds:number}; members:ActiveExercise[]; expanded:boolean; onToggle:()=>void; onSetChange:(exerciseKey:string,setId:string,patch:Partial<ActiveSet>,propagateWeight?:boolean)=>void; onToggleSet:(exercise:ActiveExercise,set:ActiveSet)=>void; onActions:()=>void }) { const total=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup").length,0); const done=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup"&&s.completed).length,0); const complete=total>0&&done===total; const label=members.length===3?"TRI-SET":"SUPERSET"; return <Card className={cn("overflow-hidden border p-0",complete&&"border-emerald-500/25 bg-emerald-500/[0.08]")}><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 py-3 pl-11 pr-3 text-left"><span className="min-w-0"><span className={cn("text-xs font-black tracking-wide",complete&&"text-emerald-600")}>{complete&&"✓ "}{label}</span><span className="mt-2 block space-y-1">{members.map(e=><span key={e.key} className="block truncate text-sm font-bold">{e.name}</span>)}</span><span className="mt-2 block text-[0.68rem] text-muted-foreground">{Math.max(...members.map(e=>e.sessionSets.filter(s=>s.kind!=="warmup").length))} rounds · {group.restSeconds}s rest</span></span><span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">{done}/{total}{expanded?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}</span></button>{expanded&&<div className="border-t border-border px-3 pb-3 pt-2"><div className="space-y-4">{members.map(e=><div key={e.key} data-workout-group-member-key={e.key}><div className="mb-1 text-sm font-extrabold">{e.name}</div><div className="space-y-1">{e.sessionSets.filter(s=>s.kind!=="warmup").map((s,i)=>{ const completedBefore=members.slice(0,members.indexOf(e)).reduce((n,m)=>n+(m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed?1:0),0); const priorRounds=members.every(m=>m.sessionSets.filter(x=>x.kind!=="warmup").slice(0,i).every(x=>x.completed)); const isNext=!s.completed&&priorRounds&&completedBefore===members.indexOf(e)&&members.slice(0,members.indexOf(e)).every(m=>m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed); return <div key={s.id} data-workout-group-set-id={s.id}><SetRow set={s} number={i+1} active={isNext} attention={isNext} canRemove={false} onChange={(patch,propagate)=>onSetChange(e.key,s.id,patch,propagate)} onToggle={()=>{ if (!s.completed) { const memberIndex=members.findIndex(m=>m.key===e.key); const next=members[memberIndex+1]; if(next) window.setTimeout(()=>{ const nextSets=next.sessionSets.filter(x=>x.kind!=="warmup"); const targetSet=nextSets[i]; const target=document.querySelector<HTMLElement>(`[data-workout-group-set-id="${CSS.escape(targetSet?.id ?? "")}"]`); if(target){ const top=target.getBoundingClientRect().top+window.scrollY-220; window.scrollTo({top:Math.max(0,top),behavior:"smooth"}); } },180); } onToggleSet(e,s); }} onRemove={()=>{}}/></div>; })}</div></div>)}</div><Button variant="ghost" size="sm" className="mt-2 w-full" onClick={onActions}><Ellipsis className="size-4"/> Group actions</Button></div>}</Card> }
