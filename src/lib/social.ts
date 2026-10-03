@@ -3,7 +3,8 @@ import type { CompletedWorkout } from "@/lib/training-data";
 import type { Json } from "@/integrations/supabase/types";
 
 export type SocialProfile = { id: string; name: string; username: string; leaderboard_enabled?: boolean };
-export type LeaderboardEntry = SocialProfile & { workout_count: number };\nexport type OwnerMember = { id: string; name: string; username: string | null; created_at: string };
+export type LeaderboardEntry = SocialProfile & { workout_count: number };
+export type OwnerMember = { id: string; name: string; username: string | null; created_at: string };
 export type FriendRequest = { id: string; sender_id: string; receiver_id: string; status: string; created_at: string };
 export type SocialPost = {
   id: string; user_id: string; workout_id: string; name: string; started_at: string;
