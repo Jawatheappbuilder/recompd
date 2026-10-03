@@ -136,6 +136,33 @@ function PwaHandler() {
   return null;
 }
 
+function IosInputViewportHandler() {
+  useEffect(() => {
+    const isIosWebKit = /iP(ad|hone|od)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!isIosWebKit) return;
+
+    let timer: number | undefined;
+    const restoreViewport = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) return;
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 140);
+    };
+
+    document.addEventListener("focusout", restoreViewport);
+    return () => {
+      document.removeEventListener("focusout", restoreViewport);
+      window.clearTimeout(timer);
+    };
+  }, []);
+  return null;
+}
+
 function ThemeHandler() {
   useEffect(() => {
     const apply = () => { const preferences = loadUserPreferences(); applyThemePreference(preferences.theme); applyAccentPreference(preferences.accent); };
