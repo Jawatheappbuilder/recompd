@@ -50,6 +50,20 @@
       "when": 1791019800000,
       "tag": "0006_social_v3_feed",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791027000000,
+      "tag": "0007_social_monthly_leaderboard",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791029100000,
+      "tag": "0008_owner_member_directory",
+      "breakpoints": true
     }
   ]
 }
