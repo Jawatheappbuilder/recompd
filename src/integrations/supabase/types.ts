@@ -91,6 +91,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          leaderboard_enabled: boolean
           created_at: string
           default_rest_seconds: number
           gender: string | null
@@ -107,6 +108,7 @@ export type Database = {
           weight_unit: string
         }
         Insert: {
+          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           weight_unit?: string
         }
         Update: {
+          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
