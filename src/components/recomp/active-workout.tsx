@@ -60,6 +60,9 @@ import { equipmentTypes, exercises, isCardioExercise, isTimedHold, muscleGroups,
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
 import { personalRecords, recordCompletedWorkout, toCompletedWorkout, useTrainingData } from "@/lib/training-data";
 import { ShareWorkoutButton } from "./share-workout";
+import { useAuth } from "./auth-context";
+import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Sheet =
@@ -646,6 +649,9 @@ function ExerciseOption({ exercise, onSelect }: { exercise: Exercise; onSelect: 
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const [celebrating, setCelebrating] = useState(true);
   const [showStats, setShowStats] = useState(false);
+  const { user } = useAuth();
+  const [sharedToFeed, setSharedToFeed] = useState(false);
+  const [sharingToFeed, setSharingToFeed] = useState(false);
   const performed = result.workout.exercises.map((exercise) => ({
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
@@ -654,6 +660,21 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
   const prExerciseIds = useMemo(() => new Set(sharePrs.map((pr) => pr.exerciseId)), [sharePrs]);
+
+  useEffect(() => {
+    if (!user) return;
+    void getMySharedWorkoutIds(user.id).then((ids) => setSharedToFeed(ids.has(shareWorkout.id))).catch(() => undefined);
+  }, [user, shareWorkout.id]);
+
+  async function toggleFeedShare() {
+    if (!user || sharingToFeed) return;
+    setSharingToFeed(true);
+    try {
+      if (sharedToFeed) { await unshareWorkoutFromSocial(user.id, shareWorkout.id); setSharedToFeed(false); toast.success("Removed from your feed"); }
+      else { await shareWorkoutToSocial(user.id, shareWorkout, sharePrs.length); setSharedToFeed(true); toast.success("Shared to your feed"); }
+    } catch { toast.error("Couldn't update Social sharing"); }
+    finally { setSharingToFeed(false); }
+  }
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -685,6 +706,11 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     </div>
 
     {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><p className="mt-0.5 text-sm font-bold">{sharePrs.length} new best performance{sharePrs.length === 1 ? "" : "s"}.</p></div>}
+
+    {user && <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/[0.06] px-4 py-3.5">
+      <div className="min-w-0"><div className="text-sm font-extrabold">Share to your feed</div><div className="mt-0.5 text-[0.68rem] leading-snug text-muted-foreground">Let your RECOMP'D friends see this workout.</div></div>
+      <button type="button" role="switch" aria-checked={sharedToFeed} disabled={sharingToFeed} onClick={() => void toggleFeedShare()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${sharedToFeed ? "bg-primary" : "bg-muted-foreground/25"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${sharedToFeed ? "left-6" : "left-1"}`} /></button>
+    </div>}
 
     {performed.length > 0 && <section className="mt-6">
       <h2 className="text-base font-black">Exercises performed</h2>
