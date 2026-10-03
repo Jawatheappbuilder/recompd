@@ -27,7 +27,10 @@ function SocialPage() {
   const [friends, setFriends] = useState<SocialProfile[]>([]);
   const [feed, setFeed] = useState<SocialPost[]>([]);
   const [sent, setSent] = useState<string[]>([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);\n  const [leaderboardEnabled, setLeaderboardEnabledState] = useState(true);\n  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);\n  const [leaderboardMonth, setLeaderboardMonth] = useState(0);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [leaderboardEnabled, setLeaderboardEnabledState] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardMonth, setLeaderboardMonth] = useState(0);
 
   async function refreshSocial(userId: string) {
     const [incoming, friendList, posts] = await Promise.allSettled([
@@ -45,7 +48,8 @@ function SocialPage() {
   useEffect(() => {
     if (!user) return;
     void getMySocialProfile(user.id).then((profile) => {
-      setNeedsUsername(!profile.username);\n      setLeaderboardEnabledState(profile.leaderboard_enabled ?? true);
+      setNeedsUsername(!profile.username);
+      setLeaderboardEnabledState(profile.leaderboard_enabled ?? true);
       if (profile.username) { setUsernameInput(profile.username); return refreshSocial(user.id); }
     }).catch((error) => {
       console.error("[social] profile load failed", error);
