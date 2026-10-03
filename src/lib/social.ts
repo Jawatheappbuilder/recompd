@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CompletedWorkout } from "@/lib/training-data";
 import type { Json } from "@/integrations/supabase/types";
 
-export type SocialProfile = { id: string; name: string; username: string };
+export type SocialProfile = { id: string; name: string; username: string; leaderboard_enabled?: boolean };\nexport type LeaderboardEntry = SocialProfile & { workout_count: number };
 export type FriendRequest = { id: string; sender_id: string; receiver_id: string; status: string; created_at: string };
 export type SocialPost = {
   id: string; user_id: string; workout_id: string; name: string; started_at: string;
@@ -16,7 +16,7 @@ export function cleanUsername(value: string) {
   return value.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_]/g, "").slice(0, 24);
 }
 export async function getMySocialProfile(userId: string) {
-  const { data, error } = await supabase.from("profiles").select("id,name,username").eq("id", userId).single();
+  const { data, error } = await supabase.from("profiles").select("id,name,username,leaderboard_enabled").eq("id", userId).single();
   if (error) throw error;
   return data as SocialProfile & { username: string | null };
 }
@@ -27,17 +27,17 @@ export async function usernameAvailable(username: string, userId: string) {
   if (error) throw error;
   return !data?.length;
 }
-export async function setUsername(userId: string, username: string) {
+export async function setUsername(userId: string, username: string, leaderboardEnabled = true) {
   const clean = cleanUsername(username);
   if (clean.length < 3) throw new Error("Username must be at least 3 characters.");
-  const { error } = await supabase.from("profiles").update({ username: clean }).eq("id", userId);
+  const { error } = await supabase.from("profiles").update({ username: clean, leaderboard_enabled: leaderboardEnabled }).eq("id", userId);
   if (error) throw error;
   return clean;
 }
 export async function searchPeople(query: string, userId: string) {
   const q = cleanUsername(query);
   if (q.length < 2) return [] as SocialProfile[];
-  const { data, error } = await supabase.from("profiles").select("id,name,username").neq("id", userId).not("username","is",null).ilike("username", `%${q}%`).limit(20);
+  const { data, error } = await supabase.from("profiles").select("id,name,username,leaderboard_enabled").neq("id", userId).not("username","is",null).ilike("username", `%${q}%`).limit(20);
   if (error) throw error;
   return (data ?? []) as SocialProfile[];
 }
@@ -51,7 +51,7 @@ export async function getFriendRequests(userId: string) {
   const rows = (data ?? []) as FriendRequest[];
   const ids = rows.map(r=>r.sender_id);
   if (!ids.length) return [] as Array<FriendRequest & { profile: SocialProfile }>;
-  const { data: profiles, error: pe } = await supabase.from("profiles").select("id,name,username").in("id",ids);
+  const { data: profiles, error: pe } = await supabase.from("profiles").select("id,name,username,leaderboard_enabled").in("id",ids);
   if (pe) throw pe;
   return rows.map(r=>({ ...r, profile: (profiles ?? []).find(p=>p.id===r.sender_id) as SocialProfile })).filter(r=>r.profile);
 }
@@ -69,7 +69,7 @@ export async function getFriends(userId: string) {
   if (error) throw error;
   const ids = (data ?? []).map(r=>r.sender_id===userId?r.receiver_id:r.sender_id);
   if (!ids.length) return [] as SocialProfile[];
-  const { data: profiles, error: pe } = await supabase.from("profiles").select("id,name,username").in("id",ids);
+  const { data: profiles, error: pe } = await supabase.from("profiles").select("id,name,username,leaderboard_enabled").in("id",ids);
   if (pe) throw pe;
   return (profiles ?? []) as SocialProfile[];
 }
@@ -132,4 +132,20 @@ export async function toggleSocialReaction(userId: string, postId: string, emoji
   const { error } = await supabase.from("social_reactions").insert({ post_id: postId, user_id: userId, emoji });
   if (error) throw error;
   return true;
+}
+
+export async function setLeaderboardEnabled(userId: string, enabled: boolean) {
+  const { error } = await supabase.from("profiles").update({ leaderboard_enabled: enabled }).eq("id", userId);
+  if (error) throw error;
+}
+
+export async function getMonthlyLeaderboard(userId: string, monthOffset = 0) {
+  const date = new Date();
+  const start = new Date(date.getFullYear(), date.getMonth() + monthOffset, 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + monthOffset + 1, 1);
+  const { data, error } = await supabase.rpc("get_friends_monthly_leaderboard", {
+    month_start: start.toISOString(), month_end: end.toISOString(),
+  });
+  if (error) throw error;
+  return ((data ?? []) as LeaderboardEntry[]).map((row) => ({ ...row, workout_count: Number(row.workout_count) || 0 }));
 }
