@@ -6,8 +6,10 @@ export type FriendRequest = { id: string; sender_id: string; receiver_id: string
 export type SocialPost = {
   id: string; user_id: string; workout_id: string; name: string; started_at: string;
   duration_sec: number; exercise_count: number; set_count: number; exercise_names: string[];
-  created_at: string; profile?: SocialProfile;
+  created_at: string; pr_count?: number; workout_snapshot?: CompletedWorkout | null; profile?: SocialProfile;
+  reactions?: SocialReaction[];
 };
+export type SocialReaction = { id: string; post_id: string; user_id: string; emoji: string; created_at: string };
 
 export function cleanUsername(value: string) {
   return value.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_]/g, "").slice(0, 24);
@@ -82,7 +84,12 @@ export async function getSocialFeed(userId: string) {
     const mine = await getMySocialProfile(userId);
     profileMap.set(userId, mine as SocialProfile);
   }
-  return (data ?? []).map((post) => ({ ...post, profile: profileMap.get(post.user_id) })) as SocialPost[];
+  const posts = (data ?? []).map((post) => ({ ...post, profile: profileMap.get(post.user_id) })) as SocialPost[];
+  const postIds = posts.map((post) => post.id);
+  if (!postIds.length) return posts;
+  const { data: reactions, error: reactionError } = await supabase.from("social_reactions").select("*").in("post_id", postIds).order("created_at", { ascending: true });
+  if (reactionError) console.warn("[social] reactions unavailable", reactionError);
+  return posts.map((post) => ({ ...post, reactions: ((reactions ?? []) as SocialReaction[]).filter((reaction) => reaction.post_id === post.id) }));
 }
 
 export async function getMySharedWorkoutIds(userId: string) {
@@ -91,7 +98,7 @@ export async function getMySharedWorkoutIds(userId: string) {
   return new Set((data ?? []).map((row) => row.workout_id));
 }
 
-export async function shareWorkoutToSocial(userId: string, workout: CompletedWorkout) {
+export async function shareWorkoutToSocial(userId: string, workout: CompletedWorkout, prCount = 0) {
   const strengthSets = workout.exercises.reduce((total, exercise) => total + (exercise.tracking === "cardio" ? 0 : exercise.sets.length), 0);
   const { error } = await supabase.from("social_posts").upsert({
     user_id: userId,
@@ -102,6 +109,8 @@ export async function shareWorkoutToSocial(userId: string, workout: CompletedWor
     exercise_count: workout.exercises.length,
     set_count: strengthSets,
     exercise_names: workout.exercises.map((exercise) => exercise.name),
+    pr_count: prCount,
+    workout_snapshot: workout,
   }, { onConflict: "user_id,workout_id" });
   if (error) throw error;
 }
@@ -109,4 +118,17 @@ export async function shareWorkoutToSocial(userId: string, workout: CompletedWor
 export async function unshareWorkoutFromSocial(userId: string, workoutId: string) {
   const { error } = await supabase.from("social_posts").delete().eq("user_id", userId).eq("workout_id", workoutId);
   if (error) throw error;
+}
+
+export async function toggleSocialReaction(userId: string, postId: string, emoji: string) {
+  const { data: existing, error: findError } = await supabase.from("social_reactions").select("id").eq("post_id", postId).eq("user_id", userId).eq("emoji", emoji).maybeSingle();
+  if (findError) throw findError;
+  if (existing?.id) {
+    const { error } = await supabase.from("social_reactions").delete().eq("id", existing.id);
+    if (error) throw error;
+    return false;
+  }
+  const { error } = await supabase.from("social_reactions").insert({ post_id: postId, user_id: userId, emoji });
+  if (error) throw error;
+  return true;
 }
