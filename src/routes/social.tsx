@@ -1,12 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Clock3, Dumbbell, Search, UserPlus, Users, X } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trophy, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/components/recomp/auth-context";
-import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, usernameAvailable, respondToFriendRequest, type FriendRequest, type SocialPost, type SocialProfile } from "@/lib/social";
-import { formatDuration } from "@/lib/training-data";
+import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, type FriendRequest, type SocialPost, type SocialProfile } from "@/lib/social";
+import { formatDuration, formatPerformance } from "@/lib/training-data";
+import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
+import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/social")({ component: SocialPage });
 type Tab = "feed" | "friends";
@@ -98,7 +101,7 @@ function SocialPage() {
       {(["feed","friends"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-lg px-3 py-2 text-sm font-extrabold capitalize transition-colors ${tab === item ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>{item}{item === "friends" && requests.length ? <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{requests.length}</span> : null}</button>)}
     </div>
 
-    {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} /> : <div>
+    {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} userId={user?.id ?? ""} onRefresh={() => user ? refreshSocial(user.id) : Promise.resolve()} /> : <div>
       {requests.length > 0 && <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Friend requests</div><div className="space-y-2">{requests.map((request) => <PersonRow key={request.id} profile={request.profile} action={<><button type="button" aria-label="Accept" onClick={() => void reply(request.id,true)} className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground"><Check className="size-4"/></button><button type="button" aria-label="Decline" onClick={() => void reply(request.id,false)} className="grid size-9 place-items-center rounded-lg bg-secondary"><X className="size-4"/></button></>} />)}</div></section>}
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Your friends · {friends.length}</div>{friends.length ? <div className="space-y-2">{friends.map((profile) => <PersonRow key={profile.id} profile={profile}/>)}</div> : <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No friends yet. Search a username below.</p>}</section>
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Find people</div><div className="rounded-xl border border-border bg-card px-3"><div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground"/><input value={query} onChange={(event)=>void runSearch(event.target.value)} placeholder="Search @username" className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"/></div></div>{query.trim().length >= 2 && <div className="mt-2 space-y-2">{results.length ? results.map((profile)=><PersonRow key={profile.id} profile={profile} action={<Button size="sm" variant={sent.includes(profile.id)?"surface":"primary"} disabled={sent.includes(profile.id)||friends.some(f=>f.id===profile.id)} onClick={()=>void addFriend(profile.id)}>{friends.some(f=>f.id===profile.id)?"Friends":sent.includes(profile.id)?"Sent":<><UserPlus className="size-4"/>Add</>}</Button>}/>) : <div className="py-8 text-center text-sm text-muted-foreground">No usernames found.</div>}</div>}</section>
@@ -106,10 +109,71 @@ function SocialPage() {
   </Screen>;
 }
 
-function Feed({ posts, loading }: { posts: SocialPost[]; loading: boolean }) {
+function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; loading: boolean; userId: string; onRefresh: () => Promise<void> }) {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [reacting, setReacting] = useState<string | null>(null);
   if (loading) return <div className="py-16 text-center text-sm text-muted-foreground">Loading feed...</div>;
   if (!posts.length) return <div className="py-14 text-center"><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Dumbbell className="size-6"/></div><div className="mt-4 font-extrabold">Nothing shared yet</div><p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">Open a completed workout in Progress and choose Share with friends to put it here.</p></div>;
-  return <div className="mt-5 space-y-3">{posts.map((post)=><Card key={post.id} className="overflow-hidden p-0"><div className="p-4"><div className="flex items-center gap-3"><Avatar profile={post.profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{post.profile?.name || "RECOMP'D friend"}</div><div className="text-xs text-muted-foreground">@{post.profile?.username || "friend"} · {relativeDate(post.created_at)}</div></div></div><h2 className="mt-4 text-lg font-black">{post.name}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground"><span className="flex items-center gap-1"><Clock3 className="size-3.5"/>{formatDuration(post.duration_sec)}</span><span>{post.exercise_count} exercises</span>{post.set_count > 0 && <span>{post.set_count} sets</span>}</div>{post.exercise_names.length > 0 && <div className="mt-3 text-sm leading-relaxed text-muted-foreground">{post.exercise_names.slice(0,4).join(" · ")}{post.exercise_names.length>4?` +${post.exercise_names.length-4} more`:""}</div>}</div></Card>)}</div>;
+
+  function templateFrom(post: SocialPost) {
+    const snapshot = post.workout_snapshot;
+    if (!snapshot?.exercises?.length) return [];
+    return snapshot.exercises.map((item) => {
+      const original = exercises.find((exercise) => exercise.id === item.exerciseId);
+      const base: Exercise = original ?? {
+        id: item.exerciseId, name: item.name, muscle: item.muscles?.[0] ?? "Core",
+        muscles: item.muscles ?? ["Core"], equipment: item.equipment,
+        type: item.tracking === "cardio" ? "Cardio" : "Isolation",
+        tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics ?? [], custom: true,
+      };
+      const plan = toWorkoutExercise(base);
+      return { ...plan, key: crypto.randomUUID(), sets: Math.max(1, item.sets?.length || plan.sets) };
+    });
+  }
+  function train(post: SocialPost) {
+    const planned = templateFrom(post);
+    if (!planned.length) { toast.error("This older share doesn't include workout details"); return; }
+    const active = createActiveWorkout(planned, post.name);
+    if (!active) return;
+    saveActiveWorkout(active);
+    toast.success("Workout ready");
+    void navigate({ to: "/workout" });
+  }
+  async function react(post: SocialPost, emoji: string) {
+    if (!userId || reacting) return;
+    setReacting(post.id + emoji);
+    try { await toggleSocialReaction(userId, post.id, emoji); await onRefresh(); }
+    catch { toast.error("Couldn't update reaction"); }
+    finally { setReacting(null); }
+  }
+
+  return <div className="mt-4 space-y-2.5">{posts.map((post) => {
+    const isOpen = expanded === post.id;
+    const snapshot = post.workout_snapshot;
+    const reactionCounts = ["💪","🔥","👏"].map((emoji) => ({
+      emoji,
+      count: post.reactions?.filter((reaction) => reaction.emoji === emoji).length ?? 0,
+      mine: post.reactions?.some((reaction) => reaction.emoji === emoji && reaction.user_id === userId) ?? false,
+    }));
+    return <Card key={post.id} className="overflow-hidden p-0">
+      <button type="button" onClick={() => setExpanded(isOpen ? null : post.id)} className="w-full p-4 text-left">
+        <div className="flex items-center gap-3"><Avatar profile={post.profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{post.profile?.name || "RECOMP'D friend"}</div><div className="text-xs text-muted-foreground">@{post.profile?.username || "friend"} · {relativeDate(post.created_at)}</div></div><ChevronDown className={`size-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}/></div>
+        <h2 className="mt-3 text-lg font-black">{post.name}</h2>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground"><span className="flex items-center gap-1"><Clock3 className="size-3.5"/>{formatDuration(post.duration_sec)}</span><span>{post.exercise_count} exercises</span>{post.set_count > 0 && <span>{post.set_count} sets</span>}{(post.pr_count ?? 0) > 0 && <span className="flex items-center gap-1 font-extrabold text-primary"><Trophy className="size-3.5"/>{post.pr_count} PR{post.pr_count === 1 ? "" : "s"}</span>}</div>
+        <div className="mt-3 space-y-1.5">
+          {(snapshot?.exercises ?? []).slice(0,3).map((exercise) => <div key={exercise.key} className="flex items-center justify-between gap-3 text-sm"><span className="truncate font-semibold">{exercise.name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"}</span></div>)}
+          {!snapshot && post.exercise_names.slice(0,3).map((name) => <div key={name} className="text-sm font-semibold">{name}</div>)}
+          {post.exercise_count > 3 && <div className="text-xs font-bold text-muted-foreground">+{post.exercise_count - 3} more exercises</div>}
+        </div>
+      </button>
+      {isOpen && <div className="border-t border-border px-4 pb-4 pt-3">
+        {snapshot?.exercises?.length ? <div className="space-y-3">{snapshot.exercises.map((exercise) => <div key={exercise.key}><div className="text-sm font-extrabold">{exercise.name}</div><div className="mt-1 space-y-0.5">{exercise.sets.map((set,index)=><div key={index} className="text-xs tabular-nums text-muted-foreground"><span className="mr-2 inline-block w-4">{exercise.tracking === "cardio" ? "" : index + 1}</span><span className="font-semibold text-foreground">{formatPerformance(set)}</span></div>)}</div></div>)}</div> : <p className="text-sm text-muted-foreground">Detailed sets weren't included in this older share.</p>}
+        <Button variant="primary" className="mt-4 w-full" onClick={() => train(post)}><Dumbbell/>Train this workout</Button>
+      </div>}
+      <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">{reactionCounts.map(({emoji,count,mine})=><button key={emoji} type="button" disabled={reacting === post.id+emoji} onClick={() => void react(post,emoji)} className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-sm transition-colors ${mine ? "border-primary bg-primary/10" : "border-border bg-secondary/60"}`}><span>{emoji}</span>{count > 0 && <span className="text-xs font-bold">{count}</span>}</button>)}{(post.pr_count ?? 0) > 0 && <span className="ml-auto flex items-center gap-1 text-[0.68rem] font-extrabold text-primary"><Flame className="size-3.5"/>strong session</span>}</div>
+    </Card>;
+  })}</div>;
 }
 
 function PersonRow({ profile, action }: { profile: SocialProfile; action?: React.ReactNode }) { return <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"><Avatar profile={profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{profile.name}</div><div className="truncate text-xs text-muted-foreground">@{profile.username}</div></div>{action}</div>; }

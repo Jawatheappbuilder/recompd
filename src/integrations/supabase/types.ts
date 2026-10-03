@@ -218,6 +218,8 @@ export type Database = {
           id: string
           name: string
           set_count: number
+          pr_count: number
+          workout_snapshot: Json | null
           started_at: string
           user_id: string
           workout_id: string
@@ -230,6 +232,8 @@ export type Database = {
           id?: string
           name: string
           set_count?: number
+          pr_count?: number
+          workout_snapshot?: Json | null
           started_at: string
           user_id?: string
           workout_id: string
@@ -242,10 +246,18 @@ export type Database = {
           id?: string
           name?: string
           set_count?: number
+          pr_count?: number
+          workout_snapshot?: Json | null
           started_at?: string
           user_id?: string
           workout_id?: string
         }
+        Relationships: []
+      }
+      social_reactions: {
+        Row: { id: string; post_id: string; user_id: string; emoji: string; created_at: string }
+        Insert: { id?: string; post_id: string; user_id?: string; emoji: string; created_at?: string }
+        Update: { id?: string; post_id?: string; user_id?: string; emoji?: string; created_at?: string }
         Relationships: []
       }
       shared_workouts: {
