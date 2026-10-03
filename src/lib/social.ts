@@ -1,8 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { CompletedWorkout } from "@/lib/training-data";
 
 export type SocialProfile = { id: string; name: string; username: string };
 export type FriendRequest = { id: string; sender_id: string; receiver_id: string; status: string; created_at: string };
-export type FeedWorkout = { id: string; name: string; started_at: string; duration_sec: number; user_id: string; profile?: SocialProfile; exerciseCount?: number; setCount?: number };
+export type SocialPost = {
+  id: string; user_id: string; workout_id: string; name: string; started_at: string;
+  duration_sec: number; exercise_count: number; set_count: number; exercise_names: string[];
+  created_at: string; profile?: SocialProfile;
+};
 
 export function cleanUsername(value: string) {
   return value.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_]/g, "").slice(0, 24);
@@ -65,15 +70,43 @@ export async function getFriends(userId: string) {
   if (pe) throw pe;
   return (profiles ?? []) as SocialProfile[];
 }
+
 export async function getSocialFeed(userId: string) {
   const friends = await getFriends(userId);
-  const ids = friends.map(f=>f.id);
-  if (!ids.length) return [] as FeedWorkout[];
-  const { data, error } = await supabase.from("workouts").select("id,name,started_at,duration_sec,user_id").in("user_id",ids).order("started_at",{ascending:false}).limit(40);
+  const friendIds = friends.map((friend) => friend.id);
+  const visibleIds = [userId, ...friendIds];
+  const { data, error } = await supabase.from("social_posts").select("*").in("user_id", visibleIds).order("created_at", { ascending: false }).limit(50);
   if (error) throw error;
-  const workouts = (data ?? []) as FeedWorkout[];
-  if (!workouts.length) return workouts;
-  const workoutIds = workouts.map(w=>w.id);
-  const { data: ex } = await supabase.from("workout_exercises").select("workout_id,sets").in("workout_id",workoutIds);
-  return workouts.map(w=>({ ...w, profile: friends.find(f=>f.id===w.user_id), exerciseCount:(ex??[]).filter(e=>e.workout_id===w.id).length, setCount:(ex??[]).filter(e=>e.workout_id===w.id).reduce((n,e)=>n+(Array.isArray(e.sets)?e.sets.length:0),0) }));
+  const profileMap = new Map(friends.map((profile) => [profile.id, profile]));
+  if (!profileMap.has(userId)) {
+    const mine = await getMySocialProfile(userId);
+    profileMap.set(userId, mine as SocialProfile);
+  }
+  return (data ?? []).map((post) => ({ ...post, profile: profileMap.get(post.user_id) })) as SocialPost[];
+}
+
+export async function getMySharedWorkoutIds(userId: string) {
+  const { data, error } = await supabase.from("social_posts").select("workout_id").eq("user_id", userId);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.workout_id));
+}
+
+export async function shareWorkoutToSocial(userId: string, workout: CompletedWorkout) {
+  const strengthSets = workout.exercises.reduce((total, exercise) => total + (exercise.tracking === "cardio" ? 0 : exercise.sets.length), 0);
+  const { error } = await supabase.from("social_posts").upsert({
+    user_id: userId,
+    workout_id: workout.id,
+    name: workout.name,
+    started_at: new Date(workout.startedAt).toISOString(),
+    duration_sec: workout.durationSec,
+    exercise_count: workout.exercises.length,
+    set_count: strengthSets,
+    exercise_names: workout.exercises.map((exercise) => exercise.name),
+  }, { onConflict: "user_id,workout_id" });
+  if (error) throw error;
+}
+
+export async function unshareWorkoutFromSocial(userId: string, workoutId: string) {
+  const { error } = await supabase.from("social_posts").delete().eq("user_id", userId).eq("workout_id", workoutId);
+  if (error) throw error;
 }

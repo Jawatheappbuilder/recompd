@@ -209,6 +209,45 @@ export type Database = {
         }
         Relationships: []
       }
+      social_posts: {
+        Row: {
+          created_at: string
+          duration_sec: number
+          exercise_count: number
+          exercise_names: string[]
+          id: string
+          name: string
+          set_count: number
+          started_at: string
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_sec?: number
+          exercise_count?: number
+          exercise_names?: string[]
+          id?: string
+          name: string
+          set_count?: number
+          started_at: string
+          user_id?: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_sec?: number
+          exercise_count?: number
+          exercise_names?: string[]
+          id?: string
+          name?: string
+          set_count?: number
+          started_at?: string
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: []
+      }
       shared_workouts: {
         Row: {
           created_at: string

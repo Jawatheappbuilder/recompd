@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { BookmarkPlus, Minus, Pencil, Plus, Trash2, Trophy, X } from "lucide-react";
-import { useState } from "react";
+import { BookmarkPlus, Minus, Pencil, Plus, Trash2, Trophy, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { saveWorkout } from "@/lib/workout-storage";
@@ -12,11 +12,29 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { deleteWorkout, formatDuration, formatLongDay, formatPerformance, formatSet, isCardioSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
 import { ShareWorkoutButton } from "../share-workout";
+import { useAuth } from "../auth-context";
+import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
 import { WorkoutCalories } from "../workout-calories";
 import { SubHeader } from "./progress-widgets";
 
 export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs: { exerciseId: string; set: CompletedSet }[] }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [sharedToSocial, setSharedToSocial] = useState<boolean | null>(null);
+  const [sharingSocial, setSharingSocial] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    void getMySharedWorkoutIds(user.id).then((ids) => setSharedToSocial(ids.has(workout.id))).catch(() => setSharedToSocial(false));
+  }, [user, workout.id]);
+  async function toggleSocialShare() {
+    if (!user || sharingSocial) return;
+    setSharingSocial(true);
+    try {
+      if (sharedToSocial) { await unshareWorkoutFromSocial(user.id, workout.id); setSharedToSocial(false); toast.success("Removed from friends feed"); }
+      else { await shareWorkoutToSocial(user.id, workout); setSharedToSocial(true); toast.success("Shared with friends"); }
+    } catch { toast.error("Couldn't update Social sharing"); }
+    finally { setSharingSocial(false); }
+  }
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -74,7 +92,9 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           );
         })}
       </div>
-      <Button variant="surface" className="mt-4 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
+      {user && <Button variant={sharedToSocial ? "primary" : "surface"} className="mt-4 w-full" disabled={sharedToSocial === null || sharingSocial} onClick={() => void toggleSocialShare()}><Users />{sharingSocial ? "Updating..." : sharedToSocial ? "Shared with friends" : "Share with friends"}</Button>}
+      {sharedToSocial && <p className="mt-1.5 text-center text-[0.7rem] text-muted-foreground">Only accepted RECOMP'D friends can see this workout summary.</p>}
+      <Button variant="surface" className="mt-3 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
       <ShareLinkButton name={workout.name} exercises={templateExercises()} className="mt-2 w-full" />
       <ShareWorkoutButton workout={workout} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
       <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
