@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
+import { BookmarkPlus, Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { formatDuration, formatPerformance } from "@/lib/training-data";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
 import { toast } from "sonner";
+import { mutate, newId, useCloudData } from "@/lib/cloud-data";
 
 export const Route = createFileRoute("/social")({ component: SocialPage });
 type Tab = "feed" | "leaderboard" | "friends";
@@ -147,9 +148,12 @@ function SocialPage() {
 
 function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; loading: boolean; userId: string; onRefresh: () => Promise<void> }) {
   const navigate = useNavigate();
+  const cloud = useCloudData();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [reacting, setReacting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [savingPost, setSavingPost] = useState<SocialPost | null>(null);
+  const [saveName, setSaveName] = useState("");
   if (loading) return <div className="py-16 text-center text-sm text-muted-foreground">Loading feed...</div>;
   if (!posts.length) return <div className="py-14 text-center"><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Dumbbell className="size-6"/></div><div className="mt-4 font-extrabold">Nothing shared yet</div><p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">Open a completed workout in Progress and choose Share with friends to put it here.</p></div>;
 
@@ -177,6 +181,19 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
     toast.success("Workout ready");
     void navigate({ to: "/workout" });
   }
+  function openSave(post: SocialPost) {
+    if (!post.workout_snapshot?.exercises?.length) { toast.error("This older share doesn't include workout details"); return; }
+    setSavingPost(post); setSaveName(post.name);
+  }
+  function saveFriendWorkout() {
+    if (!savingPost) return;
+    const planned = templateFrom(savingPost);
+    const name = saveName.trim() || savingPost.name;
+    if (!planned.length) return;
+    mutate({ kind: "upsertSaved", workout: { id: newId(), name, exercises: planned, createdAt: Date.now() } });
+    toast.success(`Saved “${name}” from @${savingPost.profile?.username || savingPost.profile?.name || "friend"}`);
+    setSavingPost(null); setSaveName("");
+  }
   async function removeShare(post: SocialPost) {
     if (!userId || post.user_id !== userId || deleting) return;
     if (!window.confirm("Remove this workout from your Social feed? Your workout history will stay saved.")) return;
@@ -193,7 +210,9 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
     finally { setReacting(null); }
   }
 
-  return <div className="mt-4 space-y-2.5">{posts.map((post) => {
+  return <>
+    {savingPost && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center" onClick={() => setSavingPost(null)}><div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl" onClick={(event) => event.stopPropagation()}><div className="text-lg font-black">Save workout</div><p className="mt-1 text-xs text-muted-foreground">Saved from @{savingPost.profile?.username || savingPost.profile?.name || "friend"}. Rename it now if you want.</p><label className="mt-4 block text-xs font-bold text-muted-foreground">Workout name</label><input autoFocus value={saveName} onChange={(event) => setSaveName(event.target.value)} maxLength={120} className="mt-2 h-12 w-full rounded-xl border border-border bg-secondary px-3 text-base font-semibold outline-none focus:ring-2 focus:ring-primary" /><div className="mt-4 grid grid-cols-2 gap-2"><Button variant="surface" onClick={() => setSavingPost(null)}>Cancel</Button><Button variant="primary" onClick={saveFriendWorkout}><BookmarkPlus/>Save</Button></div></div></div>}
+    <div className="mt-4 space-y-2.5">{posts.map((post) => {
     const isOpen = expanded === post.id;
     const snapshot = post.workout_snapshot;
     const reactionCounts = ["💪","🔥","👏"].map((emoji) => ({
@@ -214,11 +233,11 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
       </button>
       {isOpen && <div className="border-t border-border px-4 pb-4 pt-3">
         {snapshot?.exercises?.length ? <div className="space-y-3">{snapshot.exercises.map((exercise) => <div key={exercise.key}><div className="text-sm font-extrabold">{exercise.name}</div><div className="mt-1 space-y-0.5">{exercise.sets.map((set,index)=><div key={index} className="text-xs tabular-nums text-muted-foreground"><span className="mr-2 inline-block w-4">{exercise.tracking === "cardio" ? "" : index + 1}</span><span className="font-semibold text-foreground">{formatPerformance(set)}</span></div>)}</div></div>)}</div> : <p className="text-sm text-muted-foreground">Detailed sets weren't included in this older share.</p>}
-        <Button variant="primary" className="mt-4 w-full" onClick={() => train(post)}><Dumbbell/>Train this workout</Button>
+        <Button variant="primary" className="mt-4 w-full" onClick={() => train(post)}><Dumbbell/>Train this workout</Button><Button variant="surface" className="mt-2 w-full" onClick={() => openSave(post)} disabled={!snapshot?.exercises?.length}><BookmarkPlus/>Save workout</Button>
       </div>}
       <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">{reactionCounts.map(({emoji,count,mine})=><button key={emoji} type="button" disabled={reacting === post.id+emoji} onClick={() => void react(post,emoji)} className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-sm transition-colors ${mine ? "border-primary bg-primary/10" : "border-border bg-secondary/60"}`}><span>{emoji}</span>{count > 0 && <span className="text-xs font-bold">{count}</span>}</button>)}{(post.pr_count ?? 0) > 0 && <span className="ml-auto flex items-center gap-1 text-[0.68rem] font-extrabold text-primary"><Flame className="size-3.5"/>strong session</span>}</div>
     </Card>;
-  })}</div>;
+  })}</div></>;
 }
 
 function PersonRow({ profile, action }: { profile: SocialProfile; action?: React.ReactNode }) { return <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"><Avatar profile={profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{profile.name}</div><div className="truncate text-xs text-muted-foreground">@{profile.username}</div></div>{action}</div>; }
