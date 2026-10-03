@@ -5,7 +5,7 @@ import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/components/recomp/auth-context";
-import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, getMonthlyLeaderboard, setLeaderboardEnabled, unshareWorkoutFromSocial, type FriendRequest, type SocialPost, type SocialProfile, type LeaderboardEntry } from "@/lib/social";
+import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, getMonthlyLeaderboard, setLeaderboardEnabled, unshareWorkoutFromSocial, getOwnerMemberDirectory, type FriendRequest, type SocialPost, type SocialProfile, type LeaderboardEntry, type OwnerMember } from "@/lib/social";
 import { formatDuration, formatPerformance } from "@/lib/training-data";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
@@ -31,6 +31,9 @@ function SocialPage() {
   const [leaderboardEnabled, setLeaderboardEnabledState] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardMonth, setLeaderboardMonth] = useState(0);
+  const [ownerMembers, setOwnerMembers] = useState<OwnerMember[]>([]);
+  const [memberQuery, setMemberQuery] = useState("");
+  const [membersLoaded, setMembersLoaded] = useState(false);
 
   async function refreshSocial(userId: string) {
     const [incoming, friendList, posts] = await Promise.allSettled([
@@ -80,6 +83,10 @@ function SocialPage() {
     try { setLeaderboard(await getMonthlyLeaderboard(user.id, offset)); } catch { setLeaderboard([]); }
   }
   useEffect(() => { if (user && !needsUsername && tab === "leaderboard") void loadLeaderboard(leaderboardMonth); }, [user, needsUsername, tab, leaderboardMonth]);
+  useEffect(() => {
+    if (!user || needsUsername || tab !== "friends" || membersLoaded) return;
+    void getOwnerMemberDirectory().then((members) => { setOwnerMembers(members); setMembersLoaded(true); }).catch(() => setMembersLoaded(true));
+  }, [user, needsUsername, tab, membersLoaded]);
   async function toggleLeaderboard(enabled: boolean) {
     if (!user) return;
     setLeaderboardEnabledState(enabled);
@@ -132,6 +139,7 @@ function SocialPage() {
     {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} userId={user?.id ?? ""} onRefresh={() => user ? refreshSocial(user.id) : Promise.resolve()} /> : tab === "leaderboard" ? <Leaderboard entries={leaderboard} enabled={leaderboardEnabled} monthOffset={leaderboardMonth} userId={user?.id ?? ""} onMonthChange={setLeaderboardMonth} onToggle={(value) => void toggleLeaderboard(value)} /> : <div>
       {requests.length > 0 && <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Friend requests</div><div className="space-y-2">{requests.map((request) => <PersonRow key={request.id} profile={request.profile} action={<><button type="button" aria-label="Accept" onClick={() => void reply(request.id,true)} className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground"><Check className="size-4"/></button><button type="button" aria-label="Decline" onClick={() => void reply(request.id,false)} className="grid size-9 place-items-center rounded-lg bg-secondary"><X className="size-4"/></button></>} />)}</div></section>}
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Your friends · {friends.length}</div>{friends.length ? <div className="space-y-2">{friends.map((profile) => <PersonRow key={profile.id} profile={profile}/>)}</div> : <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No friends yet. Search a username below.</p>}</section>
+      {ownerMembers.length > 0 && <section className="mt-5"><div className="mb-2 flex items-center justify-between"><div className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">All members · {ownerMembers.length}</div><span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">Owner</span></div><div className="rounded-xl border border-border bg-card px-3"><div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground"/><input value={memberQuery} onChange={(event)=>setMemberQuery(event.target.value)} placeholder="Search all members" className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"/></div></div><div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">{ownerMembers.filter((member) => { const q = memberQuery.trim().toLowerCase(); return !q || member.name.toLowerCase().includes(q) || (member.username ?? "").toLowerCase().includes(q); }).map((member) => <div key={member.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"><Avatar profile={{ id: member.id, name: member.name, username: member.username ?? "" }}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{member.name || "Member"}</div><div className="text-xs text-muted-foreground">{member.username ? `@${member.username}` : "No Social username yet"} · Joined {new Date(member.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}</div></div></div>)}</div></section>}
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Find people</div><div className="rounded-xl border border-border bg-card px-3"><div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground"/><input value={query} onChange={(event)=>void runSearch(event.target.value)} placeholder="Search @username" className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"/></div></div>{query.trim().length >= 2 && <div className="mt-2 space-y-2">{results.length ? results.map((profile)=><PersonRow key={profile.id} profile={profile} action={<Button size="sm" variant={sent.includes(profile.id)?"surface":"primary"} disabled={sent.includes(profile.id)||friends.some(f=>f.id===profile.id)} onClick={()=>void addFriend(profile.id)}>{friends.some(f=>f.id===profile.id)?"Friends":sent.includes(profile.id)?"Sent":<><UserPlus className="size-4"/>Add</>}</Button>}/>) : <div className="py-8 text-center text-sm text-muted-foreground">No usernames found.</div>}</div>}</section>
     </div>}
   </Screen>;

@@ -369,6 +369,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_owner_member_directory: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          username: string | null
+          created_at: string
+        }[]
+      }
       get_friends_monthly_leaderboard: {
         Args: { month_start: string; month_end: string }
         Returns: {
