@@ -379,7 +379,7 @@ export function ExercisePicker({ open, library, onOpenChange, onAdd, onCreateCus
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary" /></div>
+            <div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} onBlur={() => { window.setTimeout(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }, 120); }} placeholder="Search exercises" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="search" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-base outline-none focus:border-primary" /></div>
             <FilterRow items={muscleGroups} value={muscle} onSelect={(item) => setMuscle(item === muscle ? null : item)} />
             <FilterRow items={equipmentTypes} value={equipment} onSelect={(item) => setEquipment(item === equipment ? null : item)} />
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">
