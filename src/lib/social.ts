@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CompletedWorkout } from "@/lib/training-data";
+import type { Json } from "@/integrations/supabase/types";
 
 export type SocialProfile = { id: string; name: string; username: string };
 export type FriendRequest = { id: string; sender_id: string; receiver_id: string; status: string; created_at: string };
@@ -110,7 +111,7 @@ export async function shareWorkoutToSocial(userId: string, workout: CompletedWor
     set_count: strengthSets,
     exercise_names: workout.exercises.map((exercise) => exercise.name),
     pr_count: prCount,
-    workout_snapshot: workout,
+    workout_snapshot: workout as unknown as Json,
   }, { onConflict: "user_id,workout_id" });
   if (error) throw error;
 }
