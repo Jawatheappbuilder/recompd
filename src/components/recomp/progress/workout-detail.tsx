@@ -31,7 +31,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
     setSharingSocial(true);
     try {
       if (sharedToSocial) { await unshareWorkoutFromSocial(user.id, workout.id); setSharedToSocial(false); toast.success("Removed from friends feed"); }
-      else { await shareWorkoutToSocial(user.id, workout); setSharedToSocial(true); toast.success("Shared with friends"); }
+      else { await shareWorkoutToSocial(user.id, workout, prs.length); setSharedToSocial(true); toast.success("Shared with friends"); }
     } catch { toast.error("Couldn't update Social sharing"); }
     finally { setSharingSocial(false); }
   }
