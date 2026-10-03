@@ -27,8 +27,16 @@ function SocialPage() {
   const [loadingFeed, setLoadingFeed] = useState(true);
 
   async function refreshSocial(userId: string) {
-    const [incoming, friendList, posts] = await Promise.all([getFriendRequests(userId), getFriends(userId), getSocialFeed(userId)]);
-    setRequests(incoming); setFriends(friendList); setFeed(posts); setLoadingFeed(false);
+    const [incoming, friendList, posts] = await Promise.allSettled([
+      getFriendRequests(userId),
+      getFriends(userId),
+      getSocialFeed(userId),
+    ]);
+    if (incoming.status === "fulfilled") setRequests(incoming.value);
+    if (friendList.status === "fulfilled") setFriends(friendList.value);
+    if (posts.status === "fulfilled") setFeed(posts.value);
+    else console.warn("[social] feed unavailable", posts.reason);
+    setLoadingFeed(false);
   }
 
   useEffect(() => {
@@ -36,7 +44,13 @@ function SocialPage() {
     void getMySocialProfile(user.id).then((profile) => {
       setNeedsUsername(!profile.username);
       if (profile.username) { setUsernameInput(profile.username); return refreshSocial(user.id); }
-    }).catch((error) => { console.error("[social] profile load failed", error); setNeedsUsername(true); setLoadingFeed(false); });
+    }).catch((error) => {
+      console.error("[social] profile load failed", error);
+      // A failed profile read is not evidence that the user has no username.
+      // Keep Social in a loading/error-safe state rather than overwriting existing setup.
+      setNeedsUsername(null);
+      setLoadingFeed(false);
+    });
   }, [user]);
 
   useEffect(() => {
