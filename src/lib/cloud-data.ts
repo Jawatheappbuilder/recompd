@@ -61,12 +61,12 @@ const toCustom = (row: { id: string; name: string; muscles: string[]; equipment:
 
 async function fetchAll(): Promise<CloudData> {
   const [w, e, b, s, c, sc] = await Promise.all([
-    supabase.from("workouts").select("*"),
-    supabase.from("workout_exercises").select("*").order("position"),
-    supabase.from("bodyweight_entries").select("*"),
-    supabase.from("saved_workouts").select("*"),
-    supabase.from("custom_exercises").select("*").order("created_at"),
-    supabase.from("scheduled_workouts").select("*"),
+    supabase.from("workouts").select("*").eq("user_id", userId!),
+    supabase.from("workout_exercises").select("*").eq("user_id", userId!).order("position"),
+    supabase.from("bodyweight_entries").select("*").eq("user_id", userId!),
+    supabase.from("saved_workouts").select("*").eq("user_id", userId!),
+    supabase.from("custom_exercises").select("*").eq("user_id", userId!).order("created_at"),
+    supabase.from("scheduled_workouts").select("*").eq("user_id", userId!),
   ]);
   const error = w.error ?? e.error ?? b.error ?? s.error ?? c.error ?? sc.error;
   if (error) throw error;
