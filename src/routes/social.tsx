@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronDown, Clock3, Dumbbell, Flame, Medal, Search, Trophy, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trophy, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
