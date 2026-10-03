@@ -14,13 +14,13 @@ export function FormMessage({ children, tone = "error" }: { children: ReactNode;
   return <p role={tone === "error" ? "alert" : "status"} className={cn("rounded-xl border px-3 py-2.5 text-xs font-semibold", tone === "error" ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/30 bg-primary/[0.06] text-foreground")}>{children}</p>;
 }
 
-export function OnboardingHeader({ title, subtitle, backTo, progress }: { title: string; subtitle: string; backTo: "/welcome" | "/create-account" | "/login" | "/onboarding/about" | "/forgot-password"; progress?: 1 | 2 }) {
+export function OnboardingHeader({ title, subtitle, backTo, progress }: { title: string; subtitle: string; backTo: "/welcome" | "/create-account" | "/login" | "/onboarding/about" | "/forgot-password"; progress?: 1 | 2 | 3 }) {
   const router = useRouter();
   return <header className="mb-6"><div className="mb-8 flex items-center justify-between"><Button variant="surface" size="icon" className="size-10" aria-label="Back" onClick={() => router.history.canGoBack() ? router.history.back() : void router.navigate({ to: backTo })}><ArrowLeft /></Button>{progress && <OnboardingProgress current={progress} />}<span className="size-10" /></div><div className="wordmark mb-5">RECOMP<span className="text-primary">'</span>D</div><h1 className="text-3xl font-extrabold">{title}</h1><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p></header>;
 }
 
-export function OnboardingProgress({ current }: { current: 1 | 2 }) {
-  return <div aria-label={`Onboarding progress: ${current} of 2`} className="flex gap-1.5">{[1, 2].map((step) => <span key={step} className={cn("h-1.5 w-8 rounded-full bg-border", step <= current && "bg-primary")} />)}</div>;
+export function OnboardingProgress({ current }: { current: 1 | 2 | 3 }) {
+  return <div aria-label={`Onboarding progress: ${current} of 3`} className="flex gap-1.5">{[1, 2, 3].map((step) => <span key={step} className={cn("h-1.5 w-8 rounded-full bg-border", step <= current && "bg-primary")} />)}</div>;
 }
 
 export function FormField({ label, error, password, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string | undefined; password?: boolean | undefined }) {
