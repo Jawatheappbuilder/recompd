@@ -113,6 +113,12 @@
     -webkit-tap-highlight-color: transparent;
   }
   button, a { touch-action: manipulation; }
+
+  /* iOS Safari auto-zooms focused form controls below 16px. Keep mobile
+     controls at 16px so typing does not leave the app viewport enlarged. */
+  @supports (-webkit-touch-callout: none) {
+    input, textarea, select { font-size: 16px; }
+  }
 }
 
 @utility wordmark {
