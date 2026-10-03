@@ -30,7 +30,10 @@ function SocialPage() {
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [leaderboardEnabled, setLeaderboardEnabledState] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardMonth, setLeaderboardMonth] = useState(0);\n  const [ownerMembers, setOwnerMembers] = useState<OwnerMember[]>([]);\n  const [memberQuery, setMemberQuery] = useState("");\n  const [membersLoaded, setMembersLoaded] = useState(false);
+  const [leaderboardMonth, setLeaderboardMonth] = useState(0);
+  const [ownerMembers, setOwnerMembers] = useState<OwnerMember[]>([]);
+  const [memberQuery, setMemberQuery] = useState("");
+  const [membersLoaded, setMembersLoaded] = useState(false);
 
   async function refreshSocial(userId: string) {
     const [incoming, friendList, posts] = await Promise.allSettled([
