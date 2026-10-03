@@ -96,10 +96,22 @@ function SocialPage() {
   </div></Screen>;
 
   return <Screen>
-    <div className="flex items-center justify-between"><div><div className="text-xs font-extrabold uppercase tracking-[.14em] text-primary">RECOMP'D</div><h1 className="text-2xl font-black">Social</h1></div><div className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><Users className="size-5" /></div></div>
-    <div className="mt-5 grid grid-cols-2 rounded-xl bg-secondary p-1">
-      {(["feed","friends"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-lg px-3 py-2 text-sm font-extrabold capitalize transition-colors ${tab === item ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>{item}{item === "friends" && requests.length ? <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{requests.length}</span> : null}</button>)}
-    </div>
+    <header className="-mx-4 -mt-3 overflow-hidden rounded-b-[2rem] border-b border-primary/10 bg-gradient-to-br from-primary/[0.13] via-primary/[0.06] to-transparent px-4 pb-5 pt-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[.2em] text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />RECOMP'D</div>
+          <h1 className="mt-1 text-[2rem] font-black leading-none tracking-[-0.04em]">Social</h1>
+          <p className="mt-2 text-xs font-medium text-muted-foreground">Train together. Share what counts.</p>
+        </div>
+        <button type="button" onClick={() => setTab("friends")} aria-label="Open friends" className="relative grid size-12 place-items-center rounded-2xl border border-primary/15 bg-card/80 text-primary shadow-sm backdrop-blur transition-transform active:scale-95">
+          <Users className="size-5" />
+          {requests.length > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-black text-primary-foreground">{requests.length}</span>}
+        </button>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/45 p-1 shadow-inner backdrop-blur">
+        {(["feed","friends"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2.5 text-sm font-extrabold capitalize transition-all ${tab === item ? "bg-card text-foreground shadow-sm ring-1 ring-black/[0.04]" : "text-muted-foreground hover:text-foreground"}`}>{item}{item === "friends" && requests.length ? <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{requests.length}</span> : null}</button>)}
+      </div>
+    </header>
 
     {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} userId={user?.id ?? ""} onRefresh={() => user ? refreshSocial(user.id) : Promise.resolve()} /> : <div>
       {requests.length > 0 && <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Friend requests</div><div className="space-y-2">{requests.map((request) => <PersonRow key={request.id} profile={request.profile} action={<><button type="button" aria-label="Accept" onClick={() => void reply(request.id,true)} className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground"><Check className="size-4"/></button><button type="button" aria-label="Decline" onClick={() => void reply(request.id,false)} className="grid size-9 place-items-center rounded-lg bg-secondary"><X className="size-4"/></button></>} />)}</div></section>}
