@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trophy, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/components/recomp/auth-context";
-import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, getMonthlyLeaderboard, setLeaderboardEnabled, type FriendRequest, type SocialPost, type SocialProfile, type LeaderboardEntry } from "@/lib/social";
+import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, getMonthlyLeaderboard, setLeaderboardEnabled, unshareWorkoutFromSocial, type FriendRequest, type SocialPost, type SocialProfile, type LeaderboardEntry } from "@/lib/social";
 import { formatDuration, formatPerformance } from "@/lib/training-data";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
@@ -141,6 +141,7 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [reacting, setReacting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   if (loading) return <div className="py-16 text-center text-sm text-muted-foreground">Loading feed...</div>;
   if (!posts.length) return <div className="py-14 text-center"><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Dumbbell className="size-6"/></div><div className="mt-4 font-extrabold">Nothing shared yet</div><p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">Open a completed workout in Progress and choose Share with friends to put it here.</p></div>;
 
@@ -168,6 +169,14 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
     toast.success("Workout ready");
     void navigate({ to: "/workout" });
   }
+  async function removeShare(post: SocialPost) {
+    if (!userId || post.user_id !== userId || deleting) return;
+    if (!window.confirm("Remove this workout from your Social feed? Your workout history will stay saved.")) return;
+    setDeleting(post.id);
+    try { await unshareWorkoutFromSocial(userId, post.workout_id); toast.success("Removed from your feed"); await onRefresh(); }
+    catch { toast.error("Couldn't remove shared workout"); }
+    finally { setDeleting(null); }
+  }
   async function react(post: SocialPost, emoji: string) {
     if (!userId || reacting) return;
     setReacting(post.id + emoji);
@@ -186,7 +195,7 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
     }));
     return <Card key={post.id} className="overflow-hidden p-0">
       <button type="button" onClick={() => setExpanded(isOpen ? null : post.id)} className="w-full p-4 text-left">
-        <div className="flex items-center gap-3"><Avatar profile={post.profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{post.profile?.name || "RECOMP'D friend"}</div><div className="text-xs text-muted-foreground">@{post.profile?.username || "friend"} · {relativeDate(post.created_at)}</div></div><ChevronDown className={`size-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}/></div>
+        <div className="flex items-center gap-3"><Avatar profile={post.profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{post.profile?.name || "RECOMP'D friend"}</div><div className="text-xs text-muted-foreground">@{post.profile?.username || "friend"} · {relativeDate(post.created_at)}</div></div>{post.user_id === userId && <button type="button" aria-label="Remove shared workout" disabled={deleting === post.id} onClick={(event) => { event.stopPropagation(); void removeShare(post); }} className="grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"><Trash2 className="size-4"/></button>}<ChevronDown className={`size-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}/></div>
         <h2 className="mt-3 text-lg font-black">{post.name}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground"><span className="flex items-center gap-1"><Clock3 className="size-3.5"/>{formatDuration(post.duration_sec)}</span><span>{post.exercise_count} exercises</span>{post.set_count > 0 && <span>{post.set_count} sets</span>}{(post.pr_count ?? 0) > 0 && <span className="flex items-center gap-1 font-extrabold text-primary"><Trophy className="size-3.5"/>{post.pr_count} PR{post.pr_count === 1 ? "" : "s"}</span>}</div>
         <div className="mt-3 space-y-1.5">
