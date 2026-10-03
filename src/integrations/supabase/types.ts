@@ -91,6 +91,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          leaderboard_enabled: boolean
           created_at: string
           default_rest_seconds: number
           gender: string | null
@@ -107,6 +108,7 @@ export type Database = {
           weight_unit: string
         }
         Insert: {
+          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           weight_unit?: string
         }
         Update: {
+          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
@@ -366,6 +369,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_friends_monthly_leaderboard: {
+        Args: { month_start: string; month_end: string }
+        Returns: {
+          id: string
+          name: string
+          username: string
+          leaderboard_enabled: boolean
+          workout_count: number
+        }[]
+      }
       get_shared_workout: {
         Args: { _token: string }
         Returns: {

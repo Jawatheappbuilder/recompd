@@ -5,14 +5,14 @@ import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/components/recomp/auth-context";
-import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, type FriendRequest, type SocialPost, type SocialProfile } from "@/lib/social";
+import { cleanUsername, getFriendRequests, getFriends, getMySocialProfile, getSocialFeed, searchPeople, sendFriendRequest, setUsername, toggleSocialReaction, usernameAvailable, respondToFriendRequest, getMonthlyLeaderboard, setLeaderboardEnabled, type FriendRequest, type SocialPost, type SocialProfile, type LeaderboardEntry } from "@/lib/social";
 import { formatDuration, formatPerformance } from "@/lib/training-data";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/social")({ component: SocialPage });
-type Tab = "feed" | "friends";
+type Tab = "feed" | "leaderboard" | "friends";
 
 function SocialPage() {
   const { user } = useAuth();
@@ -28,6 +28,9 @@ function SocialPage() {
   const [feed, setFeed] = useState<SocialPost[]>([]);
   const [sent, setSent] = useState<string[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const [leaderboardEnabled, setLeaderboardEnabledState] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardMonth, setLeaderboardMonth] = useState(0);
 
   async function refreshSocial(userId: string) {
     const [incoming, friendList, posts] = await Promise.allSettled([
@@ -46,6 +49,7 @@ function SocialPage() {
     if (!user) return;
     void getMySocialProfile(user.id).then((profile) => {
       setNeedsUsername(!profile.username);
+      setLeaderboardEnabledState(profile.leaderboard_enabled ?? true);
       if (profile.username) { setUsernameInput(profile.username); return refreshSocial(user.id); }
     }).catch((error) => {
       console.error("[social] profile load failed", error);
@@ -69,9 +73,20 @@ function SocialPage() {
 
   async function saveUsername() {
     if (!user || !available) return;
-    await setUsername(user.id, username); setNeedsUsername(false); await refreshSocial(user.id);
+    await setUsername(user.id, username, leaderboardEnabled); setNeedsUsername(false); await refreshSocial(user.id);
   }
-  async function runSearch(value: string) {
+  async function loadLeaderboard(offset = leaderboardMonth) {
+    if (!user) return;
+    try { setLeaderboard(await getMonthlyLeaderboard(user.id, offset)); } catch { setLeaderboard([]); }
+  }
+  useEffect(() => { if (user && !needsUsername && tab === "leaderboard") void loadLeaderboard(leaderboardMonth); }, [user, needsUsername, tab, leaderboardMonth]);
+  async function toggleLeaderboard(enabled: boolean) {
+    if (!user) return;
+    setLeaderboardEnabledState(enabled);
+    try { await setLeaderboardEnabled(user.id, enabled); if (tab === "leaderboard") await loadLeaderboard(); }
+    catch { setLeaderboardEnabledState(!enabled); toast.error("Couldn't update leaderboard setting"); }
+  }
+    async function runSearch(value: string) {
     setQuery(value); if (!user) return;
     const clean = cleanUsername(value); if (clean.length < 2) { setResults([]); return; }
     try { setResults(await searchPeople(clean, user.id)); } catch { setResults([]); }
@@ -91,6 +106,7 @@ function SocialPage() {
     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">See what your friends choose to share. Your workout history stays private unless you share a workout to Social.</p>
     <label className="mt-7 text-xs font-bold uppercase tracking-wide">Choose your username</label>
     <div className="mt-2 flex h-13 items-center rounded-xl border border-border bg-card px-4 focus-within:ring-2 focus-within:ring-primary/30"><span className="font-bold text-muted-foreground">@</span><input autoCapitalize="none" autoCorrect="off" value={username} onChange={(event) => setUsernameInput(cleanUsername(event.target.value))} placeholder="yourusername" className="min-w-0 flex-1 bg-transparent px-1.5 py-3 font-bold outline-none" /></div>
+    <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.06] p-4"><div><div className="flex items-center gap-2 text-sm font-extrabold"><Trophy className="size-4 text-primary"/>Friends leaderboard</div><p className="mt-1 text-[0.7rem] leading-relaxed text-muted-foreground">Show your monthly workout count to accepted friends. Your workout details stay private.</p></div><button type="button" role="switch" aria-checked={leaderboardEnabled} onClick={() => setLeaderboardEnabledState(!leaderboardEnabled)} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${leaderboardEnabled ? "bg-primary" : "bg-muted-foreground/25"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${leaderboardEnabled ? "left-6" : "left-1"}`}/></button></div>
     <div className="mt-2 h-5 text-xs">{checking ? <span className="text-muted-foreground">Checking...</span> : available === true ? <span className="font-semibold text-emerald-600">Available</span> : available === false ? <span className="font-semibold text-destructive">That username is taken</span> : username.length > 0 ? <span className="text-muted-foreground">Use at least 3 letters, numbers or _</span> : null}</div>
     <Button className="mt-4 h-12 w-full" variant="primary" disabled={!available} onClick={() => void saveUsername()}>Join social</Button>
   </div></Screen>;
@@ -108,12 +124,12 @@ function SocialPage() {
           {requests.length > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-black text-primary-foreground">{requests.length}</span>}
         </button>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/45 p-1 shadow-inner backdrop-blur">
-        {(["feed","friends"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2.5 text-sm font-extrabold capitalize transition-all ${tab === item ? "bg-card text-foreground shadow-sm ring-1 ring-black/[0.04]" : "text-muted-foreground hover:text-foreground"}`}>{item}{item === "friends" && requests.length ? <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{requests.length}</span> : null}</button>)}
+      <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-primary/10 bg-background/45 p-1 shadow-inner backdrop-blur">
+        {(["feed","leaderboard","friends"] as Tab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2.5 text-sm font-extrabold capitalize transition-all ${tab === item ? "bg-card text-foreground shadow-sm ring-1 ring-black/[0.04]" : "text-muted-foreground hover:text-foreground"}`}>{item}{item === "friends" && requests.length ? <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{requests.length}</span> : null}</button>)}
       </div>
     </header>
 
-    {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} userId={user?.id ?? ""} onRefresh={() => user ? refreshSocial(user.id) : Promise.resolve()} /> : <div>
+    {tab === "feed" ? <Feed posts={feed} loading={loadingFeed} userId={user?.id ?? ""} onRefresh={() => user ? refreshSocial(user.id) : Promise.resolve()} /> : tab === "leaderboard" ? <Leaderboard entries={leaderboard} enabled={leaderboardEnabled} monthOffset={leaderboardMonth} userId={user?.id ?? ""} onMonthChange={setLeaderboardMonth} onToggle={(value) => void toggleLeaderboard(value)} /> : <div>
       {requests.length > 0 && <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Friend requests</div><div className="space-y-2">{requests.map((request) => <PersonRow key={request.id} profile={request.profile} action={<><button type="button" aria-label="Accept" onClick={() => void reply(request.id,true)} className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground"><Check className="size-4"/></button><button type="button" aria-label="Decline" onClick={() => void reply(request.id,false)} className="grid size-9 place-items-center rounded-lg bg-secondary"><X className="size-4"/></button></>} />)}</div></section>}
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Your friends · {friends.length}</div>{friends.length ? <div className="space-y-2">{friends.map((profile) => <PersonRow key={profile.id} profile={profile}/>)}</div> : <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No friends yet. Search a username below.</p>}</section>
       <section className="mt-5"><div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Find people</div><div className="rounded-xl border border-border bg-card px-3"><div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground"/><input value={query} onChange={(event)=>void runSearch(event.target.value)} placeholder="Search @username" className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"/></div></div>{query.trim().length >= 2 && <div className="mt-2 space-y-2">{results.length ? results.map((profile)=><PersonRow key={profile.id} profile={profile} action={<Button size="sm" variant={sent.includes(profile.id)?"surface":"primary"} disabled={sent.includes(profile.id)||friends.some(f=>f.id===profile.id)} onClick={()=>void addFriend(profile.id)}>{friends.some(f=>f.id===profile.id)?"Friends":sent.includes(profile.id)?"Sent":<><UserPlus className="size-4"/>Add</>}</Button>}/>) : <div className="py-8 text-center text-sm text-muted-foreground">No usernames found.</div>}</div>}</section>
@@ -191,3 +207,18 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
 function PersonRow({ profile, action }: { profile: SocialProfile; action?: React.ReactNode }) { return <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"><Avatar profile={profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{profile.name}</div><div className="truncate text-xs text-muted-foreground">@{profile.username}</div></div>{action}</div>; }
 function Avatar({ profile }: { profile?: SocialProfile }) { return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile?.name?.[0]?.toUpperCase() || "R"}</div>; }
 function relativeDate(value: string) { const ms=Date.now()-new Date(value).getTime(); const minutes=Math.max(0,Math.floor(ms/60000)); if(minutes<1)return "just now"; if(minutes<60)return `${minutes}m`; const hours=Math.floor(minutes/60); if(hours<24)return `${hours}h`; const days=Math.floor(hours/24); return days<7?`${days}d`:new Date(value).toLocaleDateString("en-AU",{day:"numeric",month:"short"}); }
+
+function Leaderboard({ entries, enabled, monthOffset, userId, onMonthChange, onToggle }: { entries: LeaderboardEntry[]; enabled: boolean; monthOffset: number; userId: string; onMonthChange: (value: number) => void; onToggle: (value: boolean) => void }) {
+  const date = new Date(); date.setMonth(date.getMonth() + monthOffset);
+  const label = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const podium = entries.slice(0, 3);
+  return <div className="mt-5">
+    <div className="flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-[.16em] text-primary">Monthly consistency</div><h2 className="mt-1 text-2xl font-black">{label}</h2></div><div className="flex rounded-xl bg-secondary p-1"><button className="rounded-lg px-2.5 py-1.5 text-xs font-bold" onClick={() => onMonthChange(0)}>This month</button><button className="rounded-lg px-2.5 py-1.5 text-xs font-bold" onClick={() => onMonthChange(-1)}>Last</button></div></div>
+    <div className="mt-4 rounded-[1.75rem] border border-primary/15 bg-gradient-to-b from-primary/[0.10] to-card p-4 shadow-sm">
+      <div className="flex items-end justify-center gap-2">{podium.map((entry, index) => <div key={entry.id} className={`flex flex-1 flex-col items-center ${index === 0 ? "order-2" : index === 1 ? "order-1" : "order-3"}`}><div className={`grid rounded-full bg-card font-black shadow-sm ring-2 ring-primary/15 ${index === 0 ? "size-14 text-lg" : "size-11 text-sm"} place-items-center`}>{entry.name?.[0]?.toUpperCase() ?? "?"}</div><div className="mt-2 max-w-full truncate text-xs font-extrabold">{entry.name || "RECOMP'D user"}</div><div className="text-[0.65rem] text-muted-foreground">@{entry.username}</div><div className={`mt-2 rounded-full px-3 py-1 font-black ${index === 0 ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"} {entry.workout_count}</div></div>)}</div>
+    </div>
+    <div className="mt-3 space-y-2">{entries.map((entry, index) => <div key={entry.id} className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${entry.id === userId ? "border-primary/30 bg-primary/[0.06]" : "border-border bg-card"}`}><div className="w-7 text-center text-sm font-black text-muted-foreground">{index + 1}</div><div className="grid size-9 place-items-center rounded-full bg-secondary font-black">{entry.name?.[0]?.toUpperCase() ?? "?"}</div><div className="min-w-0 flex-1"><div className="truncate text-sm font-extrabold">{entry.name}{entry.id === userId ? " · You" : ""}</div><div className="truncate text-[0.68rem] text-muted-foreground">@{entry.username}</div></div><div className="text-right"><div className="text-lg font-black">{entry.workout_count}</div><div className="text-[0.62rem] font-bold uppercase text-muted-foreground">workouts</div></div></div>)}</div>
+    {!entries.length && <div className="py-12 text-center text-sm text-muted-foreground">No leaderboard activity yet.</div>}
+    <div className="mt-5 flex items-center justify-between rounded-2xl border border-border bg-card p-4"><div><div className="text-sm font-extrabold">Appear on leaderboard</div><div className="mt-0.5 text-[0.68rem] text-muted-foreground">Only your monthly workout count is shared.</div></div><button type="button" role="switch" aria-checked={enabled} onClick={() => onToggle(!enabled)} className={`relative h-7 w-12 rounded-full ${enabled ? "bg-primary" : "bg-muted-foreground/25"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${enabled ? "left-6" : "left-1"}`}/></button></div>
+  </div>;
+}
