@@ -43,6 +43,13 @@
       "when": 1791015960000,
       "tag": "0005_social_v2_explicit_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791019800000,
+      "tag": "0006_social_v3_feed",
+      "breakpoints": true
     }
   ]
 }
