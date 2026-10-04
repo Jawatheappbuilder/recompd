@@ -13,7 +13,7 @@ export type CompletedSet = {
   durationSeconds?: number; distanceKm?: number; speedKph?: number; pace?: string;
   incline?: number; level?: number; floors?: number; steps?: number; pace500m?: string;
 };
-export type CompletedExercise = { key: string; exerciseId: string; name: string; muscles: Muscle[]; equipment: Equipment; tracking?: "strength" | "cardio"; cardioMetrics?: CardioMetric[]; sets: CompletedSet[]; supersetWith?: string };
+export type CompletedExercise = { key: string; exerciseId: string; name: string; muscles: Muscle[]; equipment: Equipment; tracking?: "strength" | "cardio"; cardioMetrics?: CardioMetric[]; sets: CompletedSet[]; supersetWith?: string; groupId?: string; groupRestSeconds?: number; circuitId?: string; circuitWorkSeconds?: number; circuitRestSeconds?: number; circuitRounds?: number; circuitReps?: number };
 export type CompletedWorkout = { id: string; name: string; startedAt: number; durationSec: number; exercises: CompletedExercise[] };
 export type BodyweightEntry = { id: string; kg: number; loggedAt: number };
 export type TrainingData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[] };
@@ -37,6 +37,8 @@ export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: numb
       tracking: exercise.tracking ?? "strength",
       ...(exercise.cardioMetrics ? { cardioMetrics: exercise.cardioMetrics } : {}),
       ...(exercise.supersetWith ? { supersetWith: exercise.supersetWith } : {}),
+      ...(exercise.groupId ? { groupId: exercise.groupId, groupRestSeconds: exercise.groupRestSeconds } : {}),
+      ...(exercise.circuitId ? { circuitId: exercise.circuitId, circuitWorkSeconds: exercise.circuitWorkSeconds, circuitRestSeconds: exercise.circuitRestSeconds, circuitRounds: exercise.circuitRounds, circuitReps: exercise.circuitReps } : {}),
       sets: exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").map((set) => exercise.tracking === "cardio" ? {
         kind: "cardio" as const, weight: 0, reps: 0,
         durationSeconds: Number(set.durationSeconds) || 0,

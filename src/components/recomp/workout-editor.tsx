@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,6 +62,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
   initialPickerMuscle?: Muscle | null | undefined;
 }) {
   const [sheet, setSheet] = useState<SheetState>({ kind: "closed" });
+  const [expandedPlanGroups, setExpandedPlanGroups] = useState<string[]>([]);
   const library = useLibrary();
   const addOpen = pickerOpen ?? sheet.kind === "add";
   const setAddOpen = (open: boolean) => { if (onPickerOpenChange) onPickerOpenChange(open); else setSheet(open ? { kind: "add" } : { kind: "closed" }); };
@@ -107,8 +108,16 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={workout.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
-              {workout.map((exercise, index) => (
-                <SortableExercise
+              {workout.map((exercise, index) => {
+                const planId = exercise.groupId || exercise.circuitId;
+                if (planId && workout.findIndex((item) => (item.groupId || item.circuitId) === planId) !== index) return null;
+                if (planId) {
+                  const members = workout.filter((item) => (item.groupId || item.circuitId) === planId);
+                  const circuit = !!exercise.circuitId;
+                  const expanded = expandedPlanGroups.includes(planId);
+                  return <PlannedGroupCard key={planId} id={planId} members={members} circuit={circuit} expanded={expanded} onToggle={() => setExpandedPlanGroups((ids) => ids.includes(planId) ? ids.filter((id) => id !== planId) : [...ids, planId])} onEdit={(member) => setSheet({ kind: "actions", key: member.key })} onUnlink={() => setWorkout((current) => current.map((item) => (item.groupId || item.circuitId) === planId ? { ...item, groupId: undefined, groupRestSeconds: undefined, circuitId: undefined, circuitWorkSeconds: undefined, circuitRestSeconds: undefined, circuitRounds: undefined, circuitReps: undefined } : item))} />;
+                }
+                return <SortableExercise
                   key={exercise.key}
                   exercise={exercise}
                   index={index}
@@ -122,8 +131,8 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   partnerName={partnerOf(exercise)?.name}
                   linkedAbove={!!partnerOf(exercise) && workout[index - 1]?.key === exercise.supersetWith}
                   linkedBelow={!!partnerOf(exercise) && workout[index + 1]?.key === exercise.supersetWith}
-                />
-              ))}
+                />;
+              })}
             </div>
           </SortableContext>
         </DndContext>
@@ -171,6 +180,13 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
       />
     </>
   );
+}
+
+function PlannedGroupCard({ id, members, circuit, expanded, onToggle, onEdit, onUnlink }: { id:string; members:WorkoutExercise[]; circuit:boolean; expanded:boolean; onToggle:()=>void; onEdit:(exercise:WorkoutExercise)=>void; onUnlink:()=>void }) {
+  const first=members[0]; if(!first) return null;
+  const label=circuit?"TIMED CIRCUIT":members.length===3?"TRI-SET":"SUPERSET";
+  const detail=circuit?`${Math.round((first.circuitWorkSeconds??300)/60)} min × ${first.circuitRounds??3} rounds · ${first.circuitRestSeconds??90}s rest`:`${Math.max(...members.map(m=>m.sets))} rounds · ${first.groupRestSeconds??90}s rest`;
+  return <Card className="overflow-hidden border-primary/30 p-0"><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 bg-primary/[0.06] px-4 py-3 text-left"><span className="min-w-0"><span className="flex items-center gap-1.5 text-xs font-black tracking-wide text-primary">{circuit?<span>⏱</span>:<Link2 className="size-3.5"/>}{label}</span><span className="mt-2 block space-y-1">{members.map(m=><span key={m.key} className="block truncate text-sm font-extrabold">{m.name}</span>)}</span><span className="mt-2 block text-[0.68rem] font-semibold text-muted-foreground">{detail}</span></span>{expanded?<ChevronUp className="mt-1 size-4 text-primary"/>:<ChevronDown className="mt-1 size-4 text-primary"/>}</button>{expanded&&<div className="border-t border-border px-3 py-2"><div className="divide-y divide-border">{members.map(m=><div key={m.key} className="flex items-center justify-between gap-2 py-2"><div className="min-w-0"><div className="truncate text-sm font-bold">{m.name}</div><div className="text-[0.68rem] text-muted-foreground">{m.sets} sets · {m.reps} reps</div></div><Button variant="ghost" size="sm" onClick={()=>onEdit(m)}><Ellipsis/>Edit</Button></div>)}</div><Button variant="ghost" size="sm" className="mt-1 w-full text-muted-foreground" onClick={onUnlink}><Unlink/>Unlink {circuit?"circuit":"group"}</Button></div>}</Card>;
 }
 
 function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onActions, partnerName, linkedAbove, linkedBelow }: {
