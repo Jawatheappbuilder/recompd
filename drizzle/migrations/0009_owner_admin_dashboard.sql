@@ -19,7 +19,7 @@ as $$
     'shared_workouts', (select count(*) from social_posts),
     'reactions', (select count(*) from social_reactions),
     'recent_members', (select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) from (select p.id,p.name,p.username,p.created_at,(select max(w.started_at) from workouts w where w.user_id=p.id) last_workout_at,(select count(*) from workouts w where w.user_id=p.id) workout_count from profiles p order by p.created_at desc limit 20) x),
-    'daily_workouts', (select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) from (select d::date day,(select count(*) from workouts w where w.started_at >= d and w.started_at < d + interval '1 day') count from generate_series(date_trunc('day',now()) - interval '6 days',date_trunc('day',now()),interval '1 day') d) x)
+    'daily_workouts', (select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) from (select d::date as workout_day,(select count(*) from workouts w where w.started_at >= d and w.started_at < d + interval '1 day') as workout_count from generate_series(date_trunc('day',now()) - interval '6 days',date_trunc('day',now()),interval '1 day') d) x)
   ) else null end;
 $$;
 revoke all on function public.get_owner_admin_dashboard() from public;
