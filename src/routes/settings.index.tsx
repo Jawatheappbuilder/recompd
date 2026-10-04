@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CircleUserRound, Cloud, Crown, Dumbbell, FileText, Footprints, Info, LogIn, Mail, Palette, RefreshCcw, Shield, SlidersHorizontal, UserPlus } from "lucide-react";
+import { CircleUserRound, Crown, Dumbbell, FileText, Footprints, Info, LogIn, Mail, Palette, RefreshCcw, Shield, SlidersHorizontal, UserPlus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { Screen } from "@/components/recomp/core";
 import { SettingsHeader, SettingsLink, SettingsRow, SettingsSection } from "@/components/recomp/settings-ui";
@@ -16,15 +16,21 @@ function SettingsPage() {
   const navigate = useNavigate(); const { user, status } = useAuth();
   const theme = preferences.theme === "system" ? "System" : preferences.theme === "dark" ? "Dark" : "Light";
   return <Screen><SettingsHeader title="Settings" /><div className="space-y-5">
-    <SettingsSection title="Profile"><SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} /></SettingsSection>
-    <SettingsSection title="Training"><SettingsLink to="/settings/training" icon={SlidersHorizontal} label="Training preferences" value={`${preferences.weightUnit} · ${preferences.defaultRestSeconds}s`} /><SettingsLink to="/settings/health" icon={Footprints} label="Health & activity" value="Steps · Health Connect" /></SettingsSection>
-    <SettingsSection title="Exercises"><SettingsLink to="/settings/exercises" icon={Dumbbell} label="Manage custom exercises" /></SettingsSection>
-    <SettingsSection title="Appearance"><SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={`${theme} · ${preferences.accent === "blue" ? "Blue" : preferences.accent === "black" ? "Black" : "Red"}`} /></SettingsSection>
-    <SettingsSection title="Account">{status === "demo" ? <><SettingsRow icon={UserPlus} label="Create account" value="Save your progress" onClick={() => void navigate({ to: "/create-account" })} /><SettingsRow icon={LogIn} label="Log in" value="Use an existing account" onClick={() => void navigate({ to: "/login" })} /></> : <SettingsLink to="/settings/account" icon={CircleUserRound} label="Account" value={user?.email ?? "Account"} />}</SettingsSection>
-    {user?.id === "0fac7a7b-5bec-4614-adbd-5d69c8f1f97b" && <SettingsSection title="Owner"><SettingsLink to="/settings/admin" icon={Crown} label="RECOMP'D Admin" value="Members · activity · Social" /></SettingsSection>}
-    <SettingsSection title="Data"><SettingsRow icon={Cloud} label="Export data" value="Coming later" disabled /></SettingsSection>
-    <SettingsSection title="Preview"><SettingsRow icon={RefreshCcw} label="Restart onboarding" onClick={() => { setPreferences({ ...preferences, onboardingComplete: false }); void navigate({ to: "/welcome" }); }} /></SettingsSection>
-    <SettingsSection title="About & support">
+    <SettingsSection title="Your profile">
+      <SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} />
+      <SettingsLink to="/settings/training" icon={SlidersHorizontal} label="Training preferences" value={`${preferences.weightUnit} · ${preferences.defaultRestSeconds}s`} />
+      <SettingsLink to="/settings/health" icon={Footprints} label="Health & activity" value="Steps · Health Connect" />
+    </SettingsSection>
+    <SettingsSection title="App settings">
+      <SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={`${theme} · ${preferences.accent === "blue" ? "Blue" : preferences.accent === "black" ? "Black" : "Red"}`} />
+      <SettingsLink to="/settings/exercises" icon={Dumbbell} label="Manage custom exercises" />
+    </SettingsSection>
+    <SettingsSection title="Account & data">
+      {status === "demo" ? <><SettingsRow icon={UserPlus} label="Create account" value="Save your progress" onClick={() => void navigate({ to: "/create-account" })} /><SettingsRow icon={LogIn} label="Log in" value="Use an existing account" onClick={() => void navigate({ to: "/login" })} /></> : <SettingsLink to="/settings/account" icon={CircleUserRound} label="Account" value={user?.email ?? "Account"} />}
+    </SettingsSection>
+    {user?.id === "0fac7a7b-5bec-4614-adbd-5d69c8f1f97b" && <SettingsSection title="RECOMP'D Admin"><SettingsLink to="/settings/admin" icon={Crown} label="Admin dashboard" value="Members · activity · Social" /></SettingsSection>}
+    <SettingsSection title="Support & legal">
+      <SettingsRow icon={RefreshCcw} label="Restart onboarding" onClick={() => { setPreferences({ ...preferences, onboardingComplete: false }); void navigate({ to: "/welcome" }); }} />
       <SettingsRow icon={Info} label="About RECOMP'D" value="Version 0.1.0" />
       <SettingsLink to="/privacy" icon={Shield} label="Privacy Policy" />
       <SettingsLink to="/terms" icon={FileText} label="Terms & Fitness Disclaimer" />
