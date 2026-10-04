@@ -10,6 +10,7 @@ import {
   Minus,
   Plus,
   Search,
+  History,
 
   Shuffle,
   Trash2,
@@ -100,6 +101,23 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         if (history[exercise.exerciseId]) continue;
         const lastSet = [...exercise.sets].reverse().find((set) => set.kind !== "cardio");
         if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
+      }
+    }
+    return history;
+  }, [trainingData, workout.startedAt]);
+  const exerciseHistory = useMemo(() => {
+    const history: Record<string, Array<{ date: number; sets: Array<{ weight: number; reps: number }> }>> = {};
+    const workouts = [...(trainingData?.workouts ?? [])]
+      .filter((w) => w.startedAt < workout.startedAt)
+      .sort((a, b) => b.startedAt - a.startedAt);
+    for (const previous of workouts) {
+      for (const exercise of previous.exercises) {
+        if ((history[exercise.exerciseId]?.length ?? 0) >= 5) continue;
+        const sets = exercise.sets
+          .filter((set) => set.kind !== "cardio")
+          .map((set) => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
+        if (!sets.length) continue;
+        (history[exercise.exerciseId] ??= []).push({ date: previous.startedAt, sets });
       }
     }
     return history;
@@ -389,6 +407,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 expanded={expanded}
                 pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
                 previous={previousPerformance[exercise.id]}
+                recentHistory={exerciseHistory[exercise.id] ?? []}
                 onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
                 onStart={() => startExercise(exercise.key)}
                 onSetChange={(setId, patch, propagate, propagateReps) => updateSet(exercise.key, setId, patch, propagate, propagateReps)}
@@ -489,14 +508,24 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
   </div>;
 }
 
-function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
-  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined;
+function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, recentHistory, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
+  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined; recentHistory: Array<{ date: number; sets: Array<{ weight: number; reps: number }> }>;
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagateWeight?: boolean, propagateReps?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> } | undefined; onStartCircuit?: (() => void) | undefined;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
   const warmupSets = exercise.sessionSets.filter((set) => set.kind === "warmup");
   const done = workingSets.filter((set) => set.completed).length;
   const workingStarted = workingSets.some((set) => set.completed);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const activeWorkingIndex = workingSets.findIndex((set) => !set.completed);
+  const allHistoricalSets = recentHistory.flatMap((session) => session.sets);
+  const bestHistorical = allHistoricalSets.reduce<{ weight: number; reps: number } | null>((best, set) => {
+    if (!best) return set;
+    const score = set.weight > 0 ? set.weight * set.reps : set.reps;
+    const bestScore = best.weight > 0 ? best.weight * best.reps : best.reps;
+    return score > bestScore ? set : best;
+  }, null);
+  const formatHistoricalSet = (set: { weight: number; reps: number }) => set.weight > 0 ? `${set.weight} kg × ${set.reps}` : `${set.reps} reps`;
   return <Card className={cn("relative overflow-hidden border p-0 transition-colors", current && "border-primary/35", completed && "border-emerald-500/25 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-400/[0.08]")}>{exercise.supersetWith && <div className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
     <button type="button" className={cn("grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pl-11 pr-3 text-left transition-colors", current && "bg-primary/[0.16] dark:bg-primary/[0.20]")} onClick={onToggle}>
       <span className="min-w-0"><span className={cn("block text-sm font-extrabold leading-snug", completed && "text-emerald-700 dark:text-emerald-400")}>{exercise.name}</span><span className="mt-1 block text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span>{pairedName && <span className="mt-1 flex items-center gap-1 text-[0.65rem] font-semibold text-primary"><Link2 className="size-3" />{pairedName}</span>}</span>
@@ -505,7 +534,32 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, prev
     {circuit && <div className="flex items-center justify-between border-t border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs"><span className="font-bold">Circuit · {formatClock(circuit.workSeconds)} × {circuit.rounds} rounds</span>{onStartCircuit && <Button size="sm" onClick={onStartCircuit}>Start circuit</Button>}</div>}
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
-        {previous && <p className="mb-2 text-[0.68rem] font-semibold text-muted-foreground">Last: {previous}</p>}
+        <div className="mb-2 flex items-center justify-between gap-2">
+          {previous ? <p className="text-[0.68rem] font-semibold text-muted-foreground">Last: {previous}</p> : <span />}
+          {recentHistory.length > 0 && <button type="button" onClick={() => setHistoryOpen((open) => !open)} className="flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[0.68rem] font-extrabold text-primary hover:bg-primary/[0.08]" aria-expanded={historyOpen}><History className="size-3.5" />{historyOpen ? "Hide history" : "History"}</button>}
+        </div>
+        {historyOpen && recentHistory.length > 0 && <div className="mb-3 overflow-hidden rounded-xl border border-border bg-secondary/35">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <span className="text-[0.65rem] font-black uppercase tracking-wide text-muted-foreground">Recent sessions</span>
+            {bestHistorical && <span className="text-[0.65rem] font-bold text-primary">Best · {formatHistoricalSet(bestHistorical)}</span>}
+          </div>
+          <div className="divide-y divide-border">
+            {recentHistory.map((session, sessionIndex) => {
+              const matchingSet = activeWorkingIndex >= 0 ? session.sets[activeWorkingIndex] : undefined;
+              const date = new Date(session.date).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+              return <div key={session.date} className="px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[0.68rem] font-bold text-muted-foreground">{sessionIndex === 0 ? "Last time" : date}</span>
+                  {matchingSet && <span className="rounded-md bg-primary/[0.10] px-2 py-1 text-[0.68rem] font-extrabold tabular-nums text-primary">Set {activeWorkingIndex + 1} · {formatHistoricalSet(matchingSet)}</span>}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.65rem] font-semibold text-muted-foreground">
+                  <span className="font-bold">All sets:</span>
+                  {session.sets.map((set, index) => <span key={index} className="inline-flex items-center gap-1.5"><span>{formatHistoricalSet(set)}</span>{index < session.sets.length - 1 && <span aria-hidden="true" className="text-muted-foreground/50">·</span>}</span>)}
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>}
         <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">{isTimedHold(exercise) ? "sec" : "reps"}</span><span /></div>
         <div className="space-y-1">{warmupSets.length > 0 && workingStarted && <div className="mb-1 rounded-lg bg-secondary/60 px-2 py-2 text-[0.68rem] font-bold text-muted-foreground">✓ {warmupSets.filter((set) => set.completed).length} of {warmupSets.length} warm-up sets</div>}{exercise.sessionSets.map((set) => { const isWarmup = set.kind === "warmup"; const warmupIndex = warmupSets.findIndex((row) => row.id === set.id); const workingIndex = workingSets.findIndex((row) => row.id === set.id); if (isWarmup && workingStarted) return null; return <SetRow key={set.id} set={set} number={isWarmup ? `W${warmupIndex + 1}` : workingIndex + 1} active={current && set.id === exercise.sessionSets.find((row) => !row.completed)?.id} timed={isTimedHold(exercise)} canRemove={!isWarmup && workingSets.length > 1} onChange={(patch, propagateWeight, propagateReps) => onSetChange(set.id, patch, propagateWeight, propagateReps)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />; })}</div>
         <div className="mt-2 flex items-center justify-between gap-2"><div className="flex items-center gap-1"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddWarmup}><Plus /> Warm-up</Button></div><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
