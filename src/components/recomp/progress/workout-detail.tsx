@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { BookmarkPlus, Minus, Pencil, Plus, Trash2, Trophy, Users, X } from "lucide-react";
+import { BookmarkPlus, Link2, Minus, Pencil, Plus, Timer, Trash2, Trophy, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
@@ -16,6 +16,7 @@ import { useAuth } from "../auth-context";
 import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
 import { WorkoutCalories } from "../workout-calories";
 import { SubHeader } from "./progress-widgets";
+import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
 
 export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs: { exerciseId: string; set: CompletedSet }[] }) {
   const navigate = useNavigate();
@@ -77,7 +78,9 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
       </Card>
       <WorkoutCalories startedAt={workout.startedAt} durationSec={workout.durationSec} />
       <div className="mt-3 space-y-2">
-        {workout.exercises.map((exercise) => {
+        {workout.exercises.map((exercise,index) => {
+          const groupId=workoutGroupId(exercise); if(groupId&&workout.exercises.findIndex(e=>workoutGroupId(e)===groupId)!==index)return null;
+          const group=workoutGroupFor(workout.exercises,exercise); if(group)return <CompletedGroupCard key={group.id} group={group} prs={prs}/>;
           const pr = prs.find((item) => item.exerciseId === exercise.exerciseId);
           return (
             <Card key={exercise.key} className="p-4">
@@ -107,6 +110,8 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
     </>
   );
 }
+
+function CompletedGroupCard({group,prs}:{group:ReturnType<typeof workoutGroupFor<CompletedWorkout["exercises"][number]>>;prs:{exerciseId:string;set:CompletedSet}[]}){if(!group)return null;return <Card className="overflow-hidden border-primary/30 p-0"><div className="bg-primary/[0.06] px-4 py-3"><div className="flex items-center gap-1.5 text-xs font-black tracking-wide text-primary">{group.kind==="circuit"?<Timer className="size-3.5"/>:<Link2 className="size-3.5"/>}{group.label}</div><div className="mt-3 space-y-3">{group.members.map(exercise=>{const pr=prs.find(p=>p.exerciseId===exercise.exerciseId);return <div key={exercise.key}><div className="flex justify-between gap-2"><span className="text-sm font-extrabold">{exercise.name}</span>{pr&&<span className="text-[0.68rem] font-bold text-primary">PR {formatSet(pr.set)}</span>}</div><div className="mt-1 grid gap-1">{exercise.sets.map((set,i)=><div key={i} className="grid grid-cols-[1.5rem_minmax(0,1fr)] text-sm tabular-nums"><span className="text-muted-foreground">{exercise.tracking==="cardio"?"":i+1}</span><span className="font-semibold">{formatPerformance(set)}</span></div>)}</div></div>})}</div><div className="mt-3 text-[0.68rem] font-semibold text-muted-foreground">{group.kind==="circuit"?`${Math.round((group.workSeconds??300)/60)} min × ${group.rounds??3} rounds · ${group.restSeconds}s rest`:`${group.restSeconds}s rest after round`}</div></div></Card>}
 
 const numberInput = "h-10 w-full rounded-lg border border-border bg-secondary px-2 text-center text-sm font-bold tabular-nums outline-none focus:border-primary";
 
