@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { workoutGroups } from "@/lib/workout-groups";
 import { ChevronRight, Loader2, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ function SavedPage() {
         <Card className="flex items-center gap-3 p-3.5 pr-12 transition-colors hover:bg-accent">
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-extrabold">{item.name}</div>
-            <div className="mt-0.5 truncate text-[0.7rem] font-semibold text-muted-foreground">{item.exercises.length} exercises · {item.exercises.map((e) => e.name).join(", ")}</div><div className="mt-1 flex flex-wrap gap-1">{[...new Set(item.exercises.map((e) => e.circuitId ? "TIMED CIRCUIT" : e.groupId ? (item.exercises.filter((x) => x.groupId === e.groupId).length === 3 ? "TRI-SET" : "SUPERSET") : null).filter(Boolean))].map((label) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.58rem] font-black tracking-wide text-primary">{label}</span>)}</div>
+            <div className="mt-0.5 truncate text-[0.7rem] font-semibold text-muted-foreground">{item.exercises.length} exercises · {item.exercises.map((e) => e.name).join(", ")}</div><div className="mt-1 flex flex-wrap gap-1">{workoutGroups(item.exercises).map(({label}) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.58rem] font-black tracking-wide text-primary">{label}</span>)}</div>
           </div>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </Card>
