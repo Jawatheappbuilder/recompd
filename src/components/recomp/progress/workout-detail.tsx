@@ -48,7 +48,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
       tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics ?? [], custom: true,
     };
     const plan = toWorkoutExercise(base);
-    return { ...plan, key: crypto.randomUUID(), sets: item.sets.length || plan.sets };
+    return { ...plan, key: item.key || crypto.randomUUID(), sets: item.sets.length || plan.sets, ...(item.supersetWith ? { supersetWith: item.supersetWith } : {}), ...(item.groupId ? { groupId: item.groupId, groupRestSeconds: item.groupRestSeconds } : {}), ...(item.circuitId ? { circuitId: item.circuitId, circuitWorkSeconds: item.circuitWorkSeconds, circuitRestSeconds: item.circuitRestSeconds, circuitRounds: item.circuitRounds, circuitReps: item.circuitReps } : {}) };
   });
   const saveTemplate = () => {
     if (!workout.exercises.length) { toast.error("No exercises to save"); return; }
