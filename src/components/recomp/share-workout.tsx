@@ -83,7 +83,7 @@ function spacing(ctx: CanvasRenderingContext2D, px: number) {
   if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${px}px`;
 }
 
-type Layout = { title: string[]; titleSize: number; gap: number; blocks: { name: string[]; sets: string[]; pr: boolean }[]; height: number };
+type Layout = { title: string[]; titleSize: number; gap: number; blocks: { name: string[]; sets: string[]; pr: boolean; groupLabel?: string }[]; height: number };
 
 const NAME_SIZE = 40, NAME_LH = 50, SET_SIZE = 31, SET_LH = 42;
 
@@ -95,12 +95,13 @@ function layout(ctx: CanvasRenderingContext2D, workout: CompletedWorkout, prs: P
   const gap = compact ? 26 : 44;
   const prIds = new Set(prs.map((p) => p.exerciseId));
   const blocks = workout.exercises.filter((e) => e.sets.length).map((e) => {
+    const gid=workoutGroupId(e), group=workoutGroupFor(workout.exercises,e), firstInGroup=!gid||workout.exercises.findIndex(x=>workoutGroupId(x)===gid)===workout.exercises.indexOf(e);
     const pr = prIds.has(e.exerciseId);
     ctx.font = `700 ${NAME_SIZE}px ${SANS}`;
     const name = wrap(ctx, e.name, inner - (pr ? 110 : 0));
     ctx.font = `600 ${SET_SIZE}px ${SANS}`;
     const sets = wrapChips(ctx, condensedSets(e.sets, isTimedHold(e)), inner);
-    return { name, sets, pr };
+    return { name, sets, pr, ...(group&&firstInGroup?{groupLabel:group.label}:{}) };
   });
   const header = 230 + title.length * titleSize * 0.95 + 100;
   const stats = compact ? 190 : 230;
@@ -177,6 +178,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   // Exercises
   plan.blocks.forEach((block, i) => {
     if (i) { y += plan.gap; ctx.fillStyle = C.border; ctx.fillRect(PAD, y - 12, inner, 2); y += plan.gap; }
+    if(block.groupLabel){ctx.font=`800 22px ${SANS}`;spacing(ctx,2);ctx.fillStyle=brand.accent;ctx.fillText(block.groupLabel,PAD,y+4);spacing(ctx,0);y+=34;}
     ctx.font = `700 ${NAME_SIZE}px ${SANS}`; ctx.fillStyle = C.text;
     block.name.forEach((line, j) => ctx.fillText(line, PAD, y + NAME_LH * (j + 1) - 12));
     if (block.pr) {

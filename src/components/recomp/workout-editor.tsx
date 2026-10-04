@@ -37,6 +37,7 @@ import {
 import { saveCustomExercise, useCustomExercises } from "@/lib/workout-storage";
 import { newId } from "@/lib/cloud-data";
 import { cn } from "@/lib/utils";
+import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
 
 const repRanges = ["4–6", "6–8", "8–10", "10–12", "12–15", "15–20"];
 const cardioDurations = [300, 600, 900, 1200, 1800, 2700, 3600];
@@ -109,13 +110,14 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
           <SortableContext items={workout.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {workout.map((exercise, index) => {
-                const planId = exercise.groupId || exercise.circuitId;
+                const planId = workoutGroupId(exercise);
                 if (planId && workout.findIndex((item) => (item.groupId || item.circuitId) === planId) !== index) return null;
                 if (planId) {
-                  const members = workout.filter((item) => (item.groupId || item.circuitId) === planId);
-                  const circuit = !!exercise.circuitId;
+                  const group = workoutGroupFor(workout, exercise)!;
+                  const members = group.members;
+                  const circuit = group.kind === "circuit";
                   const expanded = expandedPlanGroups.includes(planId);
-                  return <PlannedGroupCard key={planId} id={planId} members={members} circuit={circuit} expanded={expanded} onToggle={() => setExpandedPlanGroups((ids) => ids.includes(planId) ? ids.filter((id) => id !== planId) : [...ids, planId])} onEdit={(member) => setSheet({ kind: "actions", key: member.key })} onUnlink={() => setWorkout((current) => current.map((item) => (item.groupId || item.circuitId) === planId ? { ...item, groupId: undefined, groupRestSeconds: undefined, circuitId: undefined, circuitWorkSeconds: undefined, circuitRestSeconds: undefined, circuitRounds: undefined, circuitReps: undefined } : item))} />;
+                  return <PlannedGroupCard key={planId} id={planId} members={members} circuit={circuit} expanded={expanded} onToggle={() => setExpandedPlanGroups((ids) => ids.includes(planId) ? ids.filter((id) => id !== planId) : [...ids, planId])} onEdit={(member) => setSheet({ kind: "actions", key: member.key })} onUnlink={() => setWorkout((current) => current.map((item) => workoutGroupId(item) === planId ? { ...item, supersetWith: undefined, groupId: undefined, groupRestSeconds: undefined, circuitId: undefined, circuitWorkSeconds: undefined, circuitRestSeconds: undefined, circuitRounds: undefined, circuitReps: undefined } : item))} />;
                 }
                 return <SortableExercise
                   key={exercise.key}
@@ -154,7 +156,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
         onPair={pair}
         onUnlink={(key) => { unlink(key); setSheet({ kind: "closed" }); }}
       />}
-      {supersets && <Drawer open={sheet.kind==="actions"} onOpenChange={o=>!o&&setSheet({kind:"closed"})}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Exercise options</DrawerTitle></DrawerHeader>{sheet.kind==="actions"&&<div className="space-y-1 px-4 pb-4"><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planGroup",key:sheet.key})}><Link2/>Superset / tri-set</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planCircuit",key:sheet.key})}><span className="w-4 text-center">⏱</span>Timed circuit</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"superset",key:sheet.key})}><Link2/>Classic superset</Button></div>}</DrawerContent></Drawer>}
+      {supersets && <Drawer open={sheet.kind==="actions"} onOpenChange={o=>!o&&setSheet({kind:"closed"})}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Exercise options</DrawerTitle></DrawerHeader>{sheet.kind==="actions"&&<div className="space-y-1 px-4 pb-4"><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planGroup",key:sheet.key})}><Link2/>Superset / tri-set</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planCircuit",key:sheet.key})}><span className="w-4 text-center">⏱</span>Timed circuit</Button></div>}</DrawerContent></Drawer>}
       {supersets && <PlanGroupDrawer exercise={sheet.kind==="planGroup"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,rest)=>{ const id=`group-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,groupId:id,groupRestSeconds:rest,supersetWith:undefined}:e)); setSheet({kind:"closed"}); }}/>}
       {supersets && <PlanCircuitDrawer exercise={sheet.kind==="planCircuit"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,work,rest,rounds)=>{ const id=`circuit-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,circuitId:id,circuitWorkSeconds:work,circuitRestSeconds:rest,circuitRounds:rounds,circuitReps:10}:e)); setSheet({kind:"closed"}); }}/>}
       <RepDrawer

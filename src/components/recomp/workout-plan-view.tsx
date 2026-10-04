@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { WorkoutExercise } from "@/data/exercises";
 import { WorkoutEditor } from "./workout-editor";
+import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
 
 export const exerciseTarget = (exercise: WorkoutExercise) => exercise.tracking === "cardio"
   ? `${Math.round((exercise.targetDurationSeconds ?? 1200) / 60)} min`
@@ -25,9 +26,9 @@ export const BackLink = ({ to, label }: { to: "/saved" | "/" | "/workout"; label
 export function ExerciseList({ exercises }: { exercises: WorkoutExercise[] }) {
   const letter = (key: string) => exercises.find((e) => e.key === key)?.name;
   return <div className="space-y-2">{exercises.map((exercise,index) => {
-    const planId=exercise.groupId||exercise.circuitId;
+    const planId=workoutGroupId(exercise);
     if(planId && exercises.findIndex(e=>(e.groupId||e.circuitId)===planId)!==index) return null;
-    if(planId){ const members=exercises.filter(e=>(e.groupId||e.circuitId)===planId); const circuit=!!exercise.circuitId; const label=circuit?"TIMED CIRCUIT":members.length===3?"TRI-SET":"SUPERSET"; const detail=circuit?`${Math.round((exercise.circuitWorkSeconds??300)/60)} min × ${exercise.circuitRounds??3} rounds · ${exercise.circuitRestSeconds??90}s rest`:`${Math.max(...members.map(e=>e.sets))} rounds · ${exercise.groupRestSeconds??90}s rest`; return <Card key={planId} className="overflow-hidden border-primary/30 p-0"><div className="bg-primary/[0.06] px-4 py-3"><div className="flex items-center gap-1.5 text-xs font-black tracking-wide text-primary">{circuit?<Timer className="size-3.5"/>:<Link2 className="size-3.5"/>}{label}</div><div className="mt-2 space-y-1">{members.map(m=><div key={m.key} className="flex items-center justify-between gap-3"><span className="truncate text-sm font-bold">{m.name}</span><span className="shrink-0 text-xs font-bold text-muted-foreground">{exerciseTarget(m)}</span></div>)}</div><div className="mt-2 text-[0.68rem] font-semibold text-muted-foreground">{detail}</div></div></Card> }
+    if(planId){ const group=workoutGroupFor(exercises,exercise)!; const members=group.members; const circuit=group.kind==="circuit"; const label=group.label; const detail=circuit?`${Math.round((group.workSeconds??300)/60)} min × ${group.rounds??3} rounds · ${group.restSeconds}s rest`:`${Math.max(...members.map(e=>e.sets))} rounds · ${group.restSeconds}s rest`; return <Card key={planId} className="overflow-hidden border-primary/30 p-0"><div className="bg-primary/[0.06] px-4 py-3"><div className="flex items-center gap-1.5 text-xs font-black tracking-wide text-primary">{circuit?<Timer className="size-3.5"/>:<Link2 className="size-3.5"/>}{label}</div><div className="mt-2 space-y-1">{members.map(m=><div key={m.key} className="flex items-center justify-between gap-3"><span className="truncate text-sm font-bold">{m.name}</span><span className="shrink-0 text-xs font-bold text-muted-foreground">{exerciseTarget(m)}</span></div>)}</div><div className="mt-2 text-[0.68rem] font-semibold text-muted-foreground">{detail}</div></div></Card> }
     return <Card key={exercise.key} className="px-3"><div className="flex min-h-12 items-center gap-3 py-2"><span className="w-5 shrink-0 text-xs font-bold tabular-nums text-muted-foreground">{index+1}</span><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{exercise.name}</div>{exercise.supersetWith&&<div className="mt-0.5 flex items-center gap-1 truncate text-[0.7rem] font-semibold text-primary"><Link2 className="size-3"/>Superset with {letter(exercise.supersetWith)}</div>}</div><span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">{exerciseTarget(exercise)}</span></div></Card>
   })}</div>;
 }
