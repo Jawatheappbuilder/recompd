@@ -552,8 +552,9 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, prev
                   <span className="text-[0.68rem] font-bold text-muted-foreground">{sessionIndex === 0 ? "Last time" : date}</span>
                   {matchingSet && <span className="rounded-md bg-primary/[0.10] px-2 py-1 text-[0.68rem] font-extrabold tabular-nums text-primary">Set {activeWorkingIndex + 1} · {formatHistoricalSet(matchingSet)}</span>}
                 </div>
-                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[0.65rem] font-semibold text-muted-foreground">
-                  {session.sets.map((set, index) => <span key={index} className={cn(index === activeWorkingIndex && "font-extrabold text-foreground")}>{index + 1}: {formatHistoricalSet(set)}</span>)}
+                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.65rem] font-semibold text-muted-foreground">
+                  <span className="font-bold">All sets:</span>
+                  {session.sets.map((set, index) => <span key={index} className="inline-flex items-center gap-1.5"><span>{formatHistoricalSet(set)}</span>{index < session.sets.length - 1 && <span aria-hidden="true" className="text-muted-foreground/50">·</span>}</span>)}
                 </div>
               </div>;
             })}
