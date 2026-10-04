@@ -279,7 +279,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   };
 
   const replaceExercise = (key: string, alternative: Exercise) => {
-    updateExercise(key, (current) => ({ ...current, ...alternative, key: current.key }));
+    const current = workout.exercises.find((exercise) => exercise.key === key);
+    if (current) rememberReplacement(current.id, alternative.id);
+    updateExercise(key, (exercise) => ({ ...exercise, ...alternative, key: exercise.key }));
     setSheet({ kind: "closed" });
   };
 
@@ -615,14 +617,17 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   const used = new Set(workout.exercises.map((exercise) => exercise.id));
   const [replaceQuery, setReplaceQuery] = useState("");
   useEffect(() => { if (sheet.kind !== "replace") setReplaceQuery(""); }, [sheet.kind]);
+  const recalledIds = current ? recalledReplacements(current.id) : [];
   const alternatives = current ? [...exercises.filter((exercise) => isCardioExercise(exercise) === isCardioExercise(current) && !used.has(exercise.id) && (!replaceQuery.trim() || exercise.name.toLowerCase().includes(replaceQuery.trim().toLowerCase())))].sort((a, b) => {
+    const aRecalled = recalledIds.indexOf(a.id); const bRecalled = recalledIds.indexOf(b.id);
+    if (aRecalled >= 0 || bRecalled >= 0) return aRecalled < 0 ? 1 : bRecalled < 0 ? -1 : aRecalled - bRecalled;
     const aSameMuscle = a.muscle === current.muscle || a.muscles?.includes(current.muscle) ? 0 : 1;
     const bSameMuscle = b.muscle === current.muscle || b.muscles?.includes(current.muscle) ? 0 : 1;
     return aSameMuscle - bSameMuscle || a.name.localeCompare(b.name);
   }) : [];
   return <>
     <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <><Button variant="ghost" className="w-full justify-start" onClick={() => onShowGroup(key)}><Link2 />Group exercises</Button><Button variant="ghost" className="w-full justify-start" onClick={() => onShowCircuit(key)}><Clock3 />Create timed circuit</Button></>}{current?.groupId && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemoveGroup(key)}><Unlink />Unlink group</Button>}{current?.circuitId && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemoveCircuit(key)}><Unlink />Unlink circuit</Button>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={(item) => onReplace(key, item)} />)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise, index) => <div key={exercise.id}>{index === 0 && recalledIds.includes(exercise.id) && !replaceQuery.trim() && <p className="pb-1 pt-3 text-[0.62rem] font-extrabold uppercase tracking-[0.14em] text-primary">Previously used</p>}<ExerciseOption exercise={exercise} badge={recalledIds.includes(exercise.id) ? "Used before" : undefined} onSelect={(item) => { if (current) rememberReplacement(current.id, item.id); onReplace(key, item); }} /></div>)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
     <Drawer open={sheet.kind === "group"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Create superset or tri-set</DrawerTitle></DrawerHeader>{key && <ExerciseGroupSetup workout={workout} anchorKey={key} onCreate={onCreateGroup}/>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
 
@@ -645,7 +650,13 @@ function CardioPicker({ open, onClose, onSelect }: { open: boolean; onClose: () 
 }
 
 function FilterRow<T extends string>({ items, value, onSelect }: { items: readonly T[]; value: T | null; onSelect: (item: T) => void }) { return <div className="-mx-4 flex shrink-0 gap-1.5 overflow-x-auto px-4 py-1">{items.map((item) => <Button key={item} variant={value === item ? "choiceActive" : "surface"} size="sm" className="shrink-0 rounded-full" onClick={() => onSelect(item)}>{item}</Button>)}</div>; }
-function ExerciseOption({ exercise, onSelect }: { exercise: Exercise; onSelect: (exercise: Exercise) => void }) { return <DrawerClose asChild><button type="button" className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-left last:border-0" onClick={() => onSelect(exercise)}><span className="min-w-0"><span className="block text-sm font-bold">{exercise.name}</span><span className="mt-1 block text-[0.7rem] text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span></span><Plus className="size-4 text-primary"/></button></DrawerClose>; }
+function ExerciseOption({ exercise, onSelect, badge }: { exercise: Exercise; onSelect: (exercise: Exercise) => void; badge?: string }) { return <DrawerClose asChild><button type="button" className="grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-left last:border-0" onClick={() => onSelect(exercise)}><span className="min-w-0"><span className="flex items-center gap-2"><span className="block truncate text-sm font-bold">{exercise.name}</span>{badge && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[0.56rem] font-extrabold uppercase tracking-wide text-primary">{badge}</span>}</span><span className="mt-1 block text-[0.7rem] text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</span></span><Plus className="size-4 text-primary"/></button></DrawerClose>; }
+
+type ReplacementMemory = Record<string, Record<string, number>>;
+const REPLACEMENT_MEMORY_KEY = "recomp-replacement-memory-v1";
+function replacementMemory(): ReplacementMemory { try { return JSON.parse(localStorage.getItem(REPLACEMENT_MEMORY_KEY) ?? "{}") as ReplacementMemory; } catch { return {}; } }
+function rememberReplacement(fromId: string, toId: string) { try { const memory = replacementMemory(); const choices = memory[fromId] ?? {}; choices[toId] = (choices[toId] ?? 0) + 1; memory[fromId] = choices; localStorage.setItem(REPLACEMENT_MEMORY_KEY, JSON.stringify(memory)); } catch { /* optional preference only */ } }
+function recalledReplacements(fromId: string) { const choices = replacementMemory()[fromId] ?? {}; return Object.entries(choices).sort((a,b) => b[1]-a[1]).map(([id]) => id); }
 
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const [celebrating, setCelebrating] = useState(true);
@@ -661,6 +672,13 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
   const prExerciseIds = useMemo(() => new Set(sharePrs.map((pr) => pr.exerciseId)), [sharePrs]);
+  const previousComparable = useMemo(() => data?.workouts
+    .filter((workout) => workout.id !== result.workout.id && workout.startedAt < result.workout.startedAt && workout.name === result.workout.name)
+    .sort((a, b) => b.startedAt - a.startedAt)[0], [data, result.workout.id, result.workout.name, result.workout.startedAt]);
+  const previousVolume = previousComparable?.exercises.reduce((total, exercise) => total + exercise.sets.reduce((sum, set) => sum + set.weight * set.reps, 0), 0) ?? 0;
+  const volumeDelta = previousComparable && previousVolume > 0 && result.volume > 0 ? Math.round(((result.volume - previousVolume) / previousVolume) * 100) : null;
+  const weekStart = new Date(result.workout.startedAt); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const workoutsThisWeek = data?.workouts.filter((item) => item.startedAt >= weekStart.getTime() && item.startedAt <= result.workout.startedAt).length ?? 1;
 
   useEffect(() => {
     if (!user) return;
@@ -706,7 +724,15 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       <SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} />
     </div>
 
-    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><p className="mt-0.5 text-sm font-bold">{sharePrs.length} new best performance{sharePrs.length === 1 ? "" : "s"}.</p></div>}
+    <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-3">
+      <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">What you achieved</p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div><div className="text-lg font-black tabular-nums">{workoutsThisWeek}</div><div className="text-[0.65rem] font-bold text-muted-foreground">workout{workoutsThisWeek === 1 ? "" : "s"} this week</div></div>
+        <div><div className="text-lg font-black tabular-nums">{sharePrs.length}</div><div className="text-[0.65rem] font-bold text-muted-foreground">new PR{sharePrs.length === 1 ? "" : "s"}</div></div>
+      </div>
+      {volumeDelta !== null && <div className="mt-3 border-t border-border pt-3 text-sm"><span className="font-extrabold">{volumeDelta > 0 ? "+" : ""}{volumeDelta}% volume</span><span className="text-muted-foreground"> vs last {result.workout.name}</span></div>}
+    </div>
+    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><div className="mt-1 space-y-1">{sharePrs.map((pr) => <p key={pr.exerciseId} className="text-sm font-bold">{pr.name} <span className="font-semibold text-muted-foreground">· {pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</span></p>)}</div></div>}
 
     {user && <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/[0.06] px-4 py-3.5">
       <div className="min-w-0"><div className="text-sm font-extrabold">Share to your feed</div><div className="mt-0.5 text-[0.68rem] leading-snug text-muted-foreground">Let your RECOMP'D friends see this workout.</div></div>
