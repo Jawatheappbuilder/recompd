@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookmarkPlus, Check, ChevronDown, Clock3, Dumbbell, Flame, Search, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
+import { BookmarkPlus, Check, ChevronDown, Clock3, Dumbbell, Flame, Link2, Search, Timer, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/recomp/core";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { createActiveWorkout, saveActiveWorkout } from "@/hooks/use-active-workout";
 import { toast } from "sonner";
 import { mutate, newId, useCloudData } from "@/lib/cloud-data";
+import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
 
 export const Route = createFileRoute("/social")({ component: SocialPage });
 type Tab = "feed" | "leaderboard" | "friends";
@@ -169,7 +170,7 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
         tracking: item.tracking ?? "strength", cardioMetrics: item.cardioMetrics ?? [], custom: true,
       };
       const plan = toWorkoutExercise(base);
-      return { ...plan, key: crypto.randomUUID(), sets: Math.max(1, item.sets?.length || plan.sets) };
+      return { ...plan, key: item.key || crypto.randomUUID(), sets: Math.max(1, item.sets?.length || plan.sets), ...(item.supersetWith ? { supersetWith:item.supersetWith } : {}), ...(item.groupId ? { groupId:item.groupId, groupRestSeconds:item.groupRestSeconds } : {}), ...(item.circuitId ? { circuitId:item.circuitId, circuitWorkSeconds:item.circuitWorkSeconds, circuitRestSeconds:item.circuitRestSeconds, circuitRounds:item.circuitRounds, circuitReps:item.circuitReps } : {}) };
     });
   }
   function train(post: SocialPost) {
@@ -232,7 +233,7 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
         </div>
       </button>
       {isOpen && <div className="border-t border-border px-4 pb-4 pt-3">
-        {snapshot?.exercises?.length ? <div className="space-y-3">{snapshot.exercises.map((exercise) => <div key={exercise.key}><div className="text-sm font-extrabold">{exercise.name}</div><div className="mt-1 space-y-0.5">{exercise.sets.map((set,index)=><div key={index} className="text-xs tabular-nums text-muted-foreground"><span className="mr-2 inline-block w-4">{exercise.tracking === "cardio" ? "" : index + 1}</span><span className="font-semibold text-foreground">{formatPerformance(set)}</span></div>)}</div></div>)}</div> : <p className="text-sm text-muted-foreground">Detailed sets weren't included in this older share.</p>}
+        {snapshot?.exercises?.length ? <div className="space-y-3">{snapshot.exercises.map((exercise,index) => { const gid=workoutGroupId(exercise); if(gid&&snapshot.exercises.findIndex(e=>workoutGroupId(e)===gid)!==index)return null; const group=workoutGroupFor(snapshot.exercises,exercise); if(group)return <div key={group.id} className="rounded-xl border border-primary/20 bg-primary/[0.05] p-3"><div className="flex items-center gap-1.5 text-[0.68rem] font-black tracking-wide text-primary">{group.kind==="circuit"?<Timer className="size-3.5"/>:<Link2 className="size-3.5"/>}{group.label}</div>{group.members.map(member=><div key={member.key} className="mt-2"><div className="text-sm font-extrabold">{member.name}</div>{member.sets.map((set,i)=><div key={i} className="text-xs text-muted-foreground"><span className="mr-2 inline-block w-4">{member.tracking==="cardio"?"":i+1}</span><span className="font-semibold text-foreground">{formatPerformance(set)}</span></div>)}</div>)}</div>; return <div key={exercise.key}><div className="text-sm font-extrabold">{exercise.name}</div><div className="mt-1 space-y-0.5">{exercise.sets.map((set,index)=><div key={index} className="text-xs tabular-nums text-muted-foreground"><span className="mr-2 inline-block w-4">{exercise.tracking === "cardio" ? "" : index + 1}</span><span className="font-semibold text-foreground">{formatPerformance(set)}</span></div>)}</div></div>})}</div> : <p className="text-sm text-muted-foreground">Detailed sets weren't included in this older share.</p>}
         <Button variant="primary" className="mt-4 w-full" onClick={() => train(post)}><Dumbbell/>Train this workout</Button><Button variant="surface" className="mt-2 w-full" onClick={() => openSave(post)} disabled={!snapshot?.exercises?.length}><BookmarkPlus/>Save workout</Button>
       </div>}
       <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">{reactionCounts.map(({emoji,count,mine})=><button key={emoji} type="button" disabled={reacting === post.id+emoji} onClick={() => void react(post,emoji)} className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-sm transition-colors ${mine ? "border-primary bg-primary/10" : "border-border bg-secondary/60"}`}><span>{emoji}</span>{count > 0 && <span className="text-xs font-bold">{count}</span>}</button>)}{(post.pr_count ?? 0) > 0 && <span className="ml-auto flex items-center gap-1 text-[0.68rem] font-extrabold text-primary"><Flame className="size-3.5"/>strong session</span>}</div>
