@@ -81,6 +81,11 @@ export async function getFriends(userId: string) {
   return (profiles ?? []) as SocialProfile[];
 }
 
+export async function removeFriend(userId: string, friendId: string) {
+  const { error } = await supabase.from("friendships").delete().eq("status", "accepted").or(`and(sender_id.eq.${userId},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${userId})`);
+  if (error) throw error;
+}
+
 export async function getSocialFeed(userId: string) {
   const friends = await getFriends(userId);
   const friendIds = friends.map((friend) => friend.id);
