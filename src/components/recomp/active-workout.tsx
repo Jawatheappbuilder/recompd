@@ -221,10 +221,12 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const updateSet = (exerciseKey: string, setId: string, patch: Partial<ActiveSet>, propagateWeight = false, propagateReps = false) => {
     updateExercise(exerciseKey, (exercise) => {
       const index = exercise.sessionSets.findIndex((set) => set.id === setId);
+      const editedSet = exercise.sessionSets[index];
+      const allowRepPropagation = editedSet?.kind !== "warmup";
       const sessionSets = exercise.sessionSets.map((set, setIndex) => {
         if (set.id === setId) return { ...set, ...patch };
         if (propagateWeight && setIndex > index && !set.completed && !set.weightEdited) return { ...set, weight: String(patch.weight ?? set.weight) };
-        if (propagateReps && setIndex > index && !set.completed && set.kind !== "warmup") return { ...set, reps: String(patch.reps ?? set.reps) };
+        if (propagateReps && allowRepPropagation && setIndex > index && !set.completed && set.kind !== "warmup") return { ...set, reps: String(patch.reps ?? set.reps) };
         return set;
       });
       return { ...exercise, sessionSets };
