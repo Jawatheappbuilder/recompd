@@ -100,7 +100,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       for (const exercise of previous.exercises) {
         if (history[exercise.exerciseId]) continue;
         const lastSet = [...exercise.sets].reverse().find((set) => set.kind !== "cardio");
-        if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
+        const working = exercise.sets.filter((set) => set.kind !== "cardio").slice(-4);\n        if (working.length) history[exercise.exerciseId] = working.map((set) => set.weight > 0 ? `${set.weight} kg × ${set.reps}` : `${set.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`).join(" · ");
       }
     }
     return history;
