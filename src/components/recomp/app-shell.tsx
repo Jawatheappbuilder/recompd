@@ -1,10 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Dumbbell, Hammer, House } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/recomp/auth-context";
 import { Button } from "@/components/ui/button";
 import { PENDING_SHARE_KEY } from "@/lib/workout-share";
+import { ACTIVE_WORKOUT_KEY, type ActiveWorkoutState } from "@/hooks/use-active-workout";
 
 const destinations = [
   { label: "Home", to: "/", icon: House },
@@ -63,6 +64,17 @@ function ProfileError({ onRetry, onSignOut }: { onRetry: () => void; onSignOut: 
 
 export function BottomNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutState | null>(null);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const read = () => { try { const saved = localStorage.getItem(ACTIVE_WORKOUT_KEY); setActiveWorkout(saved ? JSON.parse(saved) as ActiveWorkoutState : null); } catch { setActiveWorkout(null); } };
+    read();
+    const timer = window.setInterval(() => { setNow(Date.now()); read(); }, 1000);
+    window.addEventListener("storage", read);
+    return () => { window.clearInterval(timer); window.removeEventListener("storage", read); };
+  }, []);
+  const elapsed = activeWorkout ? Math.max(0, Math.floor((now - activeWorkout.startedAt) / 1000)) : 0;
+  const liveTime = elapsed >= 3600 ? `${Math.floor(elapsed / 3600)}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0")}` : `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] border-t border-border bg-nav/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
       <div className="grid h-[4.75rem] grid-cols-4 px-2">
@@ -70,8 +82,8 @@ export function BottomNavigation() {
           const active = to === "/" ? pathname === "/" : to === "/build" ? pathname.startsWith("/build") || pathname === "/generated-workout" : pathname.startsWith(to);
           return (
             <Link key={to} to={to} aria-current={active ? "page" : undefined} className={cn("flex min-w-0 flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold text-muted-foreground transition-colors", active && "text-primary")}>
-              <Icon className="size-[1.3rem]" strokeWidth={active ? 2.5 : 2} />
-              <span>{label}</span>
+              {label === "Workout" && activeWorkout ? <span className="min-w-[3.25rem] rounded-full bg-primary px-2 py-1 text-center text-[0.66rem] font-extrabold tabular-nums text-primary-foreground shadow-sm motion-safe:animate-pulse">{liveTime}</span> : <Icon className="size-[1.3rem]" strokeWidth={active ? 2.5 : 2} />}
+              <span>{label === "Workout" && activeWorkout ? "Live" : label}</span>
             </Link>
           );
         })}
