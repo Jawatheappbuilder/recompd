@@ -99,8 +99,9 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     for (const previous of workouts) {
       for (const exercise of previous.exercises) {
         if (history[exercise.exerciseId]) continue;
-        const lastSet = [...exercise.sets].reverse().find((set) => set.kind !== "cardio");
-        if (lastSet) history[exercise.exerciseId] = lastSet.weight > 0 ? `${lastSet.weight} kg × ${lastSet.reps}` : `${lastSet.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
+        const working = exercise.sets.filter((set) => set.kind !== "cardio");
+        const best = working.reduce<(typeof working)[number] | undefined>((current, set) => !current || (set.weight * set.reps) > (current.weight * current.reps) ? set : current, undefined);
+        if (best) history[exercise.exerciseId] = best.weight > 0 ? `${best.weight} kg × ${best.reps}` : `${best.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
       }
     }
     return history;
@@ -221,10 +222,12 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const updateSet = (exerciseKey: string, setId: string, patch: Partial<ActiveSet>, propagateWeight = false, propagateReps = false) => {
     updateExercise(exerciseKey, (exercise) => {
       const index = exercise.sessionSets.findIndex((set) => set.id === setId);
+      const editedSet = exercise.sessionSets[index];
+      const allowRepPropagation = editedSet?.kind !== "warmup";
       const sessionSets = exercise.sessionSets.map((set, setIndex) => {
         if (set.id === setId) return { ...set, ...patch };
         if (propagateWeight && setIndex > index && !set.completed && !set.weightEdited) return { ...set, weight: String(patch.weight ?? set.weight) };
-        if (propagateReps && setIndex > index && !set.completed && set.kind !== "warmup") return { ...set, reps: String(patch.reps ?? set.reps) };
+        if (propagateReps && allowRepPropagation && setIndex > index && !set.completed && set.kind !== "warmup") return { ...set, reps: String(patch.reps ?? set.reps) };
         return set;
       });
       return { ...exercise, sessionSets };
@@ -535,7 +538,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, prev
     {expanded && <div className="border-t border-border px-3 pb-3 pt-2">
       {isCardioExercise(exercise) ? <CardioFields exercise={exercise} set={exercise.sessionSets[0]} onChange={(patch) => { const first = exercise.sessionSets[0]; if (first) onSetChange(first.id, patch); }} onToggle={() => { const first = exercise.sessionSets[0]; if (first) onToggleSet(first); }} /> : <>
         <div className="mb-2 flex items-center justify-between gap-2">
-          {previous ? <p className="text-[0.68rem] font-semibold text-muted-foreground">Last: {previous}</p> : <span />}
+          {previous ? <p className="rounded-full border border-primary/10 bg-primary/[0.07] px-2.5 py-1.5 text-[0.68rem] font-semibold text-muted-foreground dark:bg-primary/[0.10]">Last best: <span className="font-extrabold text-foreground">{previous}</span></p> : <span />}
           {recentHistory.length > 0 && <button type="button" onClick={() => setHistoryOpen((open) => !open)} className="flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[0.68rem] font-extrabold text-primary hover:bg-primary/[0.08]" aria-expanded={historyOpen}><History className="size-3.5" />{historyOpen ? "Hide history" : "History"}</button>}
         </div>
         {historyOpen && recentHistory.length > 0 && <div className="mb-3 overflow-hidden rounded-xl border border-border bg-secondary/35">
