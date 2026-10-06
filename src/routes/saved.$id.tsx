@@ -36,7 +36,7 @@ function SavedWorkoutPage() {
 
   const start = () => {
     if (hasActiveWorkout()) { toast("Finish your current workout first"); void navigate({ to: "/workout" }); return; }
-    handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)) }); void navigate({ to: "/workout" });
+    handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)), sourceSavedId: item.id }); void navigate({ to: "/workout" });
   };
   return <Screen>
     <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={<>{item.exercises.length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</>} />
