@@ -1,12 +1,12 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Dumbbell, Settings } from "lucide-react";
+import { ChevronRight, Dumbbell, Settings, Sparkles, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Screen, SectionHeading } from "@/components/recomp/core";
 import { BodyweightCard } from "@/components/recomp/progress/bodyweight";
-import { PeriodSelector, PersonalRecordsCard, TrainingCalendar, TrainingPriorityBars, TrainingSummary, WorkoutRow } from "@/components/recomp/progress/progress-widgets";
-import { periodLabel, personalRecords, since, trainingPriority, trainingSummary, useTrainingData, type Period } from "@/lib/training-data";
+import { PeriodSelector, PersonalRecordsCard, TrainingCalendar, TrainingPriorityBars } from "@/components/recomp/progress/progress-widgets";
+import { formatDuration, periodDays, periodLabel, personalRecords, since, trainingPriority, trainingSummary, useTrainingData, volumeOf, type Period } from "@/lib/training-data";
 
 export const Route = createFileRoute("/progress/")({
   head: () => ({ meta: [{ title: "Progress — RECOMP'D" }, { name: "description", content: "See how much you've trained, which muscles get the most attention, your records and bodyweight trend." }, { property: "og:title", content: "Progress — RECOMP'D" }, { property: "og:description", content: "See how much you've trained, which muscles get the most attention, your records and bodyweight trend." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -21,7 +21,23 @@ function ProgressPage() {
   const from = since(period);
   const summary = useMemo(() => data ? trainingSummary(data.workouts, from) : null, [data, from]);
   const priority = useMemo(() => data ? trainingPriority(data.workouts, from) : [], [data, from]);
-  const records = useMemo(() => data ? personalRecords(data.workouts).recent : [], [data]);
+  const allRecords = useMemo(() => data ? personalRecords(data.workouts) : null, [data]);
+  const records = allRecords?.recent ?? [];
+  const progressStory = useMemo(() => {
+    if (!data) return null;
+    const now = Date.now();
+    const days = periodDays[period];
+    const periodMs = days * 86_400_000;
+    const currentFrom = now - periodMs;
+    const previousFrom = currentFrom - periodMs;
+    const current = data.workouts.filter((workout) => workout.startedAt >= currentFrom);
+    const previous = data.workouts.filter((workout) => workout.startedAt >= previousFrom && workout.startedAt < currentFrom);
+    const currentVolume = current.reduce((total, workout) => total + volumeOf(workout), 0);
+    const previousVolume = previous.reduce((total, workout) => total + volumeOf(workout), 0);
+    const volumeDelta = previousVolume > 0 ? Math.round(((currentVolume - previousVolume) / previousVolume) * 100) : null;
+    const prCount = allRecords ? [...allRecords.byWorkout.entries()].filter(([workoutId]) => current.some((workout) => workout.id === workoutId)).reduce((total, [, prs]) => total + prs.length, 0) : 0;
+    return { prCount, volumeDelta };
+  }, [data, period, allRecords]);
 
   return (
     <Screen>
@@ -38,12 +54,23 @@ function ProgressPage() {
           <PeriodSelector value={period} options={periods} onChange={setPeriod} className="relative z-10 border-primary/15 bg-card p-1 shadow-sm" />
           {data.workouts.length ? (
             <>
-              <TrainingSummary label={periodLabel[period]} workouts={summary.workouts} sets={summary.sets} durationSec={summary.durationSec} />
+              <Card className="overflow-hidden border-primary/15 p-0">
+                <div className="bg-primary/[0.06] px-4 py-3">
+                  <div className="flex items-center gap-2 text-primary"><Sparkles className="size-4" /><span className="text-[0.68rem] font-extrabold uppercase tracking-[0.12em]">Your progress · {periodLabel[period]}</span></div>
+                  <div className="mt-1.5 text-xl font-extrabold">{progressStory?.prCount ? "You're building momentum" : "You're staying consistent"}</div>
+                  <p className="mt-1 text-xs font-medium text-muted-foreground">{progressStory?.prCount ? `${progressStory.prCount} personal record${progressStory.prCount === 1 ? "" : "s"} this period` : "Every completed session adds to the picture."}</p>
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-border px-2 py-3 text-center">
+                  <div><div className="text-lg font-extrabold text-primary">{summary.workouts}</div><div className="text-[0.62rem] font-semibold text-muted-foreground">workouts</div></div>
+                  <div><div className="text-lg font-extrabold text-primary">{summary.sets}</div><div className="text-[0.62rem] font-semibold text-muted-foreground">sets</div></div>
+                  <div><div className="text-lg font-extrabold">{formatDuration(summary.durationSec)}</div><div className="text-[0.62rem] font-semibold text-muted-foreground">trained</div></div>
+                </div>
+                {progressStory?.volumeDelta !== null && progressStory?.volumeDelta !== undefined && <div className="flex items-center justify-center gap-1.5 border-t border-border px-4 py-2.5 text-xs font-bold"><TrendingUp className="size-3.5 text-primary" /><span><span className="text-primary">{progressStory.volumeDelta > 0 ? "+" : ""}{progressStory.volumeDelta}%</span> training volume vs previous {period === "4W" ? "4 weeks" : periodLabel[period].replace("Last ", "").toLowerCase()}</span></div>}
+              </Card>
               <section><SectionHeading>Muscle workload · {periodLabel[period]}</SectionHeading><TrainingPriorityBars items={priority} /></section>
               <section>
                 <SectionHeading action={<Link to="/progress/history" className="flex items-center gap-0.5 text-xs font-bold text-primary">History<ChevronRight className="size-3.5" /></Link>}>Training calendar</SectionHeading>
                 <TrainingCalendar workouts={data.workouts} />
-                <Card className="mt-2 divide-y divide-border px-4">{data.workouts.slice(0, 2).map((workout) => <WorkoutRow key={workout.id} workout={workout} />)}</Card>
               </section>
               <PersonalRecordsCard records={records} />
             </>
