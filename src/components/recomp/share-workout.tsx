@@ -1,3 +1,4 @@
+import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
 import { Download, Image as ImageIcon, Loader2, Share2, Type } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
