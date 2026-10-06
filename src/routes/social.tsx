@@ -36,6 +36,7 @@ function SocialPage() {
   const [ownerMembers, setOwnerMembers] = useState<OwnerMember[]>([]);
   const [memberQuery, setMemberQuery] = useState("");
   const [membersLoaded, setMembersLoaded] = useState(false);
+  const [removingFriend, setRemovingFriend] = useState<string | null>(null);
 
   async function refreshSocial(userId: string) {
     const [incoming, friendList, posts] = await Promise.allSettled([
@@ -55,7 +56,7 @@ function SocialPage() {
     void getMySocialProfile(user.id).then((profile) => {
       setNeedsUsername(!profile.username);
       setLeaderboardEnabledState(profile.leaderboard_enabled ?? true);
-      if (profile.username) { setUsernameInput(profile.username); return refreshSocial(user.id); }
+      if (profile.username) { setUsernameInput(profile.username); void refreshSocial(user.id); }
     }).catch((error) => {
       console.error("[social] profile load failed", error);
       // A failed profile read is not evidence that the user has no username.
@@ -105,6 +106,13 @@ function SocialPage() {
   }
   async function reply(id: string, accept: boolean) {
     if (!user) return; await respondToFriendRequest(id, accept); await refreshSocial(user.id);
+  }
+  async function removeExistingFriend(profile: SocialProfile) {
+    if (!user || removingFriend) return;
+    setRemovingFriend(profile.id);
+    try { await removeFriend(user.id, profile.id); await refreshSocial(user.id); }
+    catch { toast.error("Couldn't remove friend"); }
+    finally { setRemovingFriend(null); }
   }
 
   if (needsUsername === null) return <Screen><div className="grid min-h-[70dvh] place-items-center text-sm text-muted-foreground">Loading social...</div></Screen>;
@@ -242,7 +250,7 @@ function Feed({ posts, loading, userId, onRefresh }: { posts: SocialPost[]; load
 }
 
 function PersonRow({ profile, action }: { profile: SocialProfile; action?: React.ReactNode }) { return <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"><Avatar profile={profile}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{profile.name}</div><div className="truncate text-xs text-muted-foreground">@{profile.username}</div></div>{action}</div>; }
-function Avatar({ profile }: { profile?: SocialProfile }) { return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile?.name?.[0]?.toUpperCase() || "R"}</div>; }
+function Avatar({ profile }: { profile?: SocialProfile | undefined }) { return <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-black text-primary">{profile?.name?.[0]?.toUpperCase() || "R"}</div>; }
 function relativeDate(value: string) { const ms=Date.now()-new Date(value).getTime(); const minutes=Math.max(0,Math.floor(ms/60000)); if(minutes<1)return "just now"; if(minutes<60)return `${minutes}m`; const hours=Math.floor(minutes/60); if(hours<24)return `${hours}h`; const days=Math.floor(hours/24); return days<7?`${days}d`:new Date(value).toLocaleDateString("en-AU",{day:"numeric",month:"short"}); }
 
 function Leaderboard({ entries, enabled, monthOffset, userId, onMonthChange, onToggle }: { entries: LeaderboardEntry[]; enabled: boolean; monthOffset: number; userId: string; onMonthChange: (value: number) => void; onToggle: (value: boolean) => void }) {
