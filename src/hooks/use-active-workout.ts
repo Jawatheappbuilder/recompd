@@ -38,13 +38,14 @@ export type ActiveWorkoutState = {
   currentKey: string;
   exercises: ActiveExercise[];
   scheduledId?: string;
+  sourceSavedId?: string;
   exerciseGroups?: { id: string; memberKeys: string[]; restSeconds: number }[];
   circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
 };
 
 const repsFromTarget = (target: string) => target.match(/\d+/)?.[0] ?? "10";
 
-export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; scheduledId?: string };
+export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; scheduledId?: string; sourceSavedId?: string };
 
 export function createActiveWorkout(exercises: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
   const first = exercises[0];
@@ -94,7 +95,7 @@ export function useActiveWorkout() {
         if (legacy) {
           const parsed = JSON.parse(legacy) as WorkoutExercise[] | WorkoutHandoff;
           const base = Array.isArray(parsed) ? createActiveWorkout(parsed) : createActiveWorkout(parsed.exercises, parsed.name);
-          const created = base && !Array.isArray(parsed) && parsed.scheduledId ? { ...base, scheduledId: parsed.scheduledId } : base;
+          const created = base && !Array.isArray(parsed) ? { ...base, ...(parsed.scheduledId ? { scheduledId: parsed.scheduledId } : {}), ...(parsed.sourceSavedId ? { sourceSavedId: parsed.sourceSavedId } : {}) } : base;
           if (created) {
             localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(created));
             sessionStorage.removeItem(LEGACY_WORKOUT_KEY);
