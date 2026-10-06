@@ -60,6 +60,7 @@ import {
 import { equipmentTypes, exercises, isCardioExercise, isTimedHold, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
 import { personalRecords, recordCompletedWorkout, toCompletedWorkout, useTrainingData } from "@/lib/training-data";
+import { loadSavedWorkouts, saveWorkout } from "@/lib/workout-storage";
 import { ShareWorkoutButton } from "./share-workout";
 import { useAuth } from "./auth-context";
 import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
@@ -362,6 +363,23 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     };
     localStorage.setItem("recomp-last-workout", JSON.stringify(result));
     recordCompletedWorkout(workout, elapsed);
+    if (workout.sourceSavedId) {
+      const source = loadSavedWorkouts().find((item) => item.id === workout.sourceSavedId);
+      if (source) {
+        const activeByKey = new Map(workout.exercises.map((exercise) => [exercise.key, exercise]));
+        const groupsById = new Map((workout.exerciseGroups ?? []).map((group) => [group.id, group]));
+        const circuitsById = new Map((workout.circuits ?? []).map((circuit) => [circuit.id, circuit]));
+        const exercises = source.exercises.map((exercise) => {
+          const active = activeByKey.get(exercise.key);
+          if (!active) return exercise;
+          const group = active.groupId ? groupsById.get(active.groupId) : undefined;
+          const circuit = active.circuitId ? circuitsById.get(active.circuitId) : undefined;
+          const next = { ...exercise, supersetWith: active.supersetWith, groupId: active.groupId, groupRestSeconds: group?.restSeconds, circuitId: active.circuitId, circuitWorkSeconds: circuit?.workSeconds, circuitRestSeconds: circuit?.restSeconds, circuitRounds: circuit?.rounds, circuitReps: circuit?.reps?.[active.key] };
+          return Object.fromEntries(Object.entries(next).filter(([, value]) => value !== undefined)) as typeof exercise;
+        });
+        saveWorkout({ ...source, exercises });
+      }
+    }
     localStorage.removeItem("recomp-active-workout-v1");
     setFinished(result);
     setFinishOpen(false);
