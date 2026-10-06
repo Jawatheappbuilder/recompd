@@ -1,5 +1,5 @@
 import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
-import { Download, Image as ImageIcon, Loader2, Share2, Type } from "lucide-react";
+import { Image as ImageIcon, Loader2, Share2, Type } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -180,8 +180,11 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   plan.blocks.forEach((block, i) => {
     if (i) { y += plan.gap; ctx.fillStyle = C.border; ctx.fillRect(PAD, y - 12, inner, 2); y += plan.gap; }
     if(block.groupLabel){ctx.font=`800 22px ${SANS}`;spacing(ctx,2);ctx.fillStyle=brand.accent;ctx.fillText(block.groupLabel,PAD,y+4);spacing(ctx,0);y+=34;}
+    const grouped = !!workoutGroupId(workout.exercises.filter((e) => e.sets.length)[i]);
+    const nameX = grouped ? PAD + 28 : PAD;
+    if (grouped) { ctx.fillStyle = brand.tint; ctx.fillRect(PAD, y - 4, 8, Math.max(54, block.name.length * NAME_LH + 10 + block.sets.length * SET_LH)); }
     ctx.font = `700 ${NAME_SIZE}px ${SANS}`; ctx.fillStyle = C.text;
-    block.name.forEach((line, j) => ctx.fillText(line, PAD, y + NAME_LH * (j + 1) - 12));
+    block.name.forEach((line, j) => ctx.fillText(line, nameX, y + NAME_LH * (j + 1) - 12));
     if (block.pr) {
       ctx.font = `800 24px ${SANS}`; spacing(ctx, 2);
       const tw = ctx.measureText("PR").width + 36;
@@ -191,7 +194,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
     }
     y += block.name.length * NAME_LH + 10;
     ctx.font = `600 ${SET_SIZE}px ${SANS}`; ctx.fillStyle = C.muted;
-    block.sets.forEach((line) => { y += SET_LH; ctx.fillText(line, PAD, y - 8); });
+    block.sets.forEach((line) => { y += SET_LH; ctx.fillText(line, nameX, y - 8); });
   });
 
   // Footer
@@ -224,7 +227,6 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
   }, [open, JSON.stringify(workout), JSON.stringify(prs)]);
 
   const file = blob ? new File([blob], fileName(workout), { type: "image/png" }) : null;
-  const canShareFile = !!file && typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] });
 
   const download = () => {
     if (!url) return;
@@ -233,11 +235,13 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
   };
   const shareImage = async () => {
     if (!file) return;
-    if (!canShareFile) return download();
     setBusy(true);
-    try { await navigator.share({ files: [file], title: workout.name }); }
-    catch (error) { if ((error as Error)?.name !== "AbortError") download(); }
-    finally { setBusy(false); }
+    try {
+      if (navigator.share) await navigator.share({ files: [file], title: workout.name });
+      else download();
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") download();
+    } finally { setBusy(false); }
   };
   const shareText = async () => {
     const text = workoutShareText(workout);
@@ -259,7 +263,7 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
             {url ? <img src={url} alt={`${workout.name} share card`} className="max-h-[58dvh] w-auto max-w-full rounded-xl" /> : <div className="grid h-[48dvh] place-items-center text-muted-foreground"><Loader2 className="size-5 animate-spin" /></div>}
           </div>
           <Button variant="primary" size="xl" className="mt-3 w-full" disabled={!blob || busy} onClick={() => void shareImage()}>
-            {canShareFile || !blob ? <><ImageIcon />Share image</> : <><Download />Save image</>}
+            <><ImageIcon />Share image</>
           </Button>
           <Button variant="surface" className="mt-2 w-full" onClick={() => void shareText()}><Type />Share text</Button>
         </div>
