@@ -1,5 +1,5 @@
 import { workoutGroupFor, workoutGroupId } from "@/lib/workout-groups";
-import { Download, Image as ImageIcon, Loader2, Share2, Type } from "lucide-react";
+import { Image as ImageIcon, Loader2, Share2, Type } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,6 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
   }, [open, JSON.stringify(workout), JSON.stringify(prs)]);
 
   const file = blob ? new File([blob], fileName(workout), { type: "image/png" }) : null;
-  const canShareFile = !!file && typeof navigator !== "undefined" && (navigator.canShare ? navigator.canShare({ files: [file] }) : !!navigator.share);
 
   const download = () => {
     if (!url) return;
