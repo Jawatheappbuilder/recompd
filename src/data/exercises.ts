@@ -114,7 +114,7 @@ for (const [name, cardioMetrics] of cardio) {
 }
 export const exercises = [...byId.values()];
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number; supersetWith?: string | undefined; targetDurationSeconds?: number; groupId?: string | undefined; groupRestSeconds?: number; circuitId?: string | undefined; circuitWorkSeconds?: number; circuitRestSeconds?: number; circuitRounds?: number; circuitReps?: number };
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number | undefined; supersetWith?: string | undefined; targetDurationSeconds?: number | undefined; groupId?: string | undefined; groupRestSeconds?: number | undefined; circuitId?: string | undefined; circuitWorkSeconds?: number | undefined; circuitRestSeconds?: number | undefined; circuitRounds?: number | undefined; circuitReps?: number | undefined };
 let seq = 0;
 const preferredDefaults = () => {
   if (typeof window === "undefined") return { restSeconds: 90, reps: "8–12" };

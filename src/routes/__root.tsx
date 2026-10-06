@@ -114,6 +114,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `if(location.hostname==="recompd.lovable.app"){location.replace("https://recompd.vercel.app"+location.pathname+location.search+location.hash);}` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem("recomp-user-preferences-v1"),p=s?JSON.parse(s):null,t=p&&p.theme||"system",d=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches),e=document.documentElement;e.classList.toggle("dark",d);e.classList.toggle("light",!d);e.style.colorScheme=d?"dark":"light";e.dataset.accent=p&&p.accent||"red"}catch(e){}})();` }} />
         <HeadContent />
       </head>
