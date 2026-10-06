@@ -27,6 +27,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as OnboardingAboutRouteImport } from './routes/onboarding.about'
+import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingTrainingRouteImport } from './routes/onboarding.training'
 import { Route as ProgressIndexRouteImport } from './routes/progress.index'
 import { Route as ProgressBodyweightRouteImport } from './routes/progress.bodyweight'
@@ -37,6 +38,7 @@ import { Route as SavedIdRouteImport } from './routes/saved.$id'
 import { Route as ScheduledIdRouteImport } from './routes/scheduled.$id'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
+import { Route as SettingsAdminRouteImport } from './routes/settings.admin'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
 import { Route as SettingsExercisesRouteImport } from './routes/settings.exercises'
 import { Route as SettingsHealthRouteImport } from './routes/settings.health'
@@ -137,6 +139,11 @@ const OnboardingAboutRoute = OnboardingAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 const OnboardingTrainingRoute = OnboardingTrainingRouteImport.update({
   id: '/training',
   path: '/training',
@@ -185,6 +192,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsAccountRoute = SettingsAccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAdminRoute = SettingsAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
@@ -252,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
@@ -259,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/saved/$id': typeof SavedIdRoute
   '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
+  '/settings/admin': typeof SettingsAdminRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/health': typeof SettingsHealthRoute
@@ -289,6 +303,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
@@ -296,6 +311,7 @@ export interface FileRoutesByTo {
   '/saved/$id': typeof SavedIdRoute
   '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
+  '/settings/admin': typeof SettingsAdminRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/health': typeof SettingsHealthRoute
@@ -329,6 +345,7 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/workout': typeof WorkoutRoute
   '/onboarding/about': typeof OnboardingAboutRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/training': typeof OnboardingTrainingRoute
   '/progress/bodyweight': typeof ProgressBodyweightRoute
   '/progress/history': typeof ProgressHistoryRoute
@@ -336,6 +353,7 @@ export interface FileRoutesById {
   '/saved/$id': typeof SavedIdRoute
   '/scheduled/$id': typeof ScheduledIdRoute
   '/settings/account': typeof SettingsAccountRoute
+  '/settings/admin': typeof SettingsAdminRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/exercises': typeof SettingsExercisesRoute
   '/settings/health': typeof SettingsHealthRoute
@@ -370,6 +388,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
+    | '/onboarding/profile'
     | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
@@ -377,6 +396,7 @@ export interface FileRouteTypes {
     | '/saved/$id'
     | '/scheduled/$id'
     | '/settings/account'
+    | '/settings/admin'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/health'
@@ -407,6 +427,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
+    | '/onboarding/profile'
     | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
@@ -414,6 +435,7 @@ export interface FileRouteTypes {
     | '/saved/$id'
     | '/scheduled/$id'
     | '/settings/account'
+    | '/settings/admin'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/health'
@@ -446,6 +468,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/workout'
     | '/onboarding/about'
+    | '/onboarding/profile'
     | '/onboarding/training'
     | '/progress/bodyweight'
     | '/progress/history'
@@ -453,6 +476,7 @@ export interface FileRouteTypes {
     | '/saved/$id'
     | '/scheduled/$id'
     | '/settings/account'
+    | '/settings/admin'
     | '/settings/appearance'
     | '/settings/exercises'
     | '/settings/health'
@@ -620,6 +644,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingAboutRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/onboarding/profile': {
+      id: '/onboarding/profile'
+      path: '/profile'
+      fullPath: '/onboarding/profile'
+      preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
     '/onboarding/training': {
       id: '/onboarding/training'
       path: '/training'
@@ -690,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/admin': {
+      id: '/settings/admin'
+      path: '/admin'
+      fullPath: '/settings/admin'
+      preLoaderRoute: typeof SettingsAdminRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/appearance': {
       id: '/settings/appearance'
       path: '/appearance'
@@ -758,11 +796,13 @@ declare module '@tanstack/react-router' {
 
 interface OnboardingRouteChildren {
   OnboardingAboutRoute: typeof OnboardingAboutRoute
+  OnboardingProfileRoute: typeof OnboardingProfileRoute
   OnboardingTrainingRoute: typeof OnboardingTrainingRoute
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingAboutRoute: OnboardingAboutRoute,
+  OnboardingProfileRoute: OnboardingProfileRoute,
   OnboardingTrainingRoute: OnboardingTrainingRoute,
 }
 
@@ -794,6 +834,7 @@ const ProgressRouteWithChildren = ProgressRoute._addFileChildren(
 
 interface SettingsRouteChildren {
   SettingsAccountRoute: typeof SettingsAccountRoute
+  SettingsAdminRoute: typeof SettingsAdminRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsExercisesRoute: typeof SettingsExercisesRoute
   SettingsHealthRoute: typeof SettingsHealthRoute
@@ -804,6 +845,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAccountRoute: SettingsAccountRoute,
+  SettingsAdminRoute: SettingsAdminRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsExercisesRoute: SettingsExercisesRoute,
   SettingsHealthRoute: SettingsHealthRoute,

@@ -91,13 +91,13 @@ export type Database = {
       }
       profiles: {
         Row: {
-          leaderboard_enabled: boolean
           created_at: string
           default_rest_seconds: number
           gender: string | null
           goals: string[]
           height_cm: number | null
           id: string
+          leaderboard_enabled: boolean
           name: string
           onboarding_completed: boolean
           theme: string
@@ -108,13 +108,13 @@ export type Database = {
           weight_unit: string
         }
         Insert: {
-          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
           goals?: string[]
           height_cm?: number | null
           id: string
+          leaderboard_enabled?: boolean
           name?: string
           onboarding_completed?: boolean
           theme?: string
@@ -125,13 +125,13 @@ export type Database = {
           weight_unit?: string
         }
         Update: {
-          leaderboard_enabled?: boolean
           created_at?: string
           default_rest_seconds?: number
           gender?: string | null
           goals?: string[]
           height_cm?: number | null
           id?: string
+          leaderboard_enabled?: boolean
           name?: string
           onboarding_completed?: boolean
           theme?: string
@@ -212,57 +212,6 @@ export type Database = {
         }
         Relationships: []
       }
-      social_posts: {
-        Row: {
-          created_at: string
-          duration_sec: number
-          exercise_count: number
-          exercise_names: string[]
-          id: string
-          name: string
-          set_count: number
-          pr_count: number
-          workout_snapshot: Json | null
-          started_at: string
-          user_id: string
-          workout_id: string
-        }
-        Insert: {
-          created_at?: string
-          duration_sec?: number
-          exercise_count?: number
-          exercise_names?: string[]
-          id?: string
-          name: string
-          set_count?: number
-          pr_count?: number
-          workout_snapshot?: Json | null
-          started_at: string
-          user_id?: string
-          workout_id: string
-        }
-        Update: {
-          created_at?: string
-          duration_sec?: number
-          exercise_count?: number
-          exercise_names?: string[]
-          id?: string
-          name?: string
-          set_count?: number
-          pr_count?: number
-          workout_snapshot?: Json | null
-          started_at?: string
-          user_id?: string
-          workout_id?: string
-        }
-        Relationships: []
-      }
-      social_reactions: {
-        Row: { id: string; post_id: string; user_id: string; emoji: string; created_at: string }
-        Insert: { id?: string; post_id: string; user_id?: string; emoji: string; created_at?: string }
-        Update: { id?: string; post_id?: string; user_id?: string; emoji?: string; created_at?: string }
-        Relationships: []
-      }
       shared_workouts: {
         Row: {
           created_at: string
@@ -286,6 +235,83 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      social_posts: {
+        Row: {
+          created_at: string
+          duration_sec: number
+          exercise_count: number
+          exercise_names: string[]
+          id: string
+          name: string
+          pr_count: number
+          set_count: number
+          started_at: string
+          user_id: string
+          workout_id: string
+          workout_snapshot: Json | null
+        }
+        Insert: {
+          created_at?: string
+          duration_sec?: number
+          exercise_count?: number
+          exercise_names?: string[]
+          id?: string
+          name: string
+          pr_count?: number
+          set_count?: number
+          started_at: string
+          user_id: string
+          workout_id: string
+          workout_snapshot?: Json | null
+        }
+        Update: {
+          created_at?: string
+          duration_sec?: number
+          exercise_count?: number
+          exercise_names?: string[]
+          id?: string
+          name?: string
+          pr_count?: number
+          set_count?: number
+          started_at?: string
+          user_id?: string
+          workout_id?: string
+          workout_snapshot?: Json | null
+        }
+        Relationships: []
+      }
+      social_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_exercises: {
         Row: {
@@ -369,23 +395,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_owner_member_directory: {
-        Args: Record<PropertyKey, never>
+      get_friends_monthly_leaderboard: {
+        Args: { month_end: string; month_start: string }
         Returns: {
           id: string
+          leaderboard_enabled: boolean
           name: string
-          username: string | null
-          created_at: string
+          username: string
+          workout_count: number
         }[]
       }
-      get_friends_monthly_leaderboard: {
-        Args: { month_start: string; month_end: string }
+      get_owner_admin_dashboard: { Args: never; Returns: Json }
+      get_owner_member_directory: {
+        Args: never
         Returns: {
+          created_at: string
           id: string
           name: string
           username: string
-          leaderboard_enabled: boolean
-          workout_count: number
         }[]
       }
       get_shared_workout: {
