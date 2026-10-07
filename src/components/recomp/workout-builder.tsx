@@ -88,6 +88,16 @@ function ManualMode() {
     saveWorkout(entry); setSavedId(entry.id); clearDraft(); toast.success("Workout saved");
   };
   const load = (item: SavedWorkout) => { setName(item.name); setWorkout(item.exercises.map((exercise) => ({ ...exercise }))); setSavedId(item.id); };
+  const clearWorkout = () => {
+    if (!window.confirm("Clear this workout? This will remove all exercises.")) return;
+    setName("");
+    setWorkout([]);
+    setSavedId(null);
+    setSuggestedMuscle(null);
+    setPickerOpen(false);
+    patchDraft({ name: "", workout: [], savedId: null });
+    toast.success("Workout cleared");
+  };
 
   return <>
     <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name (optional)" enterKeyHint="done" autoComplete="off" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
@@ -107,6 +117,7 @@ function ManualMode() {
         <Button variant="surface" onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
         <Button variant="surface" onClick={save}><Bookmark />Save</Button>
       </div>
+      <Button variant="ghost" className="w-full text-muted-foreground" onClick={clearWorkout}><Trash2 />Clear workout</Button>
     </div>}
     <ScheduleSheet open={scheduling} onOpenChange={setScheduling} defaultName={finalName} onConfirm={(value) => { scheduleNewWorkout(value, workout, savedId ?? undefined); clearDraft(); void navigate({ to: "/" }); }} />
     {saved.length > 0 && <section>
