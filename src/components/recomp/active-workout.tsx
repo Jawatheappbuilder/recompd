@@ -518,8 +518,28 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 }
 
 function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixedTracking, onRename, onFinish }: { name: string; elapsed: number; progress: number; completedSets: number; totalSets: number; mixedTracking: boolean; onRename: (name: string) => void; onFinish: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(name);
+  const previousNameRef = useRef(name);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { if (!editing) setDraftName(name); }, [name, editing]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const beginRename = () => {
+    previousNameRef.current = name;
+    setDraftName("");
+    setEditing(true);
+  };
+  const finishRename = () => {
+    const next = draftName.trim();
+    onRename(next || previousNameRef.current);
+    setDraftName(next || previousNameRef.current);
+    setEditing(false);
+  };
+
   return <header className="sticky top-0 z-20 -mx-4 bg-primary px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-primary-foreground">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><input value={name} onChange={(event) => onRename(event.target.value)} onBlur={(event) => { if (!event.target.value.trim()) onRename("Workout"); }} aria-label="Workout name" className="h-7 min-w-0 flex-1 border-0 bg-transparent p-0 text-lg font-extrabold leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/60" /><span className="flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/12 px-2 py-1 text-[0.6rem] font-extrabold uppercase tracking-wide text-primary-foreground/85"><Pencil className="size-3" /> Rename</span></div><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex min-h-7 items-center gap-1.5">{editing ? <input ref={inputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousNameRef.current); onRename(previousNameRef.current); setEditing(false); } }} aria-label="Rename workout" placeholder="Workout name" className="h-7 min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-lg font-extrabold leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/55" /> : <><h1 className="min-w-0 flex-1 truncate text-lg font-extrabold leading-tight">{name}</h1><button type="button" onClick={beginRename} aria-label="Rename workout" className="grid size-7 shrink-0 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"><Pencil className="size-3.5" /></button></>}</div><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
     <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/25"><div className="h-full bg-primary-foreground transition-[width]" style={{ width: `${progress}%` }} /></div>
   </header>;
 }
@@ -762,6 +782,10 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const [sharedToFeed, setSharedToFeed] = useState(false);
   const [sharingToFeed, setSharingToFeed] = useState(false);
   const [displayName, setDisplayName] = useState(result.workout.name);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(result.workout.name);
+  const previousSummaryNameRef = useRef(result.workout.name);
+  const summaryNameInputRef = useRef<HTMLInputElement | null>(null);
   const performed = result.workout.exercises.map((exercise) => ({
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
@@ -777,6 +801,21 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const volumeDelta = previousComparable && previousVolume > 0 && result.volume > 0 ? Math.round(((result.volume - previousVolume) / previousVolume) * 100) : null;
   const weekStart = new Date(result.workout.startedAt); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
   const workoutsThisWeek = data?.workouts.filter((item) => item.startedAt >= weekStart.getTime() && item.startedAt <= result.workout.startedAt).length ?? 1;
+
+  useEffect(() => { if (editingName) summaryNameInputRef.current?.focus(); }, [editingName]);
+
+  const beginSummaryRename = () => {
+    previousSummaryNameRef.current = displayName;
+    setDraftName("");
+    setEditingName(true);
+  };
+  const finishSummaryRename = () => {
+    const next = draftName.trim() || previousSummaryNameRef.current;
+    setDisplayName(next);
+    setDraftName(next);
+    updateWorkout({ ...shareWorkout, name: next });
+    setEditingName(false);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -811,7 +850,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     <section className="-mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
       <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
       <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
-      <div className="mt-1 flex items-start gap-2"><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} onBlur={() => { const next = displayName.trim() || defaultWorkoutName(result.workout.exercises); setDisplayName(next); updateWorkout({ ...shareWorkout, name: next }); }} aria-label="Workout name" className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none [overflow-wrap:anywhere]" /><span className="mt-1 flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/12 px-2 py-1 text-[0.6rem] font-extrabold uppercase tracking-wide text-primary-foreground/85"><Pencil className="size-3" /> Rename</span></div>
+      <div className="mt-1 flex items-start gap-2">{editingName ? <input ref={summaryNameInputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishSummaryRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousSummaryNameRef.current); setDisplayName(previousSummaryNameRef.current); setEditingName(false); } }} aria-label="Rename workout" placeholder="Workout name" className="h-auto min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/55" /> : <><h1 className="min-w-0 flex-1 text-3xl font-black leading-tight [overflow-wrap:anywhere]">{displayName}</h1><button type="button" onClick={beginSummaryRename} aria-label="Rename workout" className="mt-1 grid size-8 shrink-0 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"><Pencil className="size-4" /></button></>}</div>
 
     </section>
 
