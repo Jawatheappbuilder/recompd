@@ -8,6 +8,7 @@ import {
   Ellipsis,
   Link2,
   Minus,
+  Pencil,
   Plus,
   Search,
   History,
@@ -518,7 +519,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
 function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixedTracking, onRename, onFinish }: { name: string; elapsed: number; progress: number; completedSets: number; totalSets: number; mixedTracking: boolean; onRename: (name: string) => void; onFinish: () => void }) {
   return <header className="sticky top-0 z-20 -mx-4 bg-primary px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-primary-foreground">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><input value={name} onChange={(event) => onRename(event.target.value)} onBlur={(event) => { if (!event.target.value.trim()) onRename("Workout"); }} aria-label="Workout name" className="h-7 w-full border-0 bg-transparent p-0 text-lg font-extrabold leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/60" /><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><input value={name} onChange={(event) => onRename(event.target.value)} onBlur={(event) => { if (!event.target.value.trim()) onRename("Workout"); }} aria-label="Workout name" className="h-7 min-w-0 flex-1 border-0 bg-transparent p-0 text-lg font-extrabold leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/60" /><span className="flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/12 px-2 py-1 text-[0.6rem] font-extrabold uppercase tracking-wide text-primary-foreground/85"><Pencil className="size-3" /> Rename</span></div><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
     <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/25"><div className="h-full bg-primary-foreground transition-[width]" style={{ width: `${progress}%` }} /></div>
   </header>;
 }
@@ -810,7 +811,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     <section className="-mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
       <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
       <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
-      <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} onBlur={() => { const next = displayName.trim() || defaultWorkoutName(result.workout.exercises); setDisplayName(next); updateWorkout({ ...shareWorkout, name: next }); }} aria-label="Workout name" className="mt-1 h-auto w-full border-0 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none [overflow-wrap:anywhere]" />
+      <div className="mt-1 flex items-start gap-2"><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} onBlur={() => { const next = displayName.trim() || defaultWorkoutName(result.workout.exercises); setDisplayName(next); updateWorkout({ ...shareWorkout, name: next }); }} aria-label="Workout name" className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none [overflow-wrap:anywhere]" /><span className="mt-1 flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/12 px-2 py-1 text-[0.6rem] font-extrabold uppercase tracking-wide text-primary-foreground/85"><Pencil className="size-3" /> Rename</span></div>
 
     </section>
 
