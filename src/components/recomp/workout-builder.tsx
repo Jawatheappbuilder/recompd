@@ -40,12 +40,13 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
 
 function RecentWorkoutNames() {
   const training = useTrainingData();
+  const showNew = Date.now() < new Date("2026-10-12T00:00:00+10:30").getTime();
   const recent = [...(training?.workouts ?? [])]
     .sort((a, b) => b.startedAt - a.startedAt)
     .slice(0, 5);
   if (!recent.length) return null;
   return <details className="-mt-1 rounded-xl border border-border bg-card px-3 py-2">
-    <summary className="cursor-pointer select-none text-xs font-bold text-muted-foreground">Recent workouts</summary>
+    <summary className="cursor-pointer select-none text-xs font-bold text-muted-foreground">Recent workouts {showNew && <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[0.55rem] font-extrabold uppercase tracking-wide text-primary">New</span>}</summary>
     <div className="mt-2 space-y-1 border-t border-border pt-2">
       {recent.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
         <span className="min-w-0 truncate font-semibold text-foreground">{item.name}</span>
