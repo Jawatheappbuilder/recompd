@@ -8,6 +8,7 @@ import {
   Ellipsis,
   Link2,
   Minus,
+  Pencil,
   Plus,
   Search,
   History,
@@ -59,13 +60,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { equipmentTypes, exercises, isCardioExercise, isTimedHold, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
-import { personalRecords, recordCompletedWorkout, toCompletedWorkout, useTrainingData } from "@/lib/training-data";
-import { loadSavedWorkouts, saveWorkout } from "@/lib/workout-storage";
+import { personalRecords, recordCompletedWorkout, toCompletedWorkout, updateWorkout, useTrainingData } from "@/lib/training-data";
+import { defaultWorkoutName, loadSavedWorkouts, saveCustomExercise, saveWorkout, useCustomExercises } from "@/lib/workout-storage";
 import { ShareWorkoutButton } from "./share-workout";
 import { useAuth } from "./auth-context";
 import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { newId } from "@/lib/cloud-data";
 
 type Sheet =
   | { kind: "closed" }
@@ -354,15 +356,18 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   };
 
   const finishWorkout = () => {
+    const finishedWorkout = !workout.name.trim() || workout.name.trim().toLowerCase() === "custom workout"
+      ? { ...workout, name: defaultWorkoutName(workout.exercises) }
+      : workout;
     const result: FinishedWorkout = {
-      workout,
+      workout: finishedWorkout,
       duration: elapsed,
       completedExercises: workout.exercises.filter((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).length,
       totalSets: strengthSets,
       volume: workout.exercises.reduce((total, exercise) => total + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").reduce((sum, set) => sum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0), 0),
     };
     localStorage.setItem("recomp-last-workout", JSON.stringify(result));
-    recordCompletedWorkout(workout, elapsed);
+    recordCompletedWorkout(finishedWorkout, elapsed);
     if (workout.sourceSavedId) {
       const source = loadSavedWorkouts().find((item) => item.id === workout.sourceSavedId);
       if (source) {
@@ -395,7 +400,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
   return (
     <>
-      <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
+      <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onRename={(name) => onChange({ ...workout, name })} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {circuitRun && circuitMinimized && (() => { const circuit = workout.circuits?.find((item) => item.id === circuitRun.id); const remaining = Math.max(0, Math.ceil((circuitRun.endsAt - now) / 1000)); return circuit ? <button type="button" onClick={() => setCircuitMinimized(false)} className="sticky top-0 z-40 mt-2 w-full rounded-xl border border-primary/20 bg-card px-3 py-2 text-left shadow-sm"><span className="flex items-center gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10"><Clock3 className="size-4 text-primary"/></span><span className="min-w-0 flex-1"><span className="flex items-baseline justify-between gap-3"><span className="text-[0.68rem] font-black uppercase tracking-wider text-primary">{circuitRun.phase === "rest" ? "Rest" : "Circuit"}</span><span className="text-lg font-black tabular-nums">{formatClock(remaining)}</span></span><span className="mt-0.5 flex justify-between text-[0.68rem] font-semibold text-muted-foreground"><span>Round {circuitRun.round} of {circuit.rounds}</span><span>Tap to resume</span></span></span></span></button> : null; })()}
       {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000, duration: Math.max(1, rest.duration + amount) })} onSkip={() => setRest(null)} />}
       <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
@@ -512,9 +517,29 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   );
 }
 
-function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixedTracking, onFinish }: { name: string; elapsed: number; progress: number; completedSets: number; totalSets: number; mixedTracking: boolean; onFinish: () => void }) {
+function WorkoutHeader({ name, elapsed, progress, completedSets, totalSets, mixedTracking, onRename, onFinish }: { name: string; elapsed: number; progress: number; completedSets: number; totalSets: number; mixedTracking: boolean; onRename: (name: string) => void; onFinish: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(name);
+  const previousNameRef = useRef(name);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { if (!editing) setDraftName(name); }, [name, editing]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const beginRename = () => {
+    previousNameRef.current = name;
+    setDraftName("");
+    setEditing(true);
+  };
+  const finishRename = () => {
+    const next = draftName.trim();
+    onRename(next || previousNameRef.current);
+    setDraftName(next || previousNameRef.current);
+    setEditing(false);
+  };
+
   return <header className="sticky top-0 z-20 -mx-4 bg-primary px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-primary-foreground">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h1 className="text-lg font-extrabold leading-tight">{name}</h1><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><div className="flex min-h-7 items-center gap-1.5">{editing ? <input ref={inputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousNameRef.current); onRename(previousNameRef.current); setEditing(false); } }} aria-label="Rename workout" placeholder="Workout name" className="h-7 min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-lg font-extrabold leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/55" /> : <><h1 className="min-w-0 flex-1 truncate text-lg font-extrabold leading-tight">{name}</h1><button type="button" onClick={beginRename} aria-label="Rename workout" className="grid size-7 shrink-0 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"><Pencil className="size-3.5" /></button></>}</div><div className="mt-1 flex items-center gap-2 text-[0.7rem] font-semibold text-primary-foreground/80"><span className="flex items-center gap-1 tabular-nums"><Clock3 className="size-3.5" />{formatClock(elapsed)}</span><span>{completedSets}/{totalSets} {mixedTracking ? "completed" : "sets"}</span></div></div><Button variant="surface" size="sm" className="shrink-0 border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15" onClick={onFinish}>Finish workout</Button></div>
     <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary-foreground/25"><div className="h-full bg-primary-foreground transition-[width]" style={{ width: `${progress}%` }} /></div>
   </header>;
 }
@@ -690,10 +715,27 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   const key = "key" in sheet ? sheet.key : undefined;
   const current = workout.exercises.find((exercise) => exercise.key === key);
   const used = new Set(workout.exercises.map((exercise) => exercise.id));
+  const customExercises = useCustomExercises();
+  const allExercises = useMemo(() => [...customExercises, ...exercises], [customExercises]);
   const [replaceQuery, setReplaceQuery] = useState("");
-  useEffect(() => { if (sheet.kind !== "replace") setReplaceQuery(""); }, [sheet.kind]);
+  const [creatingCustom, setCreatingCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customMuscles, setCustomMuscles] = useState<Muscle[]>([]);
+  const [customEquipment, setCustomEquipment] = useState<Equipment>("Dumbbell");
+  useEffect(() => { if (sheet.kind !== "replace") { setReplaceQuery(""); setCreatingCustom(false); setCustomName(""); setCustomMuscles([]); } }, [sheet.kind]);
   const recalledIds = current ? recalledReplacements(current.id) : [];
-  const alternatives = current ? [...exercises.filter((exercise) => isCardioExercise(exercise) === isCardioExercise(current) && !used.has(exercise.id) && (!replaceQuery.trim() || exercise.name.toLowerCase().includes(replaceQuery.trim().toLowerCase())))].sort((a, b) => {
+  const createReplacement = () => {
+    const first = customMuscles[0];
+    if (!key || !current || !customName.trim() || !first) return;
+    const exercise: Exercise = { id: `custom-${newId()}`, name: customName.trim(), muscle: first, muscles: customMuscles, equipment: customEquipment, type: customMuscles.length > 1 ? "Compound" : "Isolation", custom: true };
+    saveCustomExercise(exercise);
+    rememberReplacement(current.id, exercise.id);
+    onReplace(key, exercise);
+    setCreatingCustom(false);
+    setCustomName("");
+    setCustomMuscles([]);
+  };
+  const alternatives = current ? [...allExercises.filter((exercise) => isCardioExercise(exercise) === isCardioExercise(current) && !used.has(exercise.id) && (!replaceQuery.trim() || exercise.name.toLowerCase().includes(replaceQuery.trim().toLowerCase())))].sort((a, b) => {
     const aRecalled = recalledIds.indexOf(a.id); const bRecalled = recalledIds.indexOf(b.id);
     if (aRecalled >= 0 || bRecalled >= 0) return aRecalled < 0 ? 1 : bRecalled < 0 ? -1 : aRecalled - bRecalled;
     const aSameMuscle = a.muscle === current.muscle || a.muscles?.includes(current.muscle) ? 0 : 1;
@@ -702,7 +744,7 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
   }) : [];
   return <>
     <Drawer open={sheet.kind === "actions"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Exercise actions</DrawerTitle></DrawerHeader>{key && <div className="space-y-1 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><Button variant="ghost" className="w-full justify-start" onClick={() => onShowReplace(key)}><Shuffle />Replace exercise</Button>{current && !isCardioExercise(current) && <><Button variant="ghost" className="w-full justify-start" onClick={() => onShowGroup(key)}><Link2 />Group exercises</Button><Button variant="ghost" className="w-full justify-start" onClick={() => onShowCircuit(key)}><Clock3 />Create timed circuit</Button></>}{current?.groupId && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemoveGroup(key)}><Unlink />Unlink group</Button>}{current?.circuitId && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemoveCircuit(key)}><Unlink />Unlink circuit</Button>}{current?.supersetWith && <Button variant="ghost" className="w-full justify-start" onClick={() => onRemovePair(key)}><Unlink />Remove superset</Button>}<Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => onRemove(key)}><Trash2 />Remove exercise</Button></div>}</DrawerContent></Drawer>
-    <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[72dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Replace exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise, index) => <div key={exercise.id}>{index === 0 && recalledIds.includes(exercise.id) && !replaceQuery.trim() && <p className="pb-1 pt-3 text-[0.62rem] font-extrabold uppercase tracking-[0.14em] text-primary">Previously used</p>}<ExerciseOption exercise={exercise} badge={recalledIds.includes(exercise.id) ? "Used before" : undefined} onSelect={(item) => { if (current) rememberReplacement(current.id, item.id); onReplace(key, item); }} /></div>)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div></DrawerContent></Drawer>
+    <Drawer open={sheet.kind === "replace"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto h-[78dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="flex-row items-center justify-between pb-2 text-left"><DrawerTitle>{creatingCustom ? "Custom exercise" : "Replace exercise"}</DrawerTitle>{current && !isCardioExercise(current) && <Button variant="ghost" size="sm" className="px-2 text-primary" onClick={() => setCreatingCustom((value) => !value)}>{creatingCustom ? "Library" : <><Plus /> Create custom</>}</Button>}</DrawerHeader>{creatingCustom ? <div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><input value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder="Exercise name" className="mb-3 h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary"/><div className="min-h-0 flex-1 space-y-3 overflow-y-auto"><div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((item) => { const active = customMuscles.includes(item); return <Button key={item} variant={active ? "choiceActive" : "choice"} className="h-9 justify-between px-3" onClick={() => setCustomMuscles((values) => active ? values.filter((value) => value !== item) : [...values, item])}>{item}{active && <Check />}</Button>; })}</div><div className="grid grid-cols-3 gap-1.5">{equipmentTypes.map((item) => <Button key={item} variant={customEquipment === item ? "choiceActive" : "choice"} className="h-9 px-2 text-xs" onClick={() => setCustomEquipment(item)}>{item === "Plate-loaded Machine" ? "Plate loaded" : item === "Pin-loaded Machine" ? "Pin loaded" : item}</Button>)}</div></div><Button variant="primary" size="lg" className="mt-3 w-full" disabled={!customName.trim() || !customMuscles.length} onClick={createReplacement}>Create & replace</Button></div> : <div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input type="search" value={replaceQuery} onChange={(event) => setReplaceQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{key && alternatives.map((exercise, index) => <div key={exercise.id}>{index === 0 && recalledIds.includes(exercise.id) && !replaceQuery.trim() && <p className="pb-1 pt-3 text-[0.62rem] font-extrabold uppercase tracking-[0.14em] text-primary">Previously used</p>}<ExerciseOption exercise={exercise} badge={recalledIds.includes(exercise.id) ? "Used before" : undefined} onSelect={(item) => { if (current) rememberReplacement(current.id, item.id); onReplace(key, item); }} /></div>)}{key && alternatives.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No exercises found</p>}</div></div>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "group"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Create superset or tri-set</DrawerTitle></DrawerHeader>{key && <ExerciseGroupSetup workout={workout} anchorKey={key} onCreate={onCreateGroup}/>}</DrawerContent></Drawer>
     <Drawer open={sheet.kind === "superset"} onOpenChange={(open) => { if (!open) onClose(); }}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Choose exercise to superset with</DrawerTitle></DrawerHeader><div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">{key && workout.exercises.filter((exercise) => exercise.key !== key && !isCardioExercise(exercise) && !exercise.supersetWith && !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed)).map((exercise) => <DrawerClose key={exercise.key} asChild><button type="button" className="min-h-14 w-full border-b border-border text-left text-sm font-bold last:border-0" onClick={() => onPair(key, exercise.key)}>{exercise.name}</button></DrawerClose>)}</div></DrawerContent></Drawer>
 
@@ -739,21 +781,41 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const { user } = useAuth();
   const [sharedToFeed, setSharedToFeed] = useState(false);
   const [sharingToFeed, setSharingToFeed] = useState(false);
+  const [displayName, setDisplayName] = useState(result.workout.name);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(result.workout.name);
+  const previousSummaryNameRef = useRef(result.workout.name);
+  const summaryNameInputRef = useRef<HTMLInputElement | null>(null);
   const performed = result.workout.exercises.map((exercise) => ({
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
   })).filter(({ sets }) => sets.length > 0);
   const data = useTrainingData();
-  const shareWorkout = useMemo(() => data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration), [data, result]);
+  const shareWorkout = useMemo(() => ({ ...(data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration)), name: displayName }), [data, result, displayName]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
   const prExerciseIds = useMemo(() => new Set(sharePrs.map((pr) => pr.exerciseId)), [sharePrs]);
   const previousComparable = useMemo(() => data?.workouts
-    .filter((workout) => workout.id !== result.workout.id && workout.startedAt < result.workout.startedAt && workout.name === result.workout.name)
-    .sort((a, b) => b.startedAt - a.startedAt)[0], [data, result.workout.id, result.workout.name, result.workout.startedAt]);
+    .filter((workout) => workout.id !== result.workout.id && workout.startedAt < result.workout.startedAt && workout.name === displayName)
+    .sort((a, b) => b.startedAt - a.startedAt)[0], [data, result.workout.id, displayName, result.workout.startedAt]);
   const previousVolume = previousComparable?.exercises.reduce((total, exercise) => total + exercise.sets.reduce((sum, set) => sum + set.weight * set.reps, 0), 0) ?? 0;
   const volumeDelta = previousComparable && previousVolume > 0 && result.volume > 0 ? Math.round(((result.volume - previousVolume) / previousVolume) * 100) : null;
   const weekStart = new Date(result.workout.startedAt); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
   const workoutsThisWeek = data?.workouts.filter((item) => item.startedAt >= weekStart.getTime() && item.startedAt <= result.workout.startedAt).length ?? 1;
+
+  useEffect(() => { if (editingName) summaryNameInputRef.current?.focus(); }, [editingName]);
+
+  const beginSummaryRename = () => {
+    previousSummaryNameRef.current = displayName;
+    setDraftName("");
+    setEditingName(true);
+  };
+  const finishSummaryRename = () => {
+    const next = draftName.trim() || previousSummaryNameRef.current;
+    setDisplayName(next);
+    setDraftName(next);
+    updateWorkout({ ...shareWorkout, name: next });
+    setEditingName(false);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -788,7 +850,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     <section className="-mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
       <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
       <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
-      <h1 className="mt-1 max-w-full text-3xl font-black leading-tight [overflow-wrap:anywhere]">{result.workout.name}</h1>
+      <div className="mt-1 flex items-start gap-2">{editingName ? <input ref={summaryNameInputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishSummaryRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousSummaryNameRef.current); setDisplayName(previousSummaryNameRef.current); setEditingName(false); } }} aria-label="Rename workout" placeholder="Workout name" className="h-auto min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/55" /> : <><h1 className="min-w-0 flex-1 text-3xl font-black leading-tight [overflow-wrap:anywhere]">{displayName}</h1><button type="button" onClick={beginSummaryRename} aria-label="Rename workout" className="mt-1 grid size-8 shrink-0 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"><Pencil className="size-4" /></button></>}</div>
 
     </section>
 

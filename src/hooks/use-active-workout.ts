@@ -50,8 +50,18 @@ export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; sche
 export function createActiveWorkout(exercises: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
   const first = exercises[0];
   if (!first) return null;
-  const muscles = [...new Set(exercises.map((exercise) => exercise.muscle))];
-  const name = customName?.trim() || (muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout");
+  const counts = new Map<string, number>();
+  for (const exercise of exercises) {
+    const muscles = exercise.muscles?.length ? exercise.muscles : [exercise.muscle];
+    for (const muscle of muscles) counts.set(muscle, (counts.get(muscle) ?? 0) + 1);
+  }
+  const smartName = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3)
+    .map(([muscle]) => muscle)
+    .join(" + ") || "Workout";
+  const suppliedName = customName?.trim();
+  const name = suppliedName && suppliedName.toLowerCase() !== "custom workout" ? suppliedName : smartName;
   const groupIds = [...new Set(exercises.map((e) => e.groupId).filter(Boolean))] as string[];
   const circuitIds = [...new Set(exercises.map((e) => e.circuitId).filter(Boolean))] as string[];
   return {
