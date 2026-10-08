@@ -33,8 +33,26 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
     <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
       {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn(mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
+    <RecentWorkoutNames />
     {mode === "generate" ? <GenerateMode /> : <ManualMode />}
   </div>;
+}
+
+function RecentWorkoutNames() {
+  const training = useTrainingData();
+  const recent = [...(training?.workouts ?? [])]
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .slice(0, 5);
+  if (!recent.length) return null;
+  return <details className="-mt-1 rounded-xl border border-border bg-card px-3 py-2">
+    <summary className="cursor-pointer select-none text-xs font-bold text-muted-foreground">Recent workouts</summary>
+    <div className="mt-2 space-y-1 border-t border-border pt-2">
+      {recent.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 text-xs">
+        <span className="min-w-0 truncate font-semibold text-foreground">{item.name}</span>
+        <span className="shrink-0 text-[0.65rem] text-muted-foreground">{new Date(item.startedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span>
+      </div>)}
+    </div>
+  </details>;
 }
 
 function GenerateMode() {
