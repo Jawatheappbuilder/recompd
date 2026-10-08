@@ -18,8 +18,16 @@ export const saveWorkout = (workout: SavedWorkout) => mutate({ kind: "upsertSave
 export const deleteSavedWorkout = (id: string) => mutate({ kind: "deleteSaved", id });
 
 export const defaultWorkoutName = (exercises: WorkoutExercise[]) => {
-  const muscles = [...new Set(exercises.flatMap((exercise) => exercise.muscles?.length ? exercise.muscles : [exercise.muscle]))];
-  return muscles.length && muscles.length <= 3 ? muscles.join(" + ") : "Custom Workout";
+  const counts = new Map<string, number>();
+  for (const exercise of exercises) {
+    const muscles = exercise.muscles?.length ? exercise.muscles : [exercise.muscle];
+    for (const muscle of muscles) counts.set(muscle, (counts.get(muscle) ?? 0) + 1);
+  }
+  const ranked = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3)
+    .map(([muscle]) => muscle);
+  return ranked.length ? ranked.join(" + ") : "Workout";
 };
 
 /** Single handoff into the existing Active Workout experience. */
