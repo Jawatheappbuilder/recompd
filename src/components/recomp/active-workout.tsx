@@ -403,6 +403,48 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     if (circuit) return <CircuitMode circuit={circuit} members={members} run={circuitRun} now={now} onRun={setCircuitRun} onExit={() => { setCircuitRun(null); setCircuitMinimized(false); }} onComplete={() => { setCompletedCircuits((ids) => ids.includes(circuit.id) ? ids : [...ids, circuit.id]); setCircuitRun(null); setCircuitMinimized(false); }} onMinimize={() => setCircuitMinimized(true)} />;
   }
 
+  const renderExercise = (exercise: ActiveExercise, exerciseIndex: number) => {
+              if (exercise.groupId) {
+                const group = workout.exerciseGroups?.find((item) => item.id === exercise.groupId);
+                const firstMember = group ? workout.exercises.find((item) => group.memberKeys.includes(item.key)) : undefined;
+                if (group && firstMember?.key !== exercise.key) return null;
+                if (group) {
+                  const members = group.memberKeys.map((key) => workout.exercises.find((item) => item.key === key)).filter(Boolean) as ActiveExercise[];
+                  return <div key={group.id}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise></div>;
+                }
+              }
+              if (exercise.circuitId) {
+                const firstMember = workout.exercises.find((item) => item.circuitId === exercise.circuitId);
+                if (firstMember?.key !== exercise.key) return null;
+                const circuit = workout.circuits?.find((item) => item.id === exercise.circuitId);
+                const members = workout.exercises.filter((item) => item.circuitId === exercise.circuitId);
+                if (circuit) return <SortableActiveExercise key={circuit.id} exercise={exercise} index={exerciseIndex}><CircuitWorkoutCard circuit={circuit} members={members} expanded={expandedCircuit === circuit.id} run={circuitRun?.id === circuit.id ? circuitRun : null} now={now} onToggle={() => setExpandedCircuit((id) => id === circuit.id ? null : circuit.id)} onStart={() => { setCircuitRun({ id:circuit.id, phase:"countdown", round:1, endsAt:Date.now()+3000 }); setCircuitMinimized(false); }} onResume={() => setCircuitMinimized(false)} onActions={() => setSheet({ kind:"actions", key:exercise.key })} completed={completedCircuits.includes(circuit.id)}/></SortableActiveExercise>;
+              }
+              const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
+              const current = exercise.key === workout.currentKey && !completed;
+              const expanded = current || expandedUpcoming === exercise.key;
+              return <div key={exercise.key} data-workout-exercise-key={exercise.key}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseCard
+                exercise={exercise}
+                current={current}
+                completed={completed}
+                expanded={expanded}
+                pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
+                previous={previousPerformance[exercise.id]}
+                recentHistory={exerciseHistory[exercise.id] ?? []}
+                onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
+                onStart={() => startExercise(exercise.key)}
+                onSetChange={(setId, patch, propagate, propagateReps) => updateSet(exercise.key, setId, patch, propagate, propagateReps)}
+                onToggleSet={(set) => toggleSet(exercise, set)}
+                onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.weight ?? "", reps: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
+                onAddWarmup={() => updateExercise(exercise.key, (item) => { const firstWorking = item.sessionSets.findIndex((set) => set.kind !== "warmup"); const insertAt = firstWorking < 0 ? item.sessionSets.length : firstWorking; const warmups = item.sessionSets.filter((set) => set.kind === "warmup"); const next: ActiveSet = { id: `${item.key}-warmup-${Date.now()}`, weight: warmups.at(-1)?.weight ?? "", reps: warmups.at(-1)?.reps ?? "10", completed: false, weightEdited: false, kind: "warmup" }; return { ...item, sessionSets: [...item.sessionSets.slice(0, insertAt), next, ...item.sessionSets.slice(insertAt)] }; })}
+                onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
+                onRest={() => setSheet({ kind: "rest", key: exercise.key })}
+                onActions={() => setSheet({ kind: "actions", key: exercise.key })}
+                circuit={workout.circuits?.find((item) => item.id === exercise.circuitId)}
+                onStartCircuit={exercise.circuitId ? () => setCircuitRun({ id: exercise.circuitId!, phase: "countdown", round: 1, endsAt: Date.now() + 3000 }) : undefined}
+              /></SortableActiveExercise></div>;
+  };
+
   return (
     <>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onRename={(name) => onChange({ ...workout, name })} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
