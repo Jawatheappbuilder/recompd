@@ -142,7 +142,7 @@ function ManualMode() {
     {saved.length > 0 && <section>
       <SectionHeading>Saved</SectionHeading>
       <Card className="divide-y divide-border px-3">{saved.map((item) => <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <button type="button" onClick={() => load(item)} className="min-h-14 min-w-0 py-2 text-left"><span className="block text-sm font-bold leading-snug">{item.name}</span><span className="mt-0.5 block text-[0.7rem] text-muted-foreground">{item.exercises.length} exercises</span></button>
+        <button type="button" onClick={() => load(item)} className="min-h-14 min-w-0 py-2 text-left"><span className="block text-sm font-bold leading-snug">{item.name}</span><span className="mt-0.5 block text-[0.7rem] text-muted-foreground">{item.exercises.filter((e) => !e.note).length} exercises</span></button>
         <button type="button" aria-label={`Delete ${item.name}`} onClick={() => { deleteSavedWorkout(item.id); if (savedId === item.id) setSavedId(null); }} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-accent"><Trash2 className="size-4" /></button>
       </div>)}</Card>
     </section>}

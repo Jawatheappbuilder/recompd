@@ -7,7 +7,8 @@ const TRANSITION_SECONDS = 75;
  * Estimates elapsed workout time from planned work, configured rest periods,
  * cardio duration, and a small allowance for moving between exercises.
  */
-export function workoutTimeEstimate(workout: WorkoutExercise[]) {
+export function workoutTimeEstimate(items: WorkoutExercise[]) {
+  const workout = items.filter((item) => !item.note);
   if (!workout.length) return null;
 
   let seconds = 0;
