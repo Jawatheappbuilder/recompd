@@ -786,6 +786,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     sets: exercise.sessionSets.filter((set) => set.completed),
   })).filter(({ sets }) => sets.length > 0);
   const data = useTrainingData();
+  const [includeNotesInShare, setIncludeNotesInShare] = useState(false);
   const shareWorkout = useMemo(() => ({ ...(data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration)), name: displayName }), [data, result, displayName]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
   const prExerciseIds = useMemo(() => new Set(sharePrs.map((pr) => pr.exerciseId)), [sharePrs]);
@@ -822,7 +823,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     setSharingToFeed(true);
     try {
       if (sharedToFeed) { await unshareWorkoutFromSocial(user.id, shareWorkout.id); setSharedToFeed(false); toast.success("Removed from your feed"); }
-      else { await shareWorkoutToSocial(user.id, shareWorkout, sharePrs.length); setSharedToFeed(true); toast.success("Shared to your feed"); }
+      else { await shareWorkoutToSocial(user.id, includeNotesInShare ? shareWorkout : { ...shareWorkout, notes: [] }, sharePrs.length); setSharedToFeed(true); toast.success("Shared to your feed"); }
     } catch { toast.error("Couldn't update Social sharing"); }
     finally { setSharingToFeed(false); }
   }
@@ -866,6 +867,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     </div>
     {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><div className="mt-1 space-y-1">{sharePrs.map((pr) => <p key={pr.exerciseId} className="text-sm font-bold">{pr.name} <span className="font-semibold text-muted-foreground">· {pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</span></p>)}</div></div>}
 
+    {user && (shareWorkout.notes?.length ?? 0) > 0 && <label className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-xs"><input type="checkbox" checked={includeNotesInShare} onChange={(event) => setIncludeNotesInShare(event.target.checked)} /> Include personal notes when sharing to feed (off by default)</label>}
     {user && <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/[0.06] px-4 py-3.5">
       <div className="min-w-0"><div className="text-sm font-extrabold">Share to your feed</div><div className="mt-0.5 text-[0.68rem] leading-snug text-muted-foreground">Let your RECOMP'D friends see this workout.</div></div>
       <button type="button" role="switch" aria-checked={sharedToFeed} disabled={sharingToFeed} onClick={() => void toggleFeedShare()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${sharedToFeed ? "bg-primary" : "bg-muted-foreground/25"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${sharedToFeed ? "left-6" : "left-1"}`} /></button>
@@ -900,7 +902,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
         })}
       </div>
     </section>}
-    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}
+    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={includeNotesInShare ? shareWorkout : { ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
   </div>;
 }
 
