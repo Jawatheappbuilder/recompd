@@ -107,8 +107,9 @@ function layout(ctx: CanvasRenderingContext2D, workout: CompletedWorkout, prs: P
   const header = 230 + title.length * titleSize * 0.95 + 100;
   const stats = compact ? 190 : 230;
   const list = blocks.reduce((h, b) => h + b.name.length * NAME_LH + 10 + b.sets.length * SET_LH, 0) + Math.max(0, blocks.length - 1) * gap * 2;
+  const notesHeight = (workout.notes ?? []).reduce((height, note) => height + 160 + note.checklist.length * 46 + Math.ceil(note.body.length / 42) * 42, 0);
   const footer = 200;
-  return { title, titleSize, gap, blocks, height: Math.ceil(header + stats + 76 + list + footer + 40) };
+  return { title, titleSize, gap, blocks, height: Math.ceil(header + stats + 76 + list + notesHeight + footer + 40) };
 }
 
 export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): Promise<Blob> {
@@ -160,7 +161,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   const stats: [string, string][] = [
     [formatDuration(workout.durationSec), "Duration"],
     [String(setCount(workout)), "Sets"],
-    volume > 0 ? [Math.round(volume).toLocaleString(), "kg volume"] : [String(plan.blocks.length), "Exercises"],
+    volume > 0 ? [Math.round(volume).toLocaleString(), "kg volume"] : (workout.notes?.length && !plan.blocks.length ? [String(workout.notes.reduce((n, note) => n + note.checked.length, 0)) + "/" + String(workout.notes.reduce((n, note) => n + note.checklist.length, 0)), "Activities"] : [String(plan.blocks.length), "Exercises"]),
   ];
   const statH = plan.height > BASE_H ? 190 : 230;
   ctx.fillStyle = C.surface; ctx.beginPath(); ctx.roundRect(PAD, y, inner, statH, 32); ctx.fill();
@@ -196,6 +197,25 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
     ctx.font = `600 ${SET_SIZE}px ${SANS}`; ctx.fillStyle = C.muted;
     block.sets.forEach((line) => { y += SET_LH; ctx.fillText(line, nameX, y - 8); });
   });
+
+  // Notes are supplied only after the user explicitly opts in to sharing.
+  for (const note of workout.notes ?? []) {
+    y += 55;
+    ctx.font = "800 25px " + SANS; ctx.fillStyle = brand.accent; ctx.fillText("NOTE", PAD, y);
+    ctx.font = "700 40px " + SANS; ctx.fillStyle = C.text;
+    for (const line of wrap(ctx, note.title || "Note", inner)) { y += 54; ctx.fillText(line, PAD, y); }
+    ctx.font = "500 30px " + SANS; ctx.fillStyle = C.muted;
+    for (const line of (note.body ? wrap(ctx, note.body, inner) : [])) { y += 42; ctx.fillText(line, PAD, y); }
+    for (const item of note.checklist) {
+      const checked = note.checked.includes(item.id);
+      ctx.font = "500 30px " + SANS;
+      for (const [index, line] of wrap(ctx, item.text, inner - 55).entries()) {
+        y += 45; ctx.fillStyle = checked ? brand.accent : C.muted;
+        if (!index) ctx.fillText(checked ? "✓" : "○", PAD, y);
+        ctx.fillStyle = C.text; ctx.fillText(line, PAD + 55, y);
+      }
+    }
+  }
 
   // Footer
   ctx.fillStyle = C.border; ctx.fillRect(PAD, H - 150, inner, 2);
