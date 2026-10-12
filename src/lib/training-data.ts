@@ -14,7 +14,9 @@ export type CompletedSet = {
   incline?: number; level?: number; floors?: number; steps?: number; pace500m?: string;
 };
 export type CompletedExercise = { key: string; exerciseId: string; name: string; muscles: Muscle[]; equipment: Equipment; tracking?: "strength" | "cardio" | undefined; cardioMetrics?: CardioMetric[] | undefined; sets: CompletedSet[]; supersetWith?: string | undefined; groupId?: string | undefined; groupRestSeconds?: number | undefined; circuitId?: string | undefined; circuitWorkSeconds?: number | undefined; circuitRestSeconds?: number | undefined; circuitRounds?: number | undefined; circuitReps?: number | undefined };
-export type CompletedWorkout = { id: string; name: string; startedAt: number; durationSec: number; exercises: CompletedExercise[] };
+/** A note card as it was during the session (checked = ticked checklist ids). Never counted in stats. */
+export type CompletedNote = { key: string; title: string; body: string; checklist: { id: string; text: string }[]; checked: string[]; afterKey: string | null };
+export type CompletedWorkout = { id: string; name: string; startedAt: number; durationSec: number; exercises: CompletedExercise[]; notes?: CompletedNote[] | undefined };
 export type BodyweightEntry = { id: string; kg: number; loggedAt: number };
 export type TrainingData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[] };
 
@@ -50,7 +52,8 @@ export function toCompletedWorkout(active: ActiveWorkoutState, durationSec: numb
       } : { weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }),
     }))
     .filter((exercise) => exercise.sets.length);
-  return { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises };
+  const notes: CompletedNote[] = (active.notes ?? []).map((n) => ({ key: n.key, title: n.title, body: n.body, checklist: n.checklist, checked: n.checked, afterKey: n.afterKey }));
+  return { id: active.id, name: active.name, startedAt: active.startedAt, durationSec, exercises, ...(notes.length ? { notes } : {}) };
 }
 
 export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: number) {

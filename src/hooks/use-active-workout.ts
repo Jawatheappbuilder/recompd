@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { WorkoutExercise } from "@/data/exercises";
+import { type WorkoutExercise, type WorkoutNote } from "@/data/exercises";
+
+/** Note card in a live session; ticks reset every new session. `afterKey` = exercise it follows (null = top). */
+export type ActiveNote = WorkoutNote & { key: string; afterKey: string | null; checked: string[] };
 
 export const ACTIVE_WORKOUT_KEY = "recomp-active-workout-v1";
 const LEGACY_WORKOUT_KEY = "recomp-active-workout";
@@ -40,6 +43,7 @@ export type ActiveWorkoutState = {
   scheduledId?: string;
   sourceSavedId?: string;
   exerciseGroups?: { id: string; memberKeys: string[]; restSeconds: number }[];
+  notes?: ActiveNote[];
   circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
 };
 
@@ -47,7 +51,14 @@ const repsFromTarget = (target: string) => target.match(/\d+/)?.[0] ?? "10";
 
 export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; scheduledId?: string; sourceSavedId?: string };
 
-export function createActiveWorkout(exercises: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
+export function createActiveWorkout(items: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
+  const notes: ActiveNote[] = [];
+  let lastKey: string | null = null;
+  for (const item of items) {
+    if (item.note) notes.push({ title: item.note.title, body: item.note.body, checklist: item.note.checklist.map((c) => ({ ...c })), key: item.key, afterKey: lastKey, checked: [] });
+    else lastKey = item.key;
+  }
+  const exercises = items.filter((item) => !item.note);
   const first = exercises[0];
   if (!first) return null;
   const counts = new Map<string, number>();
@@ -70,6 +81,7 @@ export function createActiveWorkout(exercises: WorkoutExercise[], customName?: s
     name,
     startedAt: Date.now(),
     currentKey: first.key,
+    ...(notes.length ? { notes } : {}),
     exerciseGroups: groupIds.map((id) => { const members=exercises.filter((e)=>e.groupId===id); return { id, memberKeys:members.map((e)=>e.key), restSeconds:members[0]?.groupRestSeconds ?? 90 }; }),
     circuits: circuitIds.map((id) => { const members=exercises.filter((e)=>e.circuitId===id); return { id, workSeconds:members[0]?.circuitWorkSeconds ?? 300, restSeconds:members[0]?.circuitRestSeconds ?? 90, rounds:members[0]?.circuitRounds ?? 3, reps:Object.fromEntries(members.map((e)=>[e.key,e.circuitReps ?? 10])) }; }),
     exercises: exercises.map((exercise) => ({
