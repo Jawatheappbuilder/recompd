@@ -60,6 +60,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { equipmentTypes, exercises, isCardioExercise, isTimedHold, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
+import { NoteCard, NoteSheet } from "./note-card";
 import { personalRecords, recordCompletedWorkout, toCompletedWorkout, updateWorkout, useTrainingData } from "@/lib/training-data";
 import { defaultWorkoutName, loadSavedWorkouts, saveCustomExercise, saveWorkout, useCustomExercises } from "@/lib/workout-storage";
 import { ShareWorkoutButton } from "./share-workout";
@@ -127,6 +128,10 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     return history;
   }, [trainingData, workout.startedAt]);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [noteSheet, setNoteSheet] = useState<{ key: string | null } | null>(null);
+  const notesAfter = (key: string | null) => (workout.notes ?? []).filter((n) => n.afterKey === key || (key === null && n.afterKey !== null && !workout.exercises.some((e) => e.key === n.afterKey)));
+  const patchNote = (key: string, fn: (n: NonNullable<ActiveWorkoutState["notes"]>[number]) => NonNullable<ActiveWorkoutState["notes"]>[number] | null) => onChange({ ...workout, notes: (workout.notes ?? []).map((n) => n.key === key ? fn(n) : n).filter(Boolean) as NonNullable<ActiveWorkoutState["notes"]> });
+  const renderNotes = (key: string | null) => notesAfter(key).map((n) => <NoteCard key={n.key} note={n} checked={n.checked} onToggleCheck={(id) => patchNote(n.key, (x) => ({ ...x, checked: x.checked.includes(id) ? x.checked.filter((c) => c !== id) : [...x.checked, id] }))} onEdit={() => setNoteSheet({ key: n.key })} onDelete={() => patchNote(n.key, () => null)} />);
   const [now, setNow] = useState(Date.now());
   const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
@@ -406,7 +411,12 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
           <div className="mt-3 space-y-2">
-            {workout.exercises.map((exercise, exerciseIndex) => {
+            {renderNotes(null)}
+            {workout.exercises.flatMap((exercise, exerciseIndex) => [renderExercise(exercise, exerciseIndex), ...renderNotes(exercise.key)])}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {null && <div>{workout.exercises.map((exercise, exerciseIndex) => {
               if (exercise.groupId) {
                 const group = workout.exerciseGroups?.find((item) => item.id === exercise.groupId);
                 const firstMember = group ? workout.exercises.find((item) => group.memberKeys.includes(item.key)) : undefined;
