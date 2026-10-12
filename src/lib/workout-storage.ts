@@ -1,5 +1,5 @@
 import type { Exercise, WorkoutExercise } from "@/data/exercises";
-import { ACTIVE_WORKOUT_KEY, type WorkoutHandoff } from "@/hooks/use-active-workout";
+import { ACTIVE_WORKOUT_KEY, createActiveWorkout, type WorkoutHandoff } from "@/hooks/use-active-workout";
 
 import { getCloudData, mutate, useCloudData, type SavedWorkout, type ScheduledWorkout } from "./cloud-data";
 
@@ -33,8 +33,19 @@ export const defaultWorkoutName = (exercises: WorkoutExercise[]) => {
 
 /** Single handoff into the existing Active Workout experience. */
 export function handOffWorkout(handoff: WorkoutHandoff) {
-  localStorage.removeItem(ACTIVE_WORKOUT_KEY);
-  sessionStorage.setItem("recomp-active-workout", JSON.stringify(handoff));
+  // Persist the new workout before navigating. A staged sessionStorage handoff
+  // could be missed when the workout route was already mounted.
+  const active = createActiveWorkout(handoff.exercises, handoff.name);
+  if (!active) return false;
+  const next = {
+    ...active,
+    ...(handoff.scheduledId ? { scheduledId: handoff.scheduledId } : {}),
+    ...(handoff.sourceSavedId ? { sourceSavedId: handoff.sourceSavedId } : {}),
+  };
+  localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(next));
+  sessionStorage.removeItem("recomp-active-workout");
+  window.dispatchEvent(new Event("recomp-active-workout-updated"));
+  return true;
 }
 
 // ---------- scheduled workouts (planned instances; never modify saved templates) ----------
