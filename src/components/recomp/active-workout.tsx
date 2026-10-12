@@ -852,7 +852,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
 
     <div className="mt-4 grid grid-cols-2 gap-2">
       <SummaryMetric label="Duration" value={formatDuration(result.duration)} />
-      <SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length}`} />
+      <SummaryMetric label={result.workout.exercises.length ? "Exercises" : "Activities"} value={result.workout.exercises.length ? `${result.completedExercises} of ${result.workout.exercises.length}` : `${result.workout.notes?.reduce((n, note) => n + note.checked.length, 0) ?? 0} of ${result.workout.notes?.reduce((n, note) => n + note.checklist.length, 0) ?? 0}`} />
       <SummaryMetric label="Sets" value={String(result.totalSets)} />
       <SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} />
     </div>
@@ -901,6 +901,11 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
           </Card>;
         })}
       </div>
+    </section>}
+    {(result.workout.notes?.length ?? 0) > 0 && <section className="mt-6 space-y-2">
+      <h2 className="text-base font-black">Notes & activities</h2>
+      {result.workout.notes?.map((note) => <NoteCard key={note.key} note={note} checked={note.checked} defaultCollapsed={false} />)}
+      <p className="text-xs text-muted-foreground">{result.workout.notes?.reduce((count, note) => count + note.checked.filter((id) => note.checklist.some((item) => item.id === id)).length, 0)} of {result.workout.notes?.reduce((count, note) => count + note.checklist.length, 0)} checklist activities completed</p>
     </section>}
     {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={includeNotesInShare ? shareWorkout : { ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
   </div>;
