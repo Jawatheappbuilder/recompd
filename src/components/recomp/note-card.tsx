@@ -59,7 +59,7 @@ export function NoteCard({ note, checked, onToggleCheck, onEdit, onDelete, handl
               <span className={cn("grid size-5 shrink-0 place-items-center rounded-md border", on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}>{on && <Check className="size-3.5" />}</span>
               <span className={cn("min-w-0 break-words", on && "text-muted-foreground line-through")}>{item.text}</span>
             </button>
-          : <span className="flex items-center gap-2 text-sm"><span className="size-1.5 shrink-0 rounded-full bg-primary/60" /><span className="min-w-0 break-words">{item.text}</span></span>}</li>;
+          : <span className="flex items-center gap-2 text-sm"><span className={cn("grid size-5 shrink-0 place-items-center rounded-md border", on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}>{on && <Check className="size-3.5" />}</span><span className={cn("min-w-0 break-words", on && "text-muted-foreground line-through")}>{item.text}</span></span>}</li>;
       })}</ul>}
     </div>}
   </Card>;
