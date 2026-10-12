@@ -27,8 +27,8 @@ export function condensedSets(sets: CompletedSet[], timed = false) {
 
 export function workoutShareText(workout: CompletedWorkout) {
   const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map((set) => isTimedHold(e) ? setLabel(set, true) : formatPerformance(set)).join(", ")}`).join("\n");
-  const notes = (workout.notes ?? []).map((note) => [note.title, note.body, ...note.checklist.map((item) => (note.checked.includes(item.id) ? "✓ " : "○ ") + item.text)].filter(Boolean).join("\\n")).join("\\n\\n");
-  return `${workout.name}\\n${formatDuration(workout.durationSec)}\\n\\n${[details, notes].filter(Boolean).join("\\n\\n")}\\n\\nTracked with RECOMP'D`;
+  const notes = (workout.notes ?? []).map((note) => [note.title, note.body, ...note.checklist.map((item) => (note.checked.includes(item.id) ? "✓ " : "○ ") + item.text)].filter(Boolean).join("\n")).join("\n\n");
+  return `${workout.name}\n${formatDuration(workout.durationSec)}\n\n${[details, notes].filter(Boolean).join("\n\n")}\n\nTracked with RECOMP'D`;
 
 }
 
