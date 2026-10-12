@@ -27,7 +27,9 @@ export function condensedSets(sets: CompletedSet[], timed = false) {
 
 export function workoutShareText(workout: CompletedWorkout) {
   const details = workout.exercises.filter((e) => e.sets.length).map((e) => `${e.name}: ${e.sets.map((set) => isTimedHold(e) ? setLabel(set, true) : formatPerformance(set)).join(", ")}`).join("\n");
-  return `${workout.name}\n${formatDuration(workout.durationSec)}\n\n${details}\n\nTracked with RECOMP'D`;
+  const notes = (workout.notes ?? []).map((note) => [note.title, note.body, ...note.checklist.map((item) => (note.checked.includes(item.id) ? "✓ " : "○ ") + item.text)].filter(Boolean).join("\\n")).join("\\n\\n");
+  return `${workout.name}\\n${formatDuration(workout.durationSec)}\\n\\n${[details, notes].filter(Boolean).join("\\n\\n")}\\n\\nTracked with RECOMP'D`;
+
 }
 
 /* ---------- canvas rendering ---------- */
@@ -236,15 +238,17 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
   const [blob, setBlob] = useState<Blob | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [includeNotes, setIncludeNotes] = useState(false);
+  const shareableWorkout = includeNotes ? workout : { ...workout, notes: [] };
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false; let created: string | null = null;
     setBlob(null); setUrl(null);
-    renderWorkoutCard(workout, prs).then((b) => { if (cancelled) return; created = URL.createObjectURL(b); setBlob(b); setUrl(created); }).catch(() => toast.error("Couldn't create the image"));
+    renderWorkoutCard(shareableWorkout, prs).then((b) => { if (cancelled) return; created = URL.createObjectURL(b); setBlob(b); setUrl(created); }).catch(() => toast.error("Couldn't create the image"));
     return () => { cancelled = true; if (created) URL.revokeObjectURL(created); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, JSON.stringify(workout), JSON.stringify(prs)]);
+  }, [open, includeNotes, JSON.stringify(workout), JSON.stringify(prs)]);
 
   const file = blob ? new File([blob], fileName(workout), { type: "image/png" }) : null;
 
@@ -264,7 +268,7 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
     } finally { setBusy(false); }
   };
   const shareText = async () => {
-    const text = workoutShareText(workout);
+    const text = workoutShareText(shareableWorkout);
     try {
       if (navigator.share) await navigator.share({ title: workout.name, text });
       else { await navigator.clipboard.writeText(text); toast.success("Workout copied"); }
@@ -282,6 +286,7 @@ export function ShareWorkoutSheet({ workout, prs, open, onOpenChange }: { workou
           <div className="grid min-h-0 flex-1 place-items-center overflow-y-auto rounded-2xl border border-border bg-background p-2">
             {url ? <img src={url} alt={`${workout.name} share card`} className="max-h-[58dvh] w-auto max-w-full rounded-xl" /> : <div className="grid h-[48dvh] place-items-center text-muted-foreground"><Loader2 className="size-5 animate-spin" /></div>}
           </div>
+          {(workout.notes?.length ?? 0) > 0 && <label className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-sm"><input type="checkbox" checked={includeNotes} onChange={(event) => setIncludeNotes(event.target.checked)} className="size-4 accent-primary" /><span className="flex-1"><span className="block font-semibold">Include notes & activities</span><span className="block text-xs text-muted-foreground">Off by default · Applies to image and text</span></span></label>}
           <Button variant="primary" size="xl" className="mt-3 w-full" disabled={!blob || busy} onClick={() => void shareImage()}>
             <><ImageIcon />Share image</>
           </Button>
