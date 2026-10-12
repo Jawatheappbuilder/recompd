@@ -108,7 +108,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
       {sharedToSocial && <p className="mt-1.5 text-center text-[0.7rem] text-muted-foreground">Only accepted RECOMP'D friends can see this workout summary.</p>}
       <Button variant="surface" className="mt-3 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
       <ShareLinkButton name={workout.name} exercises={[...templateExercises(), ...(workout.notes ?? []).map((note) => createNoteItem(note))]} className="mt-2 w-full" />
-      <ShareWorkoutButton workout={includeNotes ? workout : { ...workout, notes: [] }} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
+      <ShareWorkoutButton workout={workout} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
       <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
