@@ -24,7 +24,6 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
   const { user } = useAuth();
   const [sharedToSocial, setSharedToSocial] = useState<boolean | null>(null);
   const [sharingSocial, setSharingSocial] = useState(false);
-  const [includeNotes, setIncludeNotes] = useState(false);
   useEffect(() => {
     if (!user) return;
     void getMySharedWorkoutIds(user.id).then((ids) => setSharedToSocial(ids.has(workout.id))).catch(() => setSharedToSocial(false));
@@ -34,7 +33,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
     setSharingSocial(true);
     try {
       if (sharedToSocial) { await unshareWorkoutFromSocial(user.id, workout.id); setSharedToSocial(false); toast.success("Removed from friends feed"); }
-      else { await shareWorkoutToSocial(user.id, includeNotes ? workout : { ...workout, notes: [] }, prs.length); setSharedToSocial(true); toast.success("Shared with friends"); }
+      else { await shareWorkoutToSocial(user.id, { ...workout, notes: [] }, prs.length); setSharedToSocial(true); toast.success("Shared with friends"); }
     } catch { toast.error("Couldn't update Social sharing"); }
     finally { setSharingSocial(false); }
   }
@@ -105,11 +104,10 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
         })}
       </div>
       {(workout.notes?.length ?? 0) > 0 && <section className="mt-4 space-y-2"><h2 className="text-sm font-extrabold">Notes & activities</h2>{workout.notes?.map((note) => <NoteCard key={note.key} note={note} checked={note.checked} />)}</section>}
-      {user && (workout.notes?.length ?? 0) > 0 && <label className="mt-3 flex items-center gap-2 text-xs"><input type="checkbox" checked={includeNotes} onChange={(e) => setIncludeNotes(e.target.checked)} /> Include personal notes when sharing (off by default)</label>}
       {user && <Button variant={sharedToSocial ? "primary" : "surface"} className="mt-4 w-full" disabled={sharedToSocial === null || sharingSocial} onClick={() => void toggleSocialShare()}><Users />{sharingSocial ? "Updating..." : sharedToSocial ? "Shared with friends" : "Share with friends"}</Button>}
       {sharedToSocial && <p className="mt-1.5 text-center text-[0.7rem] text-muted-foreground">Only accepted RECOMP'D friends can see this workout summary.</p>}
       <Button variant="surface" className="mt-3 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
-      <ShareLinkButton name={workout.name} exercises={[...templateExercises(), ...(includeNotes ? (workout.notes ?? []).map((note) => createNoteItem(note)) : [])]} className="mt-2 w-full" />
+      <ShareLinkButton name={workout.name} exercises={[...templateExercises(), ...(workout.notes ?? []).map((note) => createNoteItem(note))]} className="mt-2 w-full" />
       <ShareWorkoutButton workout={includeNotes ? workout : { ...workout, notes: [] }} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
       <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
