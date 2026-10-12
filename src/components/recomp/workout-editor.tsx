@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, ChevronDown, ChevronUp, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis, NotebookPen } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,6 +34,8 @@ import {
   type Muscle,
   type WorkoutExercise,
 } from "@/data/exercises";
+import { NoteCard, NoteSheet } from "./note-card";
+import { createNoteItem } from "@/data/exercises";
 import { saveCustomExercise, useCustomExercises } from "@/lib/workout-storage";
 import { newId } from "@/lib/cloud-data";
 import { cn } from "@/lib/utils";
@@ -64,6 +66,8 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
 }) {
   const [sheet, setSheet] = useState<SheetState>({ kind: "closed" });
   const [expandedPlanGroups, setExpandedPlanGroups] = useState<string[]>([]);
+  const [noteSheet, setNoteSheet] = useState<{ key: string | null } | null>(null);
+  const exercisesOnly = workout.filter((item) => !item.note);
   const library = useLibrary();
   const addOpen = pickerOpen ?? sheet.kind === "add";
   const setAddOpen = (open: boolean) => { if (onPickerOpenChange) onPickerOpenChange(open); else setSheet(open ? { kind: "add" } : { kind: "closed" }); };
@@ -119,6 +123,7 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   const expanded = expandedPlanGroups.includes(planId);
                   return <PlannedGroupCard key={planId} id={planId} members={members} circuit={circuit} expanded={expanded} onToggle={() => setExpandedPlanGroups((ids) => ids.includes(planId) ? ids.filter((id) => id !== planId) : [...ids, planId])} onEdit={(member) => setSheet({ kind: "actions", key: member.key })} onUnlink={() => setWorkout((current) => current.map((item) => workoutGroupId(item) === planId ? { ...item, supersetWith: undefined, groupId: undefined, groupRestSeconds: undefined, circuitId: undefined, circuitWorkSeconds: undefined, circuitRestSeconds: undefined, circuitRounds: undefined, circuitReps: undefined } : item))} />;
                 }
+                if (exercise.note) return <SortableNote key={exercise.key} item={exercise} onEdit={() => setNoteSheet({ key: exercise.key })} onDelete={() => setWorkout((current) => current.filter((item) => item.key !== exercise.key))} />;
                 return <SortableExercise
                   key={exercise.key}
                   exercise={exercise}
@@ -139,26 +144,33 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
           </SortableContext>
         </DndContext>
       )}
-      {workout.length > 0 && <Button variant="surface" className="mt-3 w-full" onClick={() => setAddOpen(true)}><Plus /> Add exercise</Button>}
+      <div className={cn("mt-3 grid gap-2", workout.length > 0 ? "grid-cols-2" : "grid-cols-1")}>
+        {workout.length > 0 && <Button variant="surface" className="w-full" onClick={() => setAddOpen(true)}><Plus /> Add exercise</Button>}
+        <Button variant="surface" className="w-full" onClick={() => setNoteSheet({ key: null })}><NotebookPen /> Add note</Button>
+      </div>
+      <NoteSheet open={!!noteSheet} initial={noteSheet?.key ? workout.find((item) => item.key === noteSheet.key)?.note : undefined} onOpenChange={(open) => { if (!open) setNoteSheet(null); }} onSave={(note) => {
+        const key = noteSheet?.key;
+        setWorkout((current) => key ? current.map((item) => item.key === key ? { ...item, name: note.title, note } : item) : [...current, createNoteItem(note)]);
+      }} />
 
       <ReplaceDrawer
         open={sheet.kind === "replace"}
         exercise={sheet.kind === "replace" ? workout.find((item) => item.key === sheet.key) : undefined}
-        workout={workout}
+        workout={exercisesOnly}
         library={library.all}
         onOpenChange={(open) => { if (!open) setSheet({ kind: "closed" }); }}
         onSelect={(exercise) => { if (sheet.kind === "replace") replace(sheet.key, exercise); }}
       />
       {supersets && <SupersetDrawer
         exercise={sheet.kind === "superset" ? workout.find((item) => item.key === sheet.key) : undefined}
-        workout={workout}
+        workout={exercisesOnly}
         onClose={() => setSheet({ kind: "closed" })}
         onPair={pair}
         onUnlink={(key) => { unlink(key); setSheet({ kind: "closed" }); }}
       />}
       {supersets && <Drawer open={sheet.kind==="actions"} onOpenChange={o=>!o&&setSheet({kind:"closed"})}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Exercise options</DrawerTitle></DrawerHeader>{sheet.kind==="actions"&&<div className="space-y-1 px-4 pb-4"><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planGroup",key:sheet.key})}><Link2/>Superset / tri-set</Button><Button variant="ghost" className="w-full justify-start" onClick={()=>setSheet({kind:"planCircuit",key:sheet.key})}><span className="w-4 text-center">⏱</span>Timed circuit</Button></div>}</DrawerContent></Drawer>}
-      {supersets && <PlanGroupDrawer exercise={sheet.kind==="planGroup"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,rest)=>{ const id=`group-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,groupId:id,groupRestSeconds:rest,supersetWith:undefined}:e)); setSheet({kind:"closed"}); }}/>}
-      {supersets && <PlanCircuitDrawer exercise={sheet.kind==="planCircuit"?workout.find(i=>i.key===sheet.key):undefined} workout={workout} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,work,rest,rounds)=>{ const id=`circuit-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,circuitId:id,circuitWorkSeconds:work,circuitRestSeconds:rest,circuitRounds:rounds,circuitReps:10}:e)); setSheet({kind:"closed"}); }}/>}
+      {supersets && <PlanGroupDrawer exercise={sheet.kind==="planGroup"?workout.find(i=>i.key===sheet.key):undefined} workout={exercisesOnly} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,rest)=>{ const id=`group-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,groupId:id,groupRestSeconds:rest,supersetWith:undefined}:e)); setSheet({kind:"closed"}); }}/>}
+      {supersets && <PlanCircuitDrawer exercise={sheet.kind==="planCircuit"?workout.find(i=>i.key===sheet.key):undefined} workout={exercisesOnly} onClose={()=>setSheet({kind:"closed"})} onCreate={(keys,work,rest,rounds)=>{ const id=`circuit-${Date.now()}`; setWorkout(cur=>cur.map(e=>keys.includes(e.key)?{...e,circuitId:id,circuitWorkSeconds:work,circuitRestSeconds:rest,circuitRounds:rounds,circuitReps:10}:e)); setSheet({kind:"closed"}); }}/>}
       <RepDrawer
         open={sheet.kind === "reps"}
         timed={sheet.kind === "reps" && isTimedHold(workout.find((item) => item.key === sheet.key) ?? { name: "" })}
@@ -430,3 +442,10 @@ function FilterRow<T extends string>({ items, value, onSelect }: { items: readon
 function PlanGroupDrawer({exercise,workout,onClose,onCreate}:{exercise:WorkoutExercise|undefined;workout:WorkoutExercise[];onClose:()=>void;onCreate:(keys:string[],rest:number)=>void}){const [keys,setKeys]=useState<string[]>([]);const [rest,setRest]=useState(90);useEffect(()=>{setKeys(exercise?[exercise.key]:[])},[exercise]);const options=workout.filter(e=>!isCardioExercise(e)&&!e.circuitId);return <Drawer open={!!exercise} onOpenChange={o=>!o&&onClose()}><DrawerContent className="mx-auto max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Superset or tri-set</DrawerTitle></DrawerHeader><div className="px-4 pb-4 space-y-1">{options.map(e=><button key={e.key} className="flex min-h-12 w-full items-center justify-between rounded-xl bg-secondary px-3 text-sm font-bold" onClick={()=>e.key!==exercise?.key&&setKeys(v=>v.includes(e.key)?v.filter(k=>k!==e.key):v.length<3?[...v,e.key]:v)}><span>{e.name}</span><span>{keys.includes(e.key)?"✓":"○"}</span></button>)}<div className="flex items-center justify-between py-2"><span className="text-xs font-bold">Rest after round</span><div className="flex items-center gap-3"><Button size="icon" variant="ghost" onClick={()=>setRest(v=>Math.max(15,v-15))}><Minus/></Button><b>{rest}s</b><Button size="icon" variant="ghost" onClick={()=>setRest(v=>v+15)}><Plus/></Button></div></div><Button className="w-full" disabled={keys.length<2} onClick={()=>onCreate(keys,rest)}>Create {keys.length===3?"tri-set":"superset"}</Button></div></DrawerContent></Drawer>}
 
 function PlanCircuitDrawer({exercise,workout,onClose,onCreate}:{exercise:WorkoutExercise|undefined;workout:WorkoutExercise[];onClose:()=>void;onCreate:(keys:string[],work:number,rest:number,rounds:number)=>void}){const [keys,setKeys]=useState<string[]>([]);const [work,setWork]=useState(300);const [rest,setRest]=useState(90);const [rounds,setRounds]=useState(3);useEffect(()=>{setKeys(exercise?[exercise.key]:[])},[exercise]);const options=workout.filter(e=>!isCardioExercise(e)&&!e.groupId);return <Drawer open={!!exercise} onOpenChange={o=>!o&&onClose()}><DrawerContent className="mx-auto max-h-[82dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader><DrawerTitle>Timed circuit</DrawerTitle></DrawerHeader><div className="overflow-y-auto px-4 pb-4 space-y-1">{options.map(e=><button key={e.key} className="flex min-h-11 w-full items-center justify-between rounded-xl bg-secondary px-3 text-sm font-bold" onClick={()=>e.key!==exercise?.key&&setKeys(v=>v.includes(e.key)?v.filter(k=>k!==e.key):[...v,e.key])}><span>{e.name}</span><span>{keys.includes(e.key)?"✓":"○"}</span></button>)}{([["Work",work,setWork,30],["Rest",rest,setRest,15],["Rounds",rounds,setRounds,1]] as [string, number, React.Dispatch<React.SetStateAction<number>>, number][]).map(([label,value,setter,step]: [string, number, React.Dispatch<React.SetStateAction<number>>, number])=><div key={String(label)} className="flex items-center justify-between py-2"><span className="text-xs font-bold">{label}</span><div className="flex items-center gap-3"><Button size="icon" variant="ghost" onClick={()=> (setter as React.Dispatch<React.SetStateAction<number>>)(v=>Math.max(Number(step),v-Number(step)))}><Minus/></Button><b>{value as number}{label==="Rounds"?"":"s"}</b><Button size="icon" variant="ghost" onClick={()=> (setter as React.Dispatch<React.SetStateAction<number>>)(v=>v+Number(step))}><Plus/></Button></div></div>)}<Button className="w-full" disabled={keys.length<2} onClick={()=>onCreate(keys,work,rest,rounds)}>Create circuit</Button></div></DrawerContent></Drawer>}
+
+function SortableNote({ item, onEdit, onDelete }: { item: WorkoutExercise; onEdit: () => void; onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.key });
+  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "z-10")}>
+    <NoteCard note={item.note!} onEdit={onEdit} onDelete={onDelete} handle={{ ...attributes, ...listeners }} dragging={isDragging} />
+  </div>;
+}
