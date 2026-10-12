@@ -416,65 +416,6 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
           </div>
         </SortableContext>
       </DndContext>
-      {null && <div>{workout.exercises.map((exercise, exerciseIndex) => {
-              if (exercise.groupId) {
-                const group = workout.exerciseGroups?.find((item) => item.id === exercise.groupId);
-                const firstMember = group ? workout.exercises.find((item) => group.memberKeys.includes(item.key)) : undefined;
-                if (group && firstMember?.key !== exercise.key) return null;
-                if (group) {
-                  const members = group.memberKeys.map((key) => workout.exercises.find((item) => item.key === key)).filter(Boolean) as ActiveExercise[];
-                  return <div key={group.id}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise></div>;
-                }
-              }
-              if (exercise.circuitId) {
-                const firstMember = workout.exercises.find((item) => item.circuitId === exercise.circuitId);
-                if (firstMember?.key !== exercise.key) return null;
-                const circuit = workout.circuits?.find((item) => item.id === exercise.circuitId);
-                const members = workout.exercises.filter((item) => item.circuitId === exercise.circuitId);
-                if (circuit) return <SortableActiveExercise key={circuit.id} exercise={exercise} index={exerciseIndex}><CircuitWorkoutCard circuit={circuit} members={members} expanded={expandedCircuit === circuit.id} run={circuitRun?.id === circuit.id ? circuitRun : null} now={now} onToggle={() => setExpandedCircuit((id) => id === circuit.id ? null : circuit.id)} onStart={() => { setCircuitRun({ id:circuit.id, phase:"countdown", round:1, endsAt:Date.now()+3000 }); setCircuitMinimized(false); }} onResume={() => setCircuitMinimized(false)} onActions={() => setSheet({ kind:"actions", key:exercise.key })} completed={completedCircuits.includes(circuit.id)}/></SortableActiveExercise>;
-              }
-              const completed = exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed);
-              const current = exercise.key === workout.currentKey && !completed;
-              const expanded = current || expandedUpcoming === exercise.key;
-              return <div key={exercise.key} data-workout-exercise-key={exercise.key}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseCard
-                exercise={exercise}
-                current={current}
-                completed={completed}
-                expanded={expanded}
-                pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
-                previous={previousPerformance[exercise.id]}
-                recentHistory={exerciseHistory[exercise.id] ?? []}
-                onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
-                onStart={() => startExercise(exercise.key)}
-                onSetChange={(setId, patch, propagate, propagateReps) => updateSet(exercise.key, setId, patch, propagate, propagateReps)}
-                onToggleSet={(set) => toggleSet(exercise, set)}
-                onAddSet={() => updateExercise(exercise.key, (item) => ({ ...item, sessionSets: [...item.sessionSets, { id: `${item.key}-set-${Date.now()}`, weight: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.weight ?? "", reps: item.sessionSets.filter((set) => set.kind !== "warmup").at(-1)?.reps ?? "10", completed: false, weightEdited: false }] }))}
-                onAddWarmup={() => updateExercise(exercise.key, (item) => { const firstWorking = item.sessionSets.findIndex((set) => set.kind !== "warmup"); const insertAt = firstWorking < 0 ? item.sessionSets.length : firstWorking; const warmups = item.sessionSets.filter((set) => set.kind === "warmup"); const next: ActiveSet = { id: `${item.key}-warmup-${Date.now()}`, weight: warmups.at(-1)?.weight ?? "", reps: warmups.at(-1)?.reps ?? "10", completed: false, weightEdited: false, kind: "warmup" }; return { ...item, sessionSets: [...item.sessionSets.slice(0, insertAt), next, ...item.sessionSets.slice(insertAt)] }; })}
-                onRemoveSet={(setId) => updateExercise(exercise.key, (item) => item.sessionSets.length <= 1 ? item : ({ ...item, sessionSets: item.sessionSets.filter((set) => set.id !== setId || set.completed) }))}
-                onRest={() => setSheet({ kind: "rest", key: exercise.key })}
-                onActions={() => setSheet({ kind: "actions", key: exercise.key })}
-                circuit={workout.circuits?.find((item) => item.id === exercise.circuitId)}
-                onStartCircuit={exercise.circuitId ? () => setCircuitRun({ id: exercise.circuitId!, phase: "countdown", round: 1, endsAt: Date.now() + 3000 }) : undefined}
-              /></SortableActiveExercise></div>;
-            })}
-          </div>
-        </SortableContext>
-        <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
-          {draggingKey && (() => {
-            const dragged = workout.exercises.find((exercise) => exercise.key === draggingKey);
-            if (!dragged) return null;
-            const draggedWorking = dragged.sessionSets.filter((set) => set.kind !== "warmup");
-            const done = draggedWorking.filter((set) => set.completed).length;
-            return <Card className="w-[calc(100vw-2rem)] max-w-[398px] border-primary/35 bg-card px-3 py-3 shadow-xl">
-              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
-                <GripVertical className="size-4 text-muted-foreground" />
-                <div className="min-w-0"><div className="truncate text-sm font-extrabold">{dragged.name}</div><div className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{dragged.muscle} · {dragged.equipment}</div></div>
-                <span className="text-xs font-bold tabular-nums text-muted-foreground">{done}/{draggedWorking.length}</span>
-              </div>
-            </Card>;
-          })()}
-        </DragOverlay>
-      </DndContext>
       {allExercisesCompleted && <div className="mt-5 rounded-2xl border border-primary/25 bg-primary/[0.08] p-3">
         <div className="mb-2 px-1"><p className="text-sm font-extrabold">Workout complete</p><p className="mt-0.5 text-[0.7rem] text-muted-foreground">All exercises are done. Finish to save your workout.</p></div>
         <Button className="h-14 w-full bg-primary text-base font-extrabold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={finishWorkout}><CircleCheck className="size-5" /> Finish workout</Button>
