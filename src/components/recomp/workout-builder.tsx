@@ -102,7 +102,23 @@ function ManualMode() {
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const estimate = workoutTimeEstimate(workout);
-  const start = () => { if (!handOffWorkout({ name: finalName, exercises: workout })) { toast.error("Could not start workout. Please check your exercises."); return; } clearDraft(); void navigate({ to: "/workout" }); };
+  const start = () => {
+    try {
+      if (!workout.length) { toast.error("Add an exercise before starting."); return; }
+      if (!handOffWorkout({ name: finalName, exercises: workout })) {
+        toast.error("Workout could not be created. Please check your exercises.");
+        return;
+      }
+      clearDraft();
+      void navigate({ to: "/workout" }).catch((error: unknown) => {
+        console.error("Workout navigation failed", error);
+        toast.error("Workout saved, but navigation failed. Open the Workout tab.");
+      });
+    } catch (error) {
+      console.error("Start workout failed", error);
+      toast.error(`Start failed: ${error instanceof Error ? error.message : String(error)}`, { duration: 10000 });
+    }
+  };
   const save = () => {
     const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
     saveWorkout(entry); setSavedId(entry.id); clearDraft(); toast.success("Workout saved");
