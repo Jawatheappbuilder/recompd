@@ -60,7 +60,7 @@ export function createActiveWorkout(items: WorkoutExercise[], customName?: strin
   }
   const exercises = items.filter((item) => !item.note);
   const first = exercises[0];
-  if (!first) return null;
+  if (!first && !notes.length) return null;
   const counts = new Map<string, number>();
   for (const exercise of exercises) {
     const muscles = exercise.muscles?.length ? exercise.muscles : [exercise.muscle];
@@ -70,7 +70,7 @@ export function createActiveWorkout(items: WorkoutExercise[], customName?: strin
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 3)
     .map(([muscle]) => muscle)
-    .join(" + ") || "Workout";
+    .join(" + ") || (notes.length ? notes[0].title || "Mobility & Notes" : "Workout");
   const suppliedName = customName?.trim();
   const name = suppliedName && suppliedName.toLowerCase() !== "custom workout" ? suppliedName : smartName;
   const groupIds = [...new Set(exercises.map((e) => e.groupId).filter(Boolean))] as string[];
@@ -80,7 +80,7 @@ export function createActiveWorkout(items: WorkoutExercise[], customName?: strin
     id: `workout-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now()}`,
     name,
     startedAt: Date.now(),
-    currentKey: first.key,
+    currentKey: first?.key ?? "",
     ...(notes.length ? { notes } : {}),
     exerciseGroups: groupIds.map((id) => { const members=exercises.filter((e)=>e.groupId===id); return { id, memberKeys:members.map((e)=>e.key), restSeconds:members[0]?.groupRestSeconds ?? 90 }; }),
     circuits: circuitIds.map((id) => { const members=exercises.filter((e)=>e.circuitId===id); return { id, workSeconds:members[0]?.circuitWorkSeconds ?? 300, restSeconds:members[0]?.circuitRestSeconds ?? 90, rounds:members[0]?.circuitRounds ?? 3, reps:Object.fromEntries(members.map((e)=>[e.key,e.circuitReps ?? 10])) }; }),
