@@ -1,3 +1,4 @@
+import { withoutNotes } from "@/data/exercises";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CalendarPlus, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -29,7 +30,7 @@ function SavedWorkoutPage() {
   const [editing, setEditing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  const estimate = item ? workoutTimeEstimate(item.exercises) : null;
+  const estimate = item ? workoutTimeEstimate(withoutNotes(item.exercises)) : null;
   if (!data) return <Screen>{null}</Screen>;
   if (!item) return <Screen><PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title="Workout not found" /></Screen>;
   if (editing) return <Screen><PlanEditor initial={item.exercises} initialName={item.name} onCancel={() => setEditing(false)} onSave={(name, exercises) => { saveWorkout({ ...item, name, exercises }); setEditing(false); toast.success("Workout updated"); }} /></Screen>;
@@ -39,10 +40,10 @@ function SavedWorkoutPage() {
     handOffWorkout({ name: item.name, exercises: item.exercises.map((e) => structuredClone(e)), sourceSavedId: item.id }); void navigate({ to: "/workout" });
   };
   return <Screen>
-    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={<>{item.exercises.length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</>} />
+    <PlanHeader back={<BackLink to="/saved" label="Back to saved workouts" />} title={item.name} subtitle={<>{withoutNotes(item.exercises).length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</>} />
     <ExerciseList exercises={item.exercises} />
     <div className="mt-4 space-y-2">
-      <Button variant="primary" size="xl" className="w-full" disabled={!item.exercises.length} onClick={start}>Start workout</Button>
+      <Button variant="primary" size="xl" className="w-full" disabled={!withoutNotes(item.exercises).length} onClick={start}>Start workout</Button>
       <div className="grid grid-cols-2 gap-2">
         <Button variant="surface" onClick={() => setScheduling(true)}><CalendarPlus />Schedule</Button>
         <Button variant="surface" onClick={() => setEditing(true)}><Pencil />Edit</Button>

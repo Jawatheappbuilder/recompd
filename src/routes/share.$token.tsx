@@ -1,3 +1,4 @@
+import { withoutNotes } from "@/data/exercises";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CalendarPlus, Check, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -61,7 +62,7 @@ function SharedWorkoutPage() {
   if (shared === undefined) return <Screen><div className="grid h-[60dvh] place-items-center text-muted-foreground"><Loader2 className="size-5 animate-spin" /></div></Screen>;
   if (!shared) return <Screen><PlanHeader title="Workout not found" subtitle="This link may have expired." /><Button asChild variant="surface" className="w-full"><Link to="/">Go to RECOMP'D</Link></Button></Screen>;
 
-  const sets = shared.exercises.reduce((sum, e) => sum + (e.tracking === "cardio" ? 1 : e.sets), 0);
+  const sets = withoutNotes(shared.exercises).reduce((sum, e) => sum + (e.tracking === "cardio" ? 1 : e.sets), 0);
   const start = () => {
     if (hasActiveWorkout()) { toast("Finish your current workout first"); void navigate({ to: "/workout" }); return; }
     handOffWorkout({ name: shared.name, exercises: shared.exercises.map((e) => structuredClone(e)) }); void navigate({ to: "/workout" });
@@ -69,7 +70,7 @@ function SharedWorkoutPage() {
 
   return <Screen>
     <p className="mb-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-primary">Shared workout</p>
-    <PlanHeader title={shared.name} subtitle={`${shared.exercises.length} exercises · ${sets} sets`} />
+    <PlanHeader title={shared.name} subtitle={`${withoutNotes(shared.exercises).length} exercises · ${sets} sets`} />
     <ExerciseList exercises={shared.exercises} />
     <div className="mt-4 space-y-2">
       {!importedId ? <Button variant="primary" size="xl" className="w-full" onClick={add}>Add to RECOMP'D</Button> : <>

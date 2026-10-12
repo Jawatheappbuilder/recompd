@@ -20,6 +20,7 @@ export const deleteSavedWorkout = (id: string) => mutate({ kind: "deleteSaved", 
 export const defaultWorkoutName = (exercises: WorkoutExercise[]) => {
   const counts = new Map<string, number>();
   for (const exercise of exercises) {
+    if (exercise.note) continue;
     const muscles = exercise.muscles?.length ? exercise.muscles : [exercise.muscle];
     for (const muscle of muscles) counts.set(muscle, (counts.get(muscle) ?? 0) + 1);
   }
