@@ -131,6 +131,19 @@ export function useActiveWorkout() {
     setHydrated(true);
   }, []);
 
+  useEffect(() => {
+    const syncNewWorkout = () => {
+      try {
+        const saved = localStorage.getItem(ACTIVE_WORKOUT_KEY);
+        setWorkoutState(saved ? JSON.parse(saved) as ActiveWorkoutState : null);
+      } catch {
+        setWorkoutState(null);
+      }
+    };
+    window.addEventListener("recomp-active-workout-updated", syncNewWorkout);
+    return () => window.removeEventListener("recomp-active-workout-updated", syncNewWorkout);
+  }, []);
+
   const setWorkout = useCallback((next: ActiveWorkoutState | null | ((current: ActiveWorkoutState | null) => ActiveWorkoutState | null)) => {
     setWorkoutState((current) => {
       const value = typeof next === "function" ? next(current) : next;
