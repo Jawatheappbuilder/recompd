@@ -185,7 +185,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const completedSets = workout.exercises.reduce((sum, exercise) => sum + exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length, 0);
   const strengthSets = workout.exercises.reduce((sum, exercise) => sum + (isCardioExercise(exercise) ? 0 : exercise.sessionSets.filter((set) => set.completed && set.kind !== "warmup").length), 0);
   const progress = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
-  const allExercisesCompleted = workout.exercises.length > 0 && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
+  const allExercisesCompleted = (workout.exercises.length > 0 || (workout.notes?.length ?? 0) > 0) && workout.exercises.every((exercise) => exercise.sessionSets.length > 0 && exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed));
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
 
   useEffect(() => {
@@ -342,7 +342,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       return unpaired;
     });
     const currentKey = workout.currentKey === removeKey ? remaining.find((exercise) => !exercise.sessionSets.filter((set) => set.kind !== "warmup").every((set) => set.completed))?.key ?? remaining[0]?.key ?? "" : workout.currentKey;
-    onChange({ ...workout, currentKey, exercises: remaining });
+    onChange({ ...workout, currentKey, exercises: remaining, notes: (workout.notes ?? []).map((note) => note.afterKey === removeKey ? { ...note, afterKey: workout.exercises[workout.exercises.findIndex((e) => e.key === removeKey) - 1]?.key ?? null } : note) });
     setRemoveKey(null);
   };
 
@@ -362,7 +362,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
   const finishWorkout = () => {
     const finishedWorkout = !workout.name.trim() || workout.name.trim().toLowerCase() === "custom workout"
-      ? { ...workout, name: defaultWorkoutName(workout.exercises) }
+      ? { ...workout, name: workout.exercises.length ? defaultWorkoutName(workout.exercises) : (workout.notes?.[0]?.title || "Mobility & Notes") }
       : workout;
     const result: FinishedWorkout = {
       workout: finishedWorkout,
@@ -474,7 +474,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       </AlertDialog>
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} duration={rest.duration} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
-      <NoteSheet open={noteSheet !== null} initial={noteSheet?.key ? (workout.notes ?? []).find((n) => n.key === noteSheet.key) : undefined} onOpenChange={(open) => { if (!open) setNoteSheet(null); }} onSave={(note) => { if (!noteSheet) return; if (noteSheet.key) patchNote(noteSheet.key, (existing) => ({ ...existing, ...note })); else onChange({ ...workout, notes: [...(workout.notes ?? []), { ...note, key: newId(), afterKey: workout.exercises.at(-1)?.key ?? null, checked: [] }] }); setNoteSheet(null); }} />
+      <NoteSheet open={noteSheet !== null} initial={noteSheet?.key ? (workout.notes ?? []).find((n) => n.key === noteSheet.key) : undefined} onOpenChange={(open) => { if (!open) setNoteSheet(null); }} onSave={(note) => { if (!noteSheet) return; if (noteSheet.key) patchNote(noteSheet.key, (existing) => ({ ...existing, ...note, checked: existing.checked.filter((id) => note.checklist.some((row) => row.id === id)) })); else onChange({ ...workout, notes: [...(workout.notes ?? []), { ...note, key: newId(), afterKey: workout.exercises.at(-1)?.key ?? null, checked: [] }] }); setNoteSheet(null); }} />
       <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys,restSeconds}], exercises:workout.exercises.map((e)=>memberKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); setRestApply({ key, seconds }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
@@ -822,7 +822,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     setSharingToFeed(true);
     try {
       if (sharedToFeed) { await unshareWorkoutFromSocial(user.id, shareWorkout.id); setSharedToFeed(false); toast.success("Removed from your feed"); }
-      else { await shareWorkoutToSocial(user.id, shareWorkout, sharePrs.length); setSharedToFeed(true); toast.success("Shared to your feed"); }
+      else { await shareWorkoutToSocial(user.id, { ...shareWorkout, notes: [] }, sharePrs.length); setSharedToFeed(true); toast.success("Shared to your feed"); }
     } catch { toast.error("Couldn't update Social sharing"); }
     finally { setSharingToFeed(false); }
   }
@@ -851,7 +851,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
 
     <div className="mt-4 grid grid-cols-2 gap-2">
       <SummaryMetric label="Duration" value={formatDuration(result.duration)} />
-      <SummaryMetric label="Exercises" value={`${result.completedExercises} of ${result.workout.exercises.length}`} />
+      <SummaryMetric label={result.workout.exercises.length ? "Exercises" : "Activities"} value={result.workout.exercises.length ? `${result.completedExercises} of ${result.workout.exercises.length}` : `${result.workout.notes?.reduce((n, note) => n + note.checked.length, 0) ?? 0} of ${result.workout.notes?.reduce((n, note) => n + note.checklist.length, 0) ?? 0}`} />
       <SummaryMetric label="Sets" value={String(result.totalSets)} />
       <SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} />
     </div>
@@ -900,7 +900,12 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
         })}
       </div>
     </section>}
-    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={shareWorkout} prs={sharePrs} className="mt-5 w-full" />}
+    {(result.workout.notes?.length ?? 0) > 0 && <section className="mt-6 space-y-2">
+      <h2 className="text-base font-black">Notes & activities</h2>
+      {result.workout.notes?.map((note) => <NoteCard key={note.key} note={note} checked={note.checked} defaultCollapsed={false} />)}
+      <p className="text-xs text-muted-foreground">{result.workout.notes?.reduce((count, note) => count + note.checked.filter((id) => note.checklist.some((item) => item.id === id)).length, 0)} of {result.workout.notes?.reduce((count, note) => count + note.checklist.length, 0)} checklist activities completed</p>
+    </section>}
+    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={includeNotesInShare ? shareWorkout : { ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
   </div>;
 }
 

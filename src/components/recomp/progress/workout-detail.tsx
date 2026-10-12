@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { BookmarkPlus, Link2, Minus, Pencil, Plus, Timer, Trash2, Trophy, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
+import { createNoteItem, exercises, toWorkoutExercise, type Exercise } from "@/data/exercises";
 import { saveWorkout } from "@/lib/workout-storage";
 import { ShareLinkButton } from "../share-link-button";
 import {
@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { deleteWorkout, formatDuration, formatLongDay, formatPerformance, formatSet, isCardioSet, setCount, updateWorkout, volumeOf, type CompletedSet, type CompletedWorkout } from "@/lib/training-data";
+import { NoteCard } from "../note-card";
 import { ShareWorkoutButton } from "../share-workout";
 import { useAuth } from "../auth-context";
 import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
@@ -32,7 +33,7 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
     setSharingSocial(true);
     try {
       if (sharedToSocial) { await unshareWorkoutFromSocial(user.id, workout.id); setSharedToSocial(false); toast.success("Removed from friends feed"); }
-      else { await shareWorkoutToSocial(user.id, workout, prs.length); setSharedToSocial(true); toast.success("Shared with friends"); }
+      else { await shareWorkoutToSocial(user.id, { ...workout, notes: [] }, prs.length); setSharedToSocial(true); toast.success("Shared with friends"); }
     } catch { toast.error("Couldn't update Social sharing"); }
     finally { setSharingSocial(false); }
   }
@@ -52,8 +53,15 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
     return { ...plan, key: item.key || crypto.randomUUID(), sets: item.sets.length || plan.sets, ...(item.supersetWith ? { supersetWith: item.supersetWith } : {}), ...(item.groupId ? { groupId: item.groupId, groupRestSeconds: item.groupRestSeconds } : {}), ...(item.circuitId ? { circuitId: item.circuitId, circuitWorkSeconds: item.circuitWorkSeconds, circuitRestSeconds: item.circuitRestSeconds, circuitRounds: item.circuitRounds, circuitReps: item.circuitReps } : {}) };
   });
   const saveTemplate = () => {
-    if (!workout.exercises.length) { toast.error("No exercises to save"); return; }
-    saveWorkout({ id: crypto.randomUUID(), name: workout.name, exercises: templateExercises(), createdAt: Date.now() });
+    const template = templateExercises();
+    const notes = workout.notes ?? [];
+    for (const note of notes) {
+      const item = createNoteItem({ title: note.title, body: note.body, checklist: note.checklist.map((c) => ({ ...c })) });
+      const at = note.afterKey === null ? 0 : template.findIndex((e) => e.key === note.afterKey) + 1;
+      template.splice(at >= 0 ? at : template.length, 0, item);
+    }
+    if (!template.length) { toast.error("Nothing to save"); return; }
+    saveWorkout({ id: crypto.randomUUID(), name: workout.name, exercises: template, createdAt: Date.now() });
     toast.success("Saved to your workouts");
   };
   const saveName = () => {
@@ -95,11 +103,12 @@ export function WorkoutDetail({ workout, prs }: { workout: CompletedWorkout; prs
           );
         })}
       </div>
+      {(workout.notes?.length ?? 0) > 0 && <section className="mt-4 space-y-2"><h2 className="text-sm font-extrabold">Notes & activities</h2>{workout.notes?.map((note) => <NoteCard key={note.key} note={note} checked={note.checked} />)}</section>}
       {user && <Button variant={sharedToSocial ? "primary" : "surface"} className="mt-4 w-full" disabled={sharedToSocial === null || sharingSocial} onClick={() => void toggleSocialShare()}><Users />{sharingSocial ? "Updating..." : sharedToSocial ? "Shared with friends" : "Share with friends"}</Button>}
       {sharedToSocial && <p className="mt-1.5 text-center text-[0.7rem] text-muted-foreground">Only accepted RECOMP'D friends can see this workout summary.</p>}
       <Button variant="surface" className="mt-3 w-full" onClick={saveTemplate}><BookmarkPlus />Save as template</Button>
-      <ShareLinkButton name={workout.name} exercises={templateExercises()} className="mt-2 w-full" />
-      <ShareWorkoutButton workout={workout} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
+      <ShareLinkButton name={workout.name} exercises={[...templateExercises(), ...(workout.notes ?? []).map((note) => createNoteItem(note))]} className="mt-2 w-full" />
+      <ShareWorkoutButton workout={includeNotes ? workout : { ...workout, notes: [] }} prs={prs} variant="surface" size="default" className="mt-4 w-full" />
       <Button variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 />Delete workout</Button>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

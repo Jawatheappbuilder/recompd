@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronUp, GripVertical, NotebookPen, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useMemo, useState, type HTMLAttributes } from "react";
+import { useEffect, useMemo, useState, type HTMLAttributes } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -23,7 +23,7 @@ export function useNoteLibrary() {
     };
     for (const s of data?.saved ?? []) s.exercises.forEach((e) => add(e.note));
     for (const s of data?.scheduled ?? []) s.exercises.forEach((e) => add(e.note));
-    for (const w of data?.workouts ?? []) (w.notes ?? []).forEach(add);
+    // Session-only notes are private and should not silently become reusable templates.
     presets.forEach(add);
     return out;
   }, [data]);
@@ -59,7 +59,7 @@ export function NoteCard({ note, checked, onToggleCheck, onEdit, onDelete, handl
               <span className={cn("grid size-5 shrink-0 place-items-center rounded-md border", on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}>{on && <Check className="size-3.5" />}</span>
               <span className={cn("min-w-0 break-words", on && "text-muted-foreground line-through")}>{item.text}</span>
             </button>
-          : <span className="flex items-center gap-2 text-sm"><span className="size-1.5 shrink-0 rounded-full bg-primary/60" /><span className="min-w-0 break-words">{item.text}</span></span>}</li>;
+          : <span className="flex items-center gap-2 text-sm"><span className={cn("grid size-5 shrink-0 place-items-center rounded-md border", on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary")}>{on && <Check className="size-3.5" />}</span><span className={cn("min-w-0 break-words", on && "text-muted-foreground line-through")}>{item.text}</span></span>}</li>;
       })}</ul>}
     </div>}
   </Card>;
@@ -82,6 +82,7 @@ export function NoteSheet({ open, initial, onOpenChange, onSave }: { open: boole
 function NoteForm({ initial, onSave }: { initial?: WorkoutNote | undefined; onSave: (note: WorkoutNote) => void }) {
   const [note, setNote] = useState<WorkoutNote>(() => initial ? structuredClone(initial) : blank());
   const library = useNoteLibrary();
+  useEffect(() => { setNote(initial ? structuredClone(initial) : blank()); }, [initial]);
   const field = "w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary";
   const setRow = (id: string, text: string) => setNote((n) => ({ ...n, checklist: n.checklist.map((c) => c.id === id ? { ...c, text } : c) }));
   const save = () => onSave({ title: note.title.trim() || "Note", body: note.body.trim(), checklist: note.checklist.filter((c) => c.text.trim()).map((c) => ({ ...c, text: c.text.trim() })) });
