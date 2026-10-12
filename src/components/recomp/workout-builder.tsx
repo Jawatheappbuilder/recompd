@@ -101,7 +101,7 @@ function ManualMode() {
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const estimate = workoutTimeEstimate(workout);
-  const start = () => { handOffWorkout({ name: finalName, exercises: workout }); clearDraft(); void navigate({ to: "/workout" }); };
+  const start = () => { if (!handOffWorkout({ name: finalName, exercises: workout })) { toast.error("Could not start workout. Please check your exercises."); return; } clearDraft(); void navigate({ to: "/workout" }); };
   const save = () => {
     const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
     saveWorkout(entry); setSavedId(entry.id); clearDraft(); toast.success("Workout saved");
