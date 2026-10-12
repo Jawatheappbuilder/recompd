@@ -114,8 +114,13 @@ for (const [name, cardioMetrics] of cardio) {
 }
 export const exercises = [...byId.values()];
 
-export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number | undefined; supersetWith?: string | undefined; targetDurationSeconds?: number | undefined; groupId?: string | undefined; groupRestSeconds?: number | undefined; circuitId?: string | undefined; circuitWorkSeconds?: number | undefined; circuitRestSeconds?: number | undefined; circuitRounds?: number | undefined; circuitReps?: number | undefined };
+export type WorkoutExercise = Exercise & { key: string; sets: number; reps: string; restSeconds?: number | undefined; supersetWith?: string | undefined; targetDurationSeconds?: number | undefined; groupId?: string | undefined; groupRestSeconds?: number | undefined; circuitId?: string | undefined; circuitWorkSeconds?: number | undefined; circuitRestSeconds?: number | undefined; circuitRounds?: number | undefined; circuitReps?: number | undefined; note?: WorkoutNote | undefined };
+/** Free-text note card (instructions, physio/mobility routines). Never counted as an exercise. */
+export type WorkoutNote = { title: string; body: string; checklist: { id: string; text: string }[] };
+export const isNoteItem = (item: { note?: unknown }) => !!item.note;
+export const withoutNotes = <T extends { note?: unknown }>(items: T[]) => items.filter((item) => !item.note);
 let seq = 0;
+export const createNoteItem = (note: WorkoutNote): WorkoutExercise => ({ id: "__note__", name: note.title || "Note", muscle: "Core", muscles: [], equipment: "Bodyweight", type: "Isolation", tracking: "strength", key: `note-${Date.now().toString(36)}-${seq++}`, sets: 0, reps: "", note });
 const preferredDefaults = () => {
   if (typeof window === "undefined") return { restSeconds: 90, reps: "8–12" };
   try {

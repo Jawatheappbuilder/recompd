@@ -1,3 +1,4 @@
+import { withoutNotes } from "@/data/exercises";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { workoutGroups } from "@/lib/workout-groups";
 import { CalendarDays, ChevronRight } from "lucide-react";
@@ -18,7 +19,7 @@ export function TodayWorkoutCard({ workout }: { workout: ScheduledWorkout }) {
       <div className="min-w-0">
         <div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Today's workout{workout.time ? ` · ${formatScheduleDate(workout.date, workout.time).split(" · ")[1]}` : ""}</div>
         <div className="mt-1 truncate text-lg font-extrabold">{workout.name}</div>
-        <div className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.exercises.length} exercises</div><div className="mt-1 flex flex-wrap gap-1">{workoutGroups(workout.exercises).map(({label}) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.56rem] font-black tracking-wide text-primary">{label}</span>)}</div>
+        <div className="mt-0.5 text-xs font-semibold text-muted-foreground">{withoutNotes(workout.exercises).length} exercises</div><div className="mt-1 flex flex-wrap gap-1">{workoutGroups(workout.exercises).map(({label}) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.56rem] font-black tracking-wide text-primary">{label}</span>)}</div>
       </div>
       <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
     </Link>
@@ -33,7 +34,7 @@ export function UpcomingWorkoutCard({ workout, className }: { workout: Scheduled
       <div className="min-w-0 flex-1">
         <div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-muted-foreground">{workout.date === localDateKey() ? "Today" : "Upcoming"}</div>
         <div className="truncate text-sm font-extrabold">{workout.name}</div>
-        <div className="truncate text-[0.7rem] font-semibold text-muted-foreground">{formatScheduleDate(workout.date, workout.time)} · {workout.exercises.length} exercises</div><div className="mt-1 flex flex-wrap gap-1">{workoutGroups(workout.exercises).map(({label}) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.56rem] font-black tracking-wide text-primary">{label}</span>)}</div>
+        <div className="truncate text-[0.7rem] font-semibold text-muted-foreground">{formatScheduleDate(workout.date, workout.time)} · {withoutNotes(workout.exercises).length} exercises</div><div className="mt-1 flex flex-wrap gap-1">{workoutGroups(workout.exercises).map(({label}) => <span key={label} className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.56rem] font-black tracking-wide text-primary">{label}</span>)}</div>
       </div>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </Card>
