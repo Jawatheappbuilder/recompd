@@ -93,6 +93,7 @@ function ManualMode() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const saved = useSavedWorkouts();
   const [savedId, setSavedId] = useState<string | null>(() => draft.savedId ?? null);
+  const [builderRevision, setBuilderRevision] = useState(0);
   const training = useTrainingData();
   const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
   const [suggestedMuscle, setSuggestedMuscle] = useState<Muscle | null>(null);
@@ -101,7 +102,7 @@ function ManualMode() {
 
   const finalName = name.trim() || defaultWorkoutName(workout);
   const estimate = workoutTimeEstimate(workout);
-  const start = () => { handOffWorkout({ name: finalName, exercises: workout }); clearDraft(); void navigate({ to: "/workout" }); };
+  const start = () => { if (!handOffWorkout({ name: finalName, exercises: workout })) { toast.error("Could not start workout. Please check your exercises."); return; } clearDraft(); void navigate({ to: "/workout" }); };
   const save = () => {
     const entry = { id: savedId ?? `saved-${newId()}`, name: finalName, exercises: workout, createdAt: Date.now() };
     saveWorkout(entry); setSavedId(entry.id); clearDraft(); toast.success("Workout saved");
@@ -114,7 +115,11 @@ function ManualMode() {
     setSavedId(null);
     setSuggestedMuscle(null);
     setPickerOpen(false);
-    patchDraft({ name: "", workout: [], savedId: null });
+    // Reset both the persisted draft and any editor-local group/drawer state.
+    // Keeping a draft while switching tabs must not resurrect cleared exercises.
+    clearDraft();
+    patchDraft({ mode: "manual", name: "", workout: [], savedId: null });
+    setBuilderRevision((revision) => revision + 1);
     toast.success("Workout cleared");
   };
 
@@ -128,7 +133,7 @@ function ManualMode() {
       <span className="flex items-center gap-2 font-display text-xl font-extrabold uppercase tracking-wide"><Plus className="size-5" />Add exercise</span>
     </button>}
     <div>
-      <WorkoutEditor supersets workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={(open) => { setPickerOpen(open); if (!open) setSuggestedMuscle(null); }} initialPickerMuscle={suggestedMuscle} />
+      <WorkoutEditor key={builderRevision} supersets workout={workout} setWorkout={setWorkout} pickerOpen={pickerOpen} onPickerOpenChange={(open) => { setPickerOpen(open); if (!open) setSuggestedMuscle(null); }} initialPickerMuscle={suggestedMuscle} />
     </div>
     {workout.length > 0 && <div className="space-y-2">
       <Button variant="primary" size="xl" className="w-full" onClick={start}>Start workout</Button>

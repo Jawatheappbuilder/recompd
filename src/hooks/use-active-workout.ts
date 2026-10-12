@@ -58,7 +58,7 @@ export function createActiveWorkout(items: WorkoutExercise[], customName?: strin
     if (item.note) notes.push({ title: item.note.title, body: item.note.body, checklist: item.note.checklist.map((c) => ({ ...c })), key: item.key, afterKey: lastKey, checked: [] });
     else lastKey = item.key;
   }
-  const exercises = items.filter((item) => !item.note);
+  // A workout handoff is the sole source of exercises for this session. Reused\n  // template rows with the same key must not be mounted twice.\n  const seenKeys = new Set<string>();\n  const exercises = items.filter((item) => {\n    if (item.note || seenKeys.has(item.key)) return false;\n    seenKeys.add(item.key);\n    return true;\n  });
   const first = exercises[0];
   if (!first && !notes.length) return null;
   const counts = new Map<string, number>();
@@ -129,6 +129,19 @@ export function useActiveWorkout() {
       localStorage.removeItem(ACTIVE_WORKOUT_KEY);
     }
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const syncNewWorkout = () => {
+      try {
+        const saved = localStorage.getItem(ACTIVE_WORKOUT_KEY);
+        setWorkoutState(saved ? JSON.parse(saved) as ActiveWorkoutState : null);
+      } catch {
+        setWorkoutState(null);
+      }
+    };
+    window.addEventListener("recomp-active-workout-updated", syncNewWorkout);
+    return () => window.removeEventListener("recomp-active-workout-updated", syncNewWorkout);
   }, []);
 
   const setWorkout = useCallback((next: ActiveWorkoutState | null | ((current: ActiveWorkoutState | null) => ActiveWorkoutState | null)) => {
