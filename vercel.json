@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "feat/progress-muscle-coverage-balance": false
+      "feat/progress-muscle-coverage-balance": true
     }
   }
 }

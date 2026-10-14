@@ -73,9 +73,9 @@ npx eslint src/lib/training-analysis.ts src/components/recomp/progress/training-
 npm run build
 ```
 
-`vercel.json` disables automatic deployments only for
-`feat/progress-muscle-coverage-balance`, to honour the PR-only request. Other
-branches retain Vercel's default deployment behaviour.
+`vercel.json` enables automatic preview deployments for
+`feat/progress-muscle-coverage-balance`, following approval to preview PR #115.
+The PR stays unmerged. Other branches retain Vercel's default deployment behaviour.
 
 Mobile smoke checks: explore the app's demo, open Progress, switch all four periods,
 tap a compound-trained muscle and a zero-work muscle, open/close the explanation,
