@@ -905,7 +905,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       {result.workout.notes?.map((note) => <NoteCard key={note.key} note={note} checked={note.checked} defaultCollapsed={false} />)}
       <p className="text-xs text-muted-foreground">{result.workout.notes?.reduce((count, note) => count + note.checked.filter((id) => note.checklist.some((item) => item.id === id)).length, 0)} of {result.workout.notes?.reduce((count, note) => count + note.checklist.length, 0)} checklist activities completed</p>
     </section>}
-    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={includeNotesInShare ? shareWorkout : { ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
+    {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={{ ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
   </div>;
 }
 
