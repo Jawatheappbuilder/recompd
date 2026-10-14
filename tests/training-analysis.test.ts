@@ -4,6 +4,7 @@ import {
   analyseTraining,
   contributionMuscles,
   coverageStatus,
+  balanceSummary,
   WEEKLY_MUSCLE_TARGETS,
 } from "../src/lib/training-analysis.ts";
 import type { CompletedExercise, CompletedSet, CompletedWorkout } from "../src/lib/training-data";
@@ -92,15 +93,14 @@ test("tiny below-target gaps stay quiet while clearly undertrained muscles still
   assert.equal(row(result, "Back").weeklySets, 9.75);
   assert.equal(row(result, "Back").status, "Near target");
   assert.equal(row(result, "Calves").status, "Lightly trained");
-  assert.equal(result.insight.title, "Calves could use more attention");
+  assert.deepEqual(result.insight.focusMuscles, ["Calves"]);
   const almostAll = history.map((item) =>
     item.muscles[0] === "Calves"
       ? { ...item, sets: Array.from({ length: 16 }, () => working) }
       : item,
   );
   const near = analyseTraining([workout(almostAll)], FROM, NOW);
-  assert.equal(near.insight.title, "Coverage across every muscle");
-  assert.match(near.insight.body, /within or close/);
+  assert.deepEqual(near.insight.focusMuscles, []);
   assert.deepEqual(row(near, "Back").target, { min: 10, max: 16 });
 });
 
@@ -263,6 +263,7 @@ test("balance excludes core, lower-body push/pull, and classifies rear-delt pull
   assert.equal(result.pushPull.firstPercent, 50);
   assert.equal(result.pushPull.secondPercent, 50);
   assert.equal(result.upperLower.firstPercent! + result.upperLower.secondPercent!, 100);
+  assert.match(balanceSummary(result.upperLower), /mostly on upper body/);
 });
 
 test("empty and core-only histories keep ten zero/appropriate rows, with no invented percentages", () => {
@@ -271,31 +272,35 @@ test("empty and core-only histories keep ten zero/appropriate rows, with no inve
   assert.ok(empty.coverage.every((item) => item.status === "Not trained"));
   assert.equal(empty.pushPull.firstPercent, null);
   assert.equal(empty.upperLower.firstPercent, null);
-  assert.equal(empty.insight.title, "Your coverage starts here");
+  assert.deepEqual(empty.insight.focusMuscles, []);
+  assert.match(empty.insight.message, /Complete a strength workout/);
+  assert.match(balanceSummary(empty.upperLower), /No.*training recorded/);
   const core = analyseTraining([workout([exercise("plank", ["Core"], 4)])], FROM, NOW);
   assert.equal(core.upperLower.firstPercent, null);
   assert.equal(core.pushPull.firstPercent, null);
+  assert.match(balanceSummary(core.upperLower), /No.*training recorded/);
 });
 
-test("insight reflects below-target coverage, above-target volume and full coverage", () => {
+test("insight prioritises undertrained muscles and keeps higher volume neutral", () => {
   const all = Object.entries(WEEKLY_MUSCLE_TARGETS.muscle).map(([muscle, target]) =>
     exercise(`custom-${muscle}`, [muscle as Muscle], target.min * 4),
   );
-  assert.equal(
-    analyseTraining([workout(all)], FROM, NOW).insight.title,
-    "Coverage across every muscle",
-  );
+  const covered = analyseTraining([workout(all)], FROM, NOW);
+  assert.deepEqual(covered.insight.focusMuscles, []);
   const high = all.map((item) =>
     item.muscles[0] === "Chest"
       ? { ...item, sets: Array.from({ length: 60 }, () => working) }
       : item,
   );
-  assert.equal(analyseTraining([workout(high)], FROM, NOW).insight.title, "Chest above range");
+  const higher = analyseTraining([workout(high)], FROM, NOW);
+  assert.equal(row(higher, "Chest").status, "Above target");
+  assert.deepEqual(higher.insight.focusMuscles, []);
+  assert.equal(higher.insight.message, covered.insight.message);
   const missingLegs = all.filter((item) => !["Hamstrings", "Glutes"].includes(item.muscles[0]!));
-  assert.equal(
-    analyseTraining([workout(missingLegs)], FROM, NOW).insight.title,
-    "Hamstrings and Glutes could use more attention",
-  );
+  assert.deepEqual(analyseTraining([workout(missingLegs)], FROM, NOW).insight.focusMuscles, [
+    "Hamstrings",
+    "Glutes",
+  ]);
 });
 
 test("analysis never mutates completed history or configured targets", () => {

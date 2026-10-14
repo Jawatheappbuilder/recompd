@@ -15,6 +15,7 @@ import { SectionHeading } from "@/components/recomp/core";
 import { formatDay } from "@/lib/training-data";
 import {
   MUSCLE_COLOURS,
+  balanceSummary,
   formatEffectiveSets,
   type BalanceSplit,
   type CoverageStatus,
@@ -31,10 +32,14 @@ const statusStyles: Record<CoverageStatus, string> = {
   "Above target": "text-sky-700 dark:text-sky-300",
 };
 
-function CoverageBar({ row }: { row: MuscleCoverage }) {
+function coverageLabel(status: CoverageStatus) {
+  return status === "Above target" ? "Higher volume" : status;
+}
+
+function CoverageBar({ row, detailed = false }: { row: MuscleCoverage; detailed?: boolean }) {
   const colour = MUSCLE_COLOURS[row.muscle];
-  // A little headroom makes above-target work visible; every muscle has its own scale.
-  const scale = row.target.max * 1.25;
+  // Overview = coverage of this muscle's minimum, capped at full. Detail retains headroom.
+  const scale = detailed ? row.target.max * 1.25 : row.target.min;
   const fill = Math.min((row.weeklySets / scale) * 100, 100);
   const min = (row.target.min / scale) * 100;
   const max = (row.target.max / scale) * 100;
@@ -46,36 +51,48 @@ function CoverageBar({ row }: { row: MuscleCoverage }) {
       aria-valuemin={0}
       aria-valuemax={scale}
       aria-valuenow={Math.min(row.weeklySets, scale)}
-      aria-valuetext={`${formatEffectiveSets(row.weeklySets)} effective sets per week; suggested range ${row.target.min} to ${row.target.max}; ${row.status}`}
+      aria-valuetext={
+        detailed
+          ? `${formatEffectiveSets(row.weeklySets)} effective sets per week; suggested range ${row.target.min} to ${row.target.max}; ${coverageLabel(row.status)}`
+          : coverageLabel(row.status)
+      }
       className="relative block h-2.5 rounded-full bg-track/50"
     >
-      <span
-        aria-hidden
-        className="absolute -inset-y-1 rounded-sm"
-        style={{
-          left: `${min}%`,
-          width: `${max - min}%`,
-          backgroundColor: `color-mix(in srgb, ${colour} 20%, transparent)`,
-        }}
-      />
+      {detailed && (
+        <span
+          aria-hidden
+          className="absolute -inset-y-1 rounded-sm"
+          style={{
+            left: `${min}%`,
+            width: `${max - min}%`,
+            backgroundColor: `color-mix(in srgb, ${colour} 20%, transparent)`,
+          }}
+        />
+      )}
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 motion-reduce:transition-none"
         style={{
           width: `${fill}%`,
-          background: `linear-gradient(to right, ${colour} ${directShare}%, color-mix(in srgb, ${colour} 55%, var(--card)) ${directShare}%)`,
+          background: detailed
+            ? `linear-gradient(to right, ${colour} ${directShare}%, color-mix(in srgb, ${colour} 55%, var(--card)) ${directShare}%)`
+            : colour,
         }}
       />
-      <span
-        aria-hidden
-        className="absolute -inset-y-0.5 w-px bg-foreground/25"
-        style={{ left: `${min}%` }}
-      />
-      <span
-        aria-hidden
-        className="absolute -inset-y-0.5 w-px bg-foreground/25"
-        style={{ left: `${max}%` }}
-      />
+      {detailed && (
+        <>
+          <span
+            aria-hidden
+            className="absolute -inset-y-0.5 w-px bg-foreground/25"
+            style={{ left: `${min}%` }}
+          />
+          <span
+            aria-hidden
+            className="absolute -inset-y-0.5 w-px bg-foreground/25"
+            style={{ left: `${max}%` }}
+          />
+        </>
+      )}
     </span>
   );
 }
@@ -89,6 +106,7 @@ export function TrainingAnalysisSection({
 }) {
   const [selectedMuscle, setSelectedMuscle] = useState<Muscle | null>(null);
   const [showMethod, setShowMethod] = useState(false);
+  const [showBalance, setShowBalance] = useState(false);
   const opener = useRef<HTMLButtonElement | null>(null);
   // Derive the selected row again on a period/goal/history change; never retain stale totals.
   const selected = analysis.coverage.find((row) => row.muscle === selectedMuscle);
@@ -100,9 +118,7 @@ export function TrainingAnalysisSection({
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="text-sm font-extrabold">Muscle coverage</h3>
-              <p className="mt-1 text-[0.65rem] text-muted-foreground">
-                Weekly averages · {periodLabel.toLowerCase()}
-              </p>
+              <p className="mt-1 text-[0.65rem] text-muted-foreground">{periodLabel}</p>
             </div>
             <button
               type="button"
@@ -121,13 +137,13 @@ export function TrainingAnalysisSection({
               <button
                 key={row.muscle}
                 type="button"
-                aria-label={`${row.muscle}: ${row.status}. View exercise contributions`}
+                aria-label={`${row.muscle}: ${coverageLabel(row.status)}. View details`}
                 aria-haspopup="dialog"
                 onClick={(event) => {
                   opener.current = event.currentTarget;
                   setSelectedMuscle(row.muscle);
                 }}
-                className="grid min-h-11 w-full grid-cols-[6rem_minmax(0,1fr)_2.7rem_auto] items-center gap-2 rounded-lg py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid min-h-11 w-full grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 text-[0.7rem] font-bold">
@@ -138,7 +154,7 @@ export function TrainingAnalysisSection({
                     />
                     {row.muscle}
                   </span>
-                  {row.status !== "Well trained" && row.status !== "Near target" && (
+                  {(row.status === "Lightly trained" || row.status === "Not trained") && (
                     <span
                       className={cn(
                         "mt-0.5 block text-[0.59rem] font-semibold",
@@ -152,9 +168,6 @@ export function TrainingAnalysisSection({
                 <span className="min-w-0">
                   <CoverageBar row={row} />
                 </span>
-                <span className="text-right text-sm font-extrabold tabular-nums">
-                  {formatEffectiveSets(row.weeklySets)}
-                </span>
                 <ChevronRight aria-hidden className="size-3 text-muted-foreground/60" />
               </button>
             ))}
@@ -163,19 +176,23 @@ export function TrainingAnalysisSection({
       </div>
       <div>
         <SectionHeading>Training balance</SectionHeading>
-        <div className="grid grid-cols-2 gap-2.5">
-          <BalanceCard
-            split={analysis.upperLower}
-            colours={[MUSCLE_COLOURS.Back, MUSCLE_COLOURS.Triceps]}
-          />
-          <BalanceCard
-            split={analysis.pushPull}
-            colours={[MUSCLE_COLOURS.Chest, MUSCLE_COLOURS.Back]}
-          />
-        </div>
-        <p className="mt-2 text-[0.6rem] leading-relaxed text-muted-foreground">
-          Your training split for this period. 50/50 is not a required goal.
-        </p>
+        <Card className="overflow-hidden">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-label={`${balanceSummary(analysis.upperLower)} View training balance breakdown`}
+            onClick={(event) => {
+              opener.current = event.currentTarget;
+              setShowBalance(true);
+            }}
+            className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl p-3.5 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          >
+            <span className="text-xs font-semibold leading-relaxed">
+              {balanceSummary(analysis.upperLower)}
+            </span>
+            <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          </button>
+        </Card>
       </div>
       <Card className="border-primary/15 bg-primary/[0.04] p-3.5">
         <div className="flex items-start gap-2.5">
@@ -186,9 +203,8 @@ export function TrainingAnalysisSection({
             <h3 className="text-[0.65rem] font-extrabold uppercase tracking-wider text-primary">
               Training insight
             </h3>
-            <p className="mt-1.5 text-xs font-bold leading-snug">{analysis.insight.title}</p>
-            <p className="mt-1 text-[0.68rem] leading-relaxed text-muted-foreground">
-              {analysis.insight.body}
+            <p className="mt-1.5 text-xs font-semibold leading-relaxed">
+              {analysis.insight.message}
             </p>
           </div>
         </div>
@@ -211,6 +227,41 @@ export function TrainingAnalysisSection({
           )}
         </DrawerContent>
       </Drawer>
+      <Drawer open={showBalance} onOpenChange={setShowBalance}>
+        <DrawerContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            opener.current?.focus();
+          }}
+          className="mx-auto max-h-[85dvh] max-w-[430px] rounded-t-2xl bg-popover"
+        >
+          <DrawerHeader className="text-left">
+            <div className="flex items-center justify-between gap-2">
+              <DrawerTitle>Training balance</DrawerTitle>
+              <CloseDrawer />
+            </div>
+            <DrawerDescription>{periodLabel}</DrawerDescription>
+          </DrawerHeader>
+          <div
+            data-vaul-no-drag
+            className="space-y-3 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          >
+            <div className="grid grid-cols-2 gap-2.5">
+              <BalanceCard
+                split={analysis.upperLower}
+                colours={[MUSCLE_COLOURS.Back, MUSCLE_COLOURS.Triceps]}
+              />
+              <BalanceCard
+                split={analysis.pushPull}
+                colours={[MUSCLE_COLOURS.Chest, MUSCLE_COLOURS.Back]}
+              />
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              These percentages describe your recorded training. 50/50 is not a required goal.
+            </p>
+          </div>
+        </DrawerContent>
+      </Drawer>
       <Drawer open={showMethod} onOpenChange={setShowMethod}>
         <DrawerContent
           onCloseAutoFocus={(event) => {
@@ -230,10 +281,11 @@ export function TrainingAnalysisSection({
           </DrawerHeader>
           <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-xs leading-relaxed text-muted-foreground">
             <p>
-              <strong className="text-foreground">Read the bars.</strong> The shaded band marks the
-              suggested range. Solid colour is direct work; lighter colour is indirect work. The
-              numbers are average effective sets per week. Tap any muscle for its target range and
-              exercise contributions.
+              <strong className="text-foreground">Read the bars.</strong> Each overview bar shows
+              recorded work against that muscle’s suggested weekly minimum. A full bar means the
+              minimum has been reached; extra sets do not make it longer. Tap a muscle for exact
+              numbers and its target range. In that detailed chart, the shaded band marks the range,
+              solid colour is direct work and lighter colour is indirect work.
             </p>
             <p>
               <strong className="text-foreground">Effective sets.</strong> Each completed working
@@ -251,7 +303,7 @@ export function TrainingAnalysisSection({
             <p>
               <strong className="text-foreground">Muscle-specific targets.</strong> The shaded band
               shows each muscle’s suggested weekly range. Within it is well trained, above it is
-              above target; zero is not trained. Small gaps within 5% below the minimum are near
+              higher volume; zero is not trained. Small gaps within 5% below the minimum are near
               target and shown quietly in the breakdown. Further below is lightly trained. Strength
               goals use lower volume ranges. If both muscle and strength goals are selected,
               strength takes priority, as it does for the app’s rep/rest defaults.
@@ -264,8 +316,8 @@ export function TrainingAnalysisSection({
             </p>
             <p>
               Set credit and targets are estimates. They do not measure effort, technique, recovery
-              or muscle growth. “Above target” does not mean better, and “not trained” means no
-              credited work was recorded in this period.
+              or muscle growth. “Higher volume” means above the suggested range, and “not trained”
+              means no credited work was recorded in this period.
             </p>
           </div>
         </DrawerContent>
@@ -380,10 +432,10 @@ function MuscleBreakdown({
               </span>
             </span>
             <span className={cn("text-[0.65rem] font-bold", statusStyles[row.status])}>
-              {row.status}
+              {coverageLabel(row.status)}
             </span>
           </div>
-          <CoverageBar row={row} />
+          <CoverageBar row={row} detailed />
           <div className="grid grid-cols-3 gap-2 pt-1 text-center">
             {[
               { label: "Direct / week", value: row.directSets / analysis.weeks },

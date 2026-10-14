@@ -48,15 +48,22 @@ through just below minimum = Near target; minimum through maximum inclusive =
 Well trained; greater than maximum = Above target. The 5% near-target buffer is a
 display heuristic for approximate targets, not a change to the range or set credit.
 Near-target muscles do not trigger below-target insights. Above
-target is descriptive, not a reward or a diagnosis of overtraining. Calculations
+target is descriptive, not a reward or a diagnosis of overtraining. The detail
+drawer calls this state "Higher volume". Calculations
 use full precision; displayed effective-set values are rounded to one decimal.
 
-The coverage overview shows muscle names, coloured bars and weekly averages.
-Only Lightly trained, Not trained and Above target get visible status labels.
-Well trained and Near target remain in accessible labels and the detail drawer.
-Exact ranges, goal profile, the bar legend and direct/indirect explanations are
-available behind the info button or by tapping a muscle. Rows retain 44px touch
-targets while reducing repeated text.
+The coverage overview shows muscle names and one solid coloured bar per muscle.
+Bar fill is weekly average / that muscle's reference minimum, capped at 100%;
+extra sets do not extend a full bar. Only Lightly trained and Not trained get
+visible labels. Exact numbers, target bands and direct/indirect colour segments
+are confined to the muscle drawer. Higher volume and Near target stay in the
+detail/accessibility labels. The info drawer explains the simple and detailed
+charts and the goal profile. Rows retain 44px touch targets.
+
+Training Insight is one short sentence: invite a strength workout when the period
+is empty, point to up to two muscles below target, or acknowledge coverage across
+all muscles. Higher-volume work does not trigger a recovery warning. The selector
+also exposes the chosen focus muscles for regression checks.
 
 ## Balance and contributions
 
@@ -65,7 +72,10 @@ lower four, excluding core. Push/pull compares primary upper-body working sets;
 chest/triceps presses and shoulder work are push, back/biceps and rear-delt/face
 pulls are pull. Lower-body and core sets are excluded. Secondary muscle credit is
 not counted again in the movement split. Empty denominators show dashes; recorded
-splits always add to 100%. Neither split has a prescribed 50/50 ideal.
+splits always add to 100%. Neither split has a prescribed 50/50 ideal. The overview
+uses one plain-language upper/lower summary. Tap it for the original percentage
+cards, segmented bars, descriptions and explanation. A missing regional split
+states no upper/lower training was recorded, including core-only histories.
 
 Tap any muscle for weekly direct/indirect credit, period totals, the last 7 days,
 last-trained date and each exercise's working sets × credit = effective sets.
@@ -88,7 +98,8 @@ npm run build
 The PR stays unmerged. Other branches retain Vercel's default deployment behaviour.
 
 Mobile smoke checks: explore the app's demo, open Progress, switch all four periods,
-tap a compound-trained muscle and a zero-work muscle, open/close the explanation,
+tap a compound-trained muscle and a zero-work muscle, open/close the explanation
+and the balance breakdown,
 change goals in training settings, check light/dark themes and 320–430px widths.
 Confirm calendar/history/records/bodyweight navigation still works. New-account,
 cardio-only and older-period empty states must not invent training or percentages.

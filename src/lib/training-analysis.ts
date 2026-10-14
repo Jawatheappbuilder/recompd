@@ -142,6 +142,15 @@ export type BalanceSplit = {
   description: string;
 };
 
+/** Plain-language overview; the percentage breakdown stays in the detail drawer. */
+export function balanceSummary(split: BalanceSplit) {
+  if (split.firstPercent === null)
+    return "No upper- or lower-body training recorded in this period.";
+  if (Math.abs(split.firstPercent - 50) <= 5)
+    return "Your training has been shared evenly between upper and lower body.";
+  return `Your training has focused mostly on ${split.firstPercent > 50 ? "upper" : "lower"} body.`;
+}
+
 function balanceSplit(
   firstLabel: string,
   secondLabel: string,
@@ -311,8 +320,8 @@ function joinMuscles(rows: MuscleCoverage[]) {
 function trainingInsight(coverage: MuscleCoverage[], workingSets: number) {
   if (!workingSets)
     return {
-      title: "Your coverage starts here",
-      body: "Complete a strength workout to see muscle coverage and training balance for this period.",
+      focusMuscles: [] as Muscle[],
+      message: "Complete a strength workout to see which muscles you’ve worked.",
     };
   const below = coverage
     .filter((row) => row.status === "Lightly trained" || row.status === "Not trained")
@@ -320,21 +329,13 @@ function trainingInsight(coverage: MuscleCoverage[], workingSets: number) {
   if (below.length) {
     const focus = below.slice(0, 2);
     return {
-      title: `${joinMuscles(focus)} could use more attention`,
-      body: `Their weekly averages are below the suggested ranges. Tap a muscle to check its direct and indirect work, plus the last 7 days.`,
+      focusMuscles: focus.map((row) => row.muscle),
+      message: `Give ${joinMuscles(focus).toLowerCase()} a little more attention next time.`,
     };
   }
-  const above = coverage.filter((row) => row.status === "Above target");
-  if (above.length)
-    return {
-      title: `${joinMuscles(above.slice(0, 2))} above range`,
-      body: "Check recovery alongside your progress. Above target describes recorded volume; it does not measure workout quality.",
-    };
   return {
-    title: "Coverage across every muscle",
-    body: coverage.some((row) => row.status === "Near target")
-      ? "All 10 muscle groups are within or close to their suggested weekly ranges. Keep tracking performance and recovery alongside your sets."
-      : "All 10 muscle groups are within their suggested weekly ranges. Keep tracking performance and recovery alongside your sets.",
+    focusMuscles: [] as Muscle[],
+    message: "You’ve given every muscle group attention in this period.",
   };
 }
 
