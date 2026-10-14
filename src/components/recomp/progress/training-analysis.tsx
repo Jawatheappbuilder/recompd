@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 const statusStyles: Record<CoverageStatus, string> = {
   "Well trained": "text-emerald-700 dark:text-emerald-400",
+  "Near target": "text-muted-foreground",
   "Lightly trained": "text-amber-800 dark:text-amber-300",
   "Not trained": "text-muted-foreground",
   "Above target": "text-sky-700 dark:text-sky-300",
@@ -100,7 +101,7 @@ export function TrainingAnalysisSection({
             <div>
               <h3 className="text-sm font-extrabold">Muscle coverage</h3>
               <p className="mt-1 text-[0.65rem] text-muted-foreground">
-                {periodLabel} · average effective sets / week
+                Weekly averages · {periodLabel.toLowerCase()}
               </p>
             </div>
             <button
@@ -115,16 +116,7 @@ export function TrainingAnalysisSection({
               <Info className="size-4" />
             </button>
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3 text-[0.6rem] text-muted-foreground">
-            <span className="rounded-full bg-secondary px-2 py-1 font-semibold">
-              {analysis.targetLabel} targets
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span aria-hidden className="h-2.5 w-3 rounded-sm bg-foreground/15" />
-              Shaded band = target
-            </span>
-          </div>
-          <div className="mt-1 divide-y divide-border/40">
+          <div className="mt-2 divide-y divide-border/40">
             {analysis.coverage.map((row) => (
               <button
                 key={row.muscle}
@@ -135,7 +127,7 @@ export function TrainingAnalysisSection({
                   opener.current = event.currentTarget;
                   setSelectedMuscle(row.muscle);
                 }}
-                className="grid min-h-[49px] w-full grid-cols-[6rem_minmax(0,1fr)_2.7rem_auto] items-center gap-2 rounded-lg py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid min-h-11 w-full grid-cols-[6rem_minmax(0,1fr)_2.7rem_auto] items-center gap-2 rounded-lg py-2 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 text-[0.7rem] font-bold">
@@ -146,20 +138,19 @@ export function TrainingAnalysisSection({
                     />
                     {row.muscle}
                   </span>
-                  <span
-                    className={cn(
-                      "mt-0.5 block text-[0.59rem] font-semibold",
-                      statusStyles[row.status],
-                    )}
-                  >
-                    {row.status}
-                  </span>
+                  {row.status !== "Well trained" && row.status !== "Near target" && (
+                    <span
+                      className={cn(
+                        "mt-0.5 block text-[0.59rem] font-semibold",
+                        statusStyles[row.status],
+                      )}
+                    >
+                      {row.status}
+                    </span>
+                  )}
                 </span>
-                <span className="min-w-0 space-y-1.5">
+                <span className="min-w-0">
                   <CoverageBar row={row} />
-                  <span className="block text-[0.56rem] text-muted-foreground">
-                    Target {row.target.min}–{row.target.max}
-                  </span>
                 </span>
                 <span className="text-right text-sm font-extrabold tabular-nums">
                   {formatEffectiveSets(row.weeklySets)}
@@ -168,9 +159,6 @@ export function TrainingAnalysisSection({
               </button>
             ))}
           </div>
-          <p className="mt-2 text-[0.6rem] leading-relaxed text-muted-foreground">
-            Direct + indirect work · tap a muscle for its breakdown
-          </p>
         </Card>
       </div>
       <div>
@@ -242,6 +230,12 @@ export function TrainingAnalysisSection({
           </DrawerHeader>
           <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-xs leading-relaxed text-muted-foreground">
             <p>
+              <strong className="text-foreground">Read the bars.</strong> The shaded band marks the
+              suggested range. Solid colour is direct work; lighter colour is indirect work. The
+              numbers are average effective sets per week. Tap any muscle for its target range and
+              exercise contributions.
+            </p>
+            <p>
               <strong className="text-foreground">Effective sets.</strong> Each completed working
               set gives its primary muscle 1 set of credit and each supporting muscle{" "}
               {formatEffectiveSets(analysis.secondaryCredit)}. A bench press set counts as 1 for
@@ -256,10 +250,11 @@ export function TrainingAnalysisSection({
             </p>
             <p>
               <strong className="text-foreground">Muscle-specific targets.</strong> The shaded band
-              shows each muscle’s suggested weekly range. Below it is lightly trained, within it is
-              well trained, above it is above target; zero is not trained. Strength goals use lower
-              volume ranges. If both muscle and strength goals are selected, strength takes
-              priority, as it does for the app’s rep/rest defaults.
+              shows each muscle’s suggested weekly range. Within it is well trained, above it is
+              above target; zero is not trained. Small gaps within 5% below the minimum are near
+              target and shown quietly in the breakdown. Further below is lightly trained. Strength
+              goals use lower volume ranges. If both muscle and strength goals are selected,
+              strength takes priority, as it does for the app’s rep/rest defaults.
             </p>
             <p>
               <strong className="text-foreground">Balance.</strong> Upper/lower compares effective

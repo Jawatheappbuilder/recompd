@@ -7,7 +7,10 @@ const library = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
 /** An estimate of supporting-muscle work, not a measurement of effort or stimulus. */
 export const DEFAULT_SECONDARY_CREDIT = 0.5;
-export type CoverageStatus = "Well trained" | "Lightly trained" | "Not trained" | "Above target";
+export type CoverageStatus =
+  "Well trained" | "Near target" | "Lightly trained" | "Not trained" | "Above target";
+/** Avoid drawing attention to tiny gaps below an approximate reference range. */
+export const NEAR_TARGET_RATIO = 0.95;
 export type WeeklyTarget = { min: number; max: number };
 type TargetProfile = "muscle" | "strength" | "general";
 
@@ -76,7 +79,8 @@ export function targetProfileForGoals(goals: readonly TrainingGoal[]) {
 
 export function coverageStatus(weeklySets: number, target: WeeklyTarget): CoverageStatus {
   if (weeklySets <= 0) return "Not trained";
-  if (weeklySets < target.min) return "Lightly trained";
+  if (weeklySets < target.min * NEAR_TARGET_RATIO) return "Lightly trained";
+  if (weeklySets < target.min) return "Near target";
   if (weeklySets > target.max) return "Above target";
   return "Well trained";
 }
@@ -311,7 +315,7 @@ function trainingInsight(coverage: MuscleCoverage[], workingSets: number) {
       body: "Complete a strength workout to see muscle coverage and training balance for this period.",
     };
   const below = coverage
-    .filter((row) => row.weeklySets < row.target.min)
+    .filter((row) => row.status === "Lightly trained" || row.status === "Not trained")
     .sort((a, b) => a.weeklySets / a.target.min - b.weeklySets / b.target.min);
   if (below.length) {
     const focus = below.slice(0, 2);
@@ -328,7 +332,9 @@ function trainingInsight(coverage: MuscleCoverage[], workingSets: number) {
     };
   return {
     title: "Coverage across every muscle",
-    body: "All 10 muscle groups are within their suggested weekly ranges. Keep tracking performance and recovery alongside your sets.",
+    body: coverage.some((row) => row.status === "Near target")
+      ? "All 10 muscle groups are within or close to their suggested weekly ranges. Keep tracking performance and recovery alongside your sets."
+      : "All 10 muscle groups are within their suggested weekly ranges. Keep tracking performance and recovery alongside your sets.",
   };
 }
 

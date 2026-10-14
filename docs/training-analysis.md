@@ -43,10 +43,20 @@ columns are implementation defaults; all ranges live in `WEEKLY_MUSCLE_TARGETS`.
 priority. No selected goal defaults to muscle building. Other goals use general
 fitness. Weekly workout frequency does not change the muscle ranges.
 
-Zero = Not trained; 0 < average < minimum = Lightly trained; minimum through
-maximum inclusive = Well trained; greater than maximum = Above target. Above
+Zero = Not trained; 0 < average < 95% of minimum = Lightly trained; 95% of minimum
+through just below minimum = Near target; minimum through maximum inclusive =
+Well trained; greater than maximum = Above target. The 5% near-target buffer is a
+display heuristic for approximate targets, not a change to the range or set credit.
+Near-target muscles do not trigger below-target insights. Above
 target is descriptive, not a reward or a diagnosis of overtraining. Calculations
 use full precision; displayed effective-set values are rounded to one decimal.
+
+The coverage overview shows muscle names, coloured bars and weekly averages.
+Only Lightly trained, Not trained and Above target get visible status labels.
+Well trained and Near target remain in accessible labels and the detail drawer.
+Exact ranges, goal profile, the bar legend and direct/indirect explanations are
+available behind the info button or by tapping a muscle. Rows retain 44px touch
+targets while reducing repeated text.
 
 ## Balance and contributions
 

@@ -72,10 +72,36 @@ test("a calf target is independent of a heavily trained back", () => {
 test("coverage boundaries use each muscle's range, including zero and above target", () => {
   const target = { min: 4, max: 10 };
   assert.equal(coverageStatus(0, target), "Not trained");
-  assert.equal(coverageStatus(3.9, target), "Lightly trained");
+  assert.equal(coverageStatus(3.79, target), "Lightly trained");
+  assert.equal(coverageStatus(3.8, target), "Near target");
+  assert.equal(coverageStatus(3.9, target), "Near target");
   assert.equal(coverageStatus(4, target), "Well trained");
   assert.equal(coverageStatus(10, target), "Well trained");
   assert.equal(coverageStatus(10.1, target), "Above target");
+});
+
+test("tiny below-target gaps stay quiet while clearly undertrained muscles still stand out", () => {
+  const history = Object.entries(WEEKLY_MUSCLE_TARGETS.muscle).map(([muscle, target]) =>
+    exercise(
+      `custom-${muscle}`,
+      [muscle as Muscle],
+      muscle === "Back" ? 39 : muscle === "Calves" ? 12 : target.min * 4,
+    ),
+  );
+  const result = analyseTraining([workout(history)], FROM, NOW);
+  assert.equal(row(result, "Back").weeklySets, 9.75);
+  assert.equal(row(result, "Back").status, "Near target");
+  assert.equal(row(result, "Calves").status, "Lightly trained");
+  assert.equal(result.insight.title, "Calves could use more attention");
+  const almostAll = history.map((item) =>
+    item.muscles[0] === "Calves"
+      ? { ...item, sets: Array.from({ length: 16 }, () => working) }
+      : item,
+  );
+  const near = analyseTraining([workout(almostAll)], FROM, NOW);
+  assert.equal(near.insight.title, "Coverage across every muscle");
+  assert.match(near.insight.body, /within or close/);
+  assert.deepEqual(row(near, "Back").target, { min: 10, max: 16 });
 });
 
 test("all four periods divide by the full selected interval, including inactive weeks", () => {
