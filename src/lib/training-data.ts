@@ -9,7 +9,9 @@ import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
  */
 
 export type CompletedSet = {
-  weight: number; reps: number; kind?: "strength" | "cardio";
+  weight: number; reps: number; kind?: "strength" | "cardio" | "warmup";
+  /** Older/imported rows may carry completion metadata; omitted means completed history. */
+  completed?: boolean;
   durationSeconds?: number; distanceKm?: number; speedKph?: number; pace?: string;
   incline?: number; level?: number; floors?: number; steps?: number; pace500m?: string;
 };
