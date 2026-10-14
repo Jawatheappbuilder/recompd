@@ -38,8 +38,8 @@ function coverageLabel(status: CoverageStatus) {
 
 function CoverageBar({ row, detailed = false }: { row: MuscleCoverage; detailed?: boolean }) {
   const colour = MUSCLE_COLOURS[row.muscle];
-  // Overview = coverage of this muscle's minimum, capped at full. Detail retains headroom.
-  const scale = detailed ? row.target.max * 1.25 : row.target.min;
+  // Use the full muscle-specific range with headroom, rather than filling at its minimum.
+  const scale = row.target.max * 1.25;
   const fill = Math.min((row.weeklySets / scale) * 100, 100);
   const min = (row.target.min / scale) * 100;
   const max = (row.target.max / scale) * 100;
@@ -282,8 +282,8 @@ export function TrainingAnalysisSection({
           <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-xs leading-relaxed text-muted-foreground">
             <p>
               <strong className="text-foreground">Read the bars.</strong> Each overview bar shows
-              recorded work against that muscle’s suggested weekly minimum. A full bar means the
-              minimum has been reached; extra sets do not make it longer. Tap a muscle for exact
+              your weekly training amount against that muscle’s own suggested range, with room above
+              the upper end. Reaching the minimum does not fill the bar. Tap a muscle for exact
               numbers and its target range. In that detailed chart, the shaded band marks the range,
               solid colour is direct work and lighter colour is indirect work.
             </p>

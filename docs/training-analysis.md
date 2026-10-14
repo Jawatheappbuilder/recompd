@@ -53,8 +53,9 @@ drawer calls this state "Higher volume". Calculations
 use full precision; displayed effective-set values are rounded to one decimal.
 
 The coverage overview shows muscle names and one solid coloured bar per muscle.
-Bar fill is weekly average / that muscle's reference minimum, capped at 100%;
-extra sets do not extend a full bar. Only Lightly trained and Not trained get
+Bar fill is weekly average / (that muscle's reference maximum × 1.25), capped at
+100%. The headroom shows differences within and above the target range; reaching
+the minimum no longer fills the bar. Only Lightly trained and Not trained get
 visible labels. Exact numbers, target bands and direct/indirect colour segments
 are confined to the muscle drawer. Higher volume and Near target stay in the
 detail/accessibility labels. The info drawer explains the simple and detailed
