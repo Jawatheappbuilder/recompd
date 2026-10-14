@@ -74,9 +74,10 @@ chest/triceps presses and shoulder work are push, back/biceps and rear-delt/face
 pulls are pull. Lower-body and core sets are excluded. Secondary muscle credit is
 not counted again in the movement split. Empty denominators show dashes; recorded
 splits always add to 100%. Neither split has a prescribed 50/50 ideal. The overview
-uses one plain-language upper/lower summary. Tap it for the original percentage
-cards, segmented bars, descriptions and explanation. A missing regional split
-states no upper/lower training was recorded, including core-only histories.
+shows the Upper/Lower and Push/Pull percentage cards, segmented bars, descriptions
+and explanation directly below muscle coverage. No tap is required. The group
+has a plain-language accessible summary. Missing regional splits show dashes and
+a no-recorded-sets state, including core-only histories.
 
 Tap any muscle for weekly direct/indirect credit, period totals, the last 7 days,
 last-trained date and each exercise's working sets × credit = effective sets.
@@ -100,7 +101,7 @@ The PR stays unmerged. Other branches retain Vercel's default deployment behavio
 
 Mobile smoke checks: explore the app's demo, open Progress, switch all four periods,
 tap a compound-trained muscle and a zero-work muscle, open/close the explanation
-and the balance breakdown,
+and inspect the visible balance cards,
 change goals in training settings, check light/dark themes and 320–430px widths.
 Confirm calendar/history/records/bodyweight navigation still works. New-account,
 cardio-only and older-period empty states must not invent training or percentages.

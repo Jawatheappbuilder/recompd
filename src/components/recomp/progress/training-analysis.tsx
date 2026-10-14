@@ -106,7 +106,6 @@ export function TrainingAnalysisSection({
 }) {
   const [selectedMuscle, setSelectedMuscle] = useState<Muscle | null>(null);
   const [showMethod, setShowMethod] = useState(false);
-  const [showBalance, setShowBalance] = useState(false);
   const opener = useRef<HTMLButtonElement | null>(null);
   // Derive the selected row again on a period/goal/history change; never retain stale totals.
   const selected = analysis.coverage.find((row) => row.muscle === selectedMuscle);
@@ -176,23 +175,23 @@ export function TrainingAnalysisSection({
       </div>
       <div>
         <SectionHeading>Training balance</SectionHeading>
-        <Card className="overflow-hidden">
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            aria-label={`${balanceSummary(analysis.upperLower)} View training balance breakdown`}
-            onClick={(event) => {
-              opener.current = event.currentTarget;
-              setShowBalance(true);
-            }}
-            className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl p-3.5 text-left transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-          >
-            <span className="text-xs font-semibold leading-relaxed">
-              {balanceSummary(analysis.upperLower)}
-            </span>
-            <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          </button>
-        </Card>
+        <div
+          role="group"
+          aria-label={balanceSummary(analysis.upperLower)}
+          className="grid grid-cols-2 gap-2.5"
+        >
+          <BalanceCard
+            split={analysis.upperLower}
+            colours={[MUSCLE_COLOURS.Back, MUSCLE_COLOURS.Triceps]}
+          />
+          <BalanceCard
+            split={analysis.pushPull}
+            colours={[MUSCLE_COLOURS.Chest, MUSCLE_COLOURS.Back]}
+          />
+        </div>
+        <p className="mt-2 text-[0.6rem] leading-relaxed text-muted-foreground">
+          These percentages describe your recorded training. 50/50 is not a required goal.
+        </p>
       </div>
       <Card className="border-primary/15 bg-primary/[0.04] p-3.5">
         <div className="flex items-start gap-2.5">
@@ -225,41 +224,6 @@ export function TrainingAnalysisSection({
           {selected && (
             <MuscleBreakdown row={selected} analysis={analysis} periodLabel={periodLabel} />
           )}
-        </DrawerContent>
-      </Drawer>
-      <Drawer open={showBalance} onOpenChange={setShowBalance}>
-        <DrawerContent
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            opener.current?.focus();
-          }}
-          className="mx-auto max-h-[85dvh] max-w-[430px] rounded-t-2xl bg-popover"
-        >
-          <DrawerHeader className="text-left">
-            <div className="flex items-center justify-between gap-2">
-              <DrawerTitle>Training balance</DrawerTitle>
-              <CloseDrawer />
-            </div>
-            <DrawerDescription>{periodLabel}</DrawerDescription>
-          </DrawerHeader>
-          <div
-            data-vaul-no-drag
-            className="space-y-3 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-          >
-            <div className="grid grid-cols-2 gap-2.5">
-              <BalanceCard
-                split={analysis.upperLower}
-                colours={[MUSCLE_COLOURS.Back, MUSCLE_COLOURS.Triceps]}
-              />
-              <BalanceCard
-                split={analysis.pushPull}
-                colours={[MUSCLE_COLOURS.Chest, MUSCLE_COLOURS.Back]}
-              />
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              These percentages describe your recorded training. 50/50 is not a required goal.
-            </p>
-          </div>
         </DrawerContent>
       </Drawer>
       <Drawer open={showMethod} onOpenChange={setShowMethod}>

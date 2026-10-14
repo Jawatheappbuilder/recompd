@@ -142,7 +142,7 @@ export type BalanceSplit = {
   description: string;
 };
 
-/** Plain-language overview; the percentage breakdown stays in the detail drawer. */
+/** Plain-language description of the regional split, including an empty-data state. */
 export function balanceSummary(split: BalanceSplit) {
   if (split.firstPercent === null)
     return "No upper- or lower-body training recorded in this period.";
