@@ -4,6 +4,8 @@ import type { Json } from "@/integrations/supabase/types";
 import type { Equipment, Exercise, Muscle, WorkoutExercise } from "@/data/exercises";
 import type { BodyweightEntry, CompletedExercise, CompletedNote, CompletedWorkout } from "./training-data";
 
+import { decodeExerciseSets, encodeExerciseSets } from "./workout-exercise-storage";
+
 const NOTE_ROW_ID = "__note__";
 
 /*
@@ -80,10 +82,9 @@ async function fetchAll(): Promise<CloudData> {
       notesByWorkout.set(row.workout_id, [...(notesByWorkout.get(row.workout_id) ?? []), { ...payload, key: row.exercise_key, afterKey: row.superset_with }]);
       continue;
     }
-    const rawSets = row.sets as unknown as CompletedExercise["sets"];
-    const sets = rawSets.map((set) => ({ ...set, weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
+    const { sets, metadata } = decodeExerciseSets(row.sets);
     const cardio = sets.some((set) => set.kind === "cardio" || set.durationSeconds !== undefined);
-    const exercise: CompletedExercise = { key: row.exercise_key, exerciseId: row.exercise_id, name: row.name, muscles: row.muscles as Muscle[], equipment: row.equipment as Equipment, tracking: cardio ? "cardio" : "strength", sets, ...(row.superset_with ? { supersetWith: row.superset_with } : {}) };
+    const exercise: CompletedExercise = { key: row.exercise_key, exerciseId: row.exercise_id, name: row.name, muscles: row.muscles as Muscle[], equipment: row.equipment as Equipment, tracking: cardio ? "cardio" : "strength", sets, ...metadata, ...(row.superset_with ? { supersetWith: row.superset_with } : {}) };
     byWorkout.set(row.workout_id, [...(byWorkout.get(row.workout_id) ?? []), exercise]);
   }
   return {
@@ -109,8 +110,8 @@ async function run(op: Op) {
       check(await supabase.from("workouts").upsert({ user_id: userId!, id: w.id, name: w.name.slice(0, 120), started_at: new Date(w.startedAt).toISOString(), ended_at: new Date(w.startedAt + w.durationSec * 1000).toISOString(), duration_sec: Math.round(w.durationSec) }));
       check(await supabase.from("workout_exercises").delete().eq("workout_id", w.id));
       if (w.exercises.length) check(await supabase.from("workout_exercises").insert(w.exercises.map((ex, position) => ({
-        user_id: userId!, workout_id: w.id, position, exercise_key: ex.key, exercise_id: ex.exerciseId, name: ex.name.slice(0, 120), muscles: ex.muscles, equipment: ex.equipment,
-        superset_with: ex.supersetWith ?? null, sets: ex.sets.map((set) => ({ ...set, completed: true })) as unknown as Json,
+        user_id: userId!, workout_id: w.id, position, exercise_key: ex.key, exercise_id: ex.exerciseId, name: ex.name.slice(0, 120), muscles: ex.muscles, equipment: String(ex.equipment),
+        superset_with: ex.supersetWith ?? null, sets: encodeExerciseSets(ex) as unknown as Json,
       })).concat((w.notes ?? []).map((note, i) => ({
         // Notes ride along as marker rows so history keeps them; they are split out on load and never counted.
         user_id: userId!, workout_id: w.id, position: w.exercises.length + i, exercise_key: note.key, exercise_id: NOTE_ROW_ID, name: note.title.slice(0, 120), muscles: [], equipment: "Note",

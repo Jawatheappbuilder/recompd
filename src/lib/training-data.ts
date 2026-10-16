@@ -116,30 +116,6 @@ export function trainingSummary(workouts: CompletedWorkout[], from: number) {
 }
 
 export type WorkloadLevel = "High workload" | "Moderate workload" | "Low workload";
-export const priorityMuscles: Muscle[] = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Core"];
-const libraryMuscles = new Map(exerciseLibrary.map((exercise) => [exercise.id, exercise.muscles?.length ? exercise.muscles : [exercise.muscle]]));
-
-/** Completed sets per muscle; the first listed muscle gets full credit, supporting muscles get half. */
-export function trainingPriority(workouts: CompletedWorkout[], from: number) {
-  const scores = new Map<Muscle, number>(priorityMuscles.map((muscle) => [muscle, 0]));
-  for (const workout of workouts) {
-    if (workout.startedAt < from) continue;
-    for (const exercise of workout.exercises) {
-      if (exercise.tracking === "cardio" || exercise.sets.some(isCardioSet)) continue;
-      const muscles = exercise.muscles.length > 1 ? exercise.muscles : libraryMuscles.get(exercise.exerciseId) ?? exercise.muscles;
-      muscles.forEach((muscle, index) => scores.set(muscle, (scores.get(muscle) ?? 0) + exercise.sets.length * (index === 0 ? 1 : 0.5)));
-    }
-  }
-  const max = Math.max(...scores.values());
-  return priorityMuscles
-    .map((muscle) => {
-      const score = scores.get(muscle) ?? 0;
-      const ratio = max ? score / max : 0;
-      const level: WorkloadLevel = ratio >= 0.66 ? "High workload" : ratio >= 0.33 ? "Moderate workload" : "Low workload";
-      return { muscle, score, ratio, level };
-    })
-    .sort((a, b) => b.score - a.score);
-}
 
 export const estimate1RM = (set: CompletedSet) => set.weight > 0 && set.reps > 0 && set.reps <= 12 ? set.weight * (1 + set.reps / 30) : 0;
 const setBeats = (a: CompletedSet, b: CompletedSet | undefined) => !b || a.weight > b.weight || (a.weight === b.weight && a.reps > b.reps);

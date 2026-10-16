@@ -77,7 +77,7 @@ export function createActiveWorkout(items: WorkoutExercise[], customName?: strin
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 3)
     .map(([muscle]) => muscle)
-    .join(" + ") || (notes.length ? notes[0].title || "Mobility & Notes" : "Workout");
+    .join(" + ") || (notes.length ? notes[0]?.title || "Mobility & Notes" : "Workout");
   const suppliedName = customName?.trim();
   const name = suppliedName && suppliedName.toLowerCase() !== "custom workout" ? suppliedName : smartName;
   const groupIds = [...new Set(exercises.map((e) => e.groupId).filter(Boolean))] as string[];

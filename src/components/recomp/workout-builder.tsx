@@ -9,7 +9,8 @@ import { muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@
 import { newId } from "@/lib/cloud-data";
 import { defaultWorkoutName, deleteSavedWorkout, handOffWorkout, saveWorkout, useSavedWorkouts, type SavedWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
-import { since, trainingPriority, useTrainingData } from "@/lib/training-data";
+import { useTrainingData } from "@/lib/training-data";
+import { useTrainingGuidance } from "@/hooks/use-training-guidance";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
@@ -58,8 +59,7 @@ function RecentWorkoutNames() {
 
 function GenerateMode() {
   const navigate = useNavigate();
-  const training = useTrainingData();
-  const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
+  const { suggestions } = useTrainingGuidance();
   const [selected, setSelected] = useState<Muscle[]>(() => readDraft().selected ?? []);
   const [count, setCount] = useState(() => readDraft().count ?? 6);
   useEffect(() => { patchDraft({ selected, count }); }, [selected, count]);
@@ -70,7 +70,7 @@ function GenerateMode() {
   return <>
     <section>
       <SectionHeading>Muscles</SectionHeading>
-      {suggestions.length > 0 && <p className="-mt-1 mb-2 text-[0.66rem] leading-snug text-muted-foreground"><span className="font-semibold text-foreground">Suggested:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="opacity-80">· lower 4-week workload</span></p>}
+      {suggestions.length > 0 && <p className="-mt-1 mb-2 text-[0.66rem] leading-snug text-muted-foreground"><span className="font-semibold text-foreground">Suggested:</span> {suggestions.map((item) => item.muscle).join(" · ")} <span className="opacity-80">· below their 4-week targets</span></p>}
       <div className="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4">{quickSelects.map((q) => <Chip key={q.label} active={q.muscles.every((m) => selected.includes(m))} onClick={() => quick(q.muscles)}>{q.label}</Chip>)}</div>
       <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((m) => { const a = selected.includes(m); return <Button key={m} variant={a ? "choiceActive" : "choice"} aria-pressed={a} onClick={() => toggle(m)} className={cn("h-9 justify-between px-3 transition-all", a && "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15")}>{m}{a && <Check />}</Button>; })}</div>
     </section>
@@ -94,8 +94,7 @@ function ManualMode() {
   const saved = useSavedWorkouts();
   const [savedId, setSavedId] = useState<string | null>(() => draft.savedId ?? null);
   const [builderRevision, setBuilderRevision] = useState(0);
-  const training = useTrainingData();
-  const suggestions = trainingPriority(training?.workouts ?? [], since("4W")).slice().sort((a, b) => a.score - b.score).slice(0, 3);
+  const { suggestions } = useTrainingGuidance();
   const [suggestedMuscle, setSuggestedMuscle] = useState<Muscle | null>(null);
   useEffect(() => { patchDraft({ name, workout, savedId }); }, [name, workout, savedId]);
   const [scheduling, setScheduling] = useState(false);
@@ -142,7 +141,7 @@ function ManualMode() {
   return <>
     <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Workout name (optional)" enterKeyHint="done" autoComplete="off" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus:border-primary" />
     {suggestions.length > 0 && <div className="rounded-xl border border-border bg-card px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2"><span className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Suggested today</span><span className="text-[0.62rem] text-muted-foreground">Lower workload over the last 4 weeks</span></div>
+      <div className="flex items-center justify-between gap-2"><span className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted-foreground">Suggested today</span><span className="text-[0.62rem] text-muted-foreground">Below their 4-week targets</span></div>
       <div className="mt-2 flex gap-1.5 overflow-x-auto">{suggestions.map((item) => <button key={item.muscle} type="button" className="shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1.5 text-xs font-bold text-primary" onClick={() => { setSuggestedMuscle(item.muscle); setPickerOpen(true); }}>{item.muscle}</button>)}</div>
     </div>}
     {!workout.length && <button type="button" onClick={() => setPickerOpen(true)} className="grid h-28 w-full place-items-center rounded-2xl border border-dashed border-primary/40 bg-card text-primary transition-colors hover:bg-accent">

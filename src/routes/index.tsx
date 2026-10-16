@@ -10,6 +10,7 @@ import { localDateKey, useUpcomingWorkouts } from "@/lib/workout-storage";
 import { BodyweightSummary, TrainingPriority, WeeklyTraining, WorkoutSummary } from "@/components/recomp/training-widgets";
 import { useAuth } from "@/components/recomp/auth-context";
 import { StepsCard } from "@/components/recomp/steps-card";
+import { useActiveWorkout } from "@/hooks/use-active-workout";
 import { LogWeightSheet } from "@/components/recomp/progress/bodyweight";
 
 export const Route = createFileRoute("/")({
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const [preferences, setPreferences] = useUserPreferences();
+  const { workout: activeWorkout } = useActiveWorkout();
+  const activeSets = activeWorkout?.exercises.flatMap((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup")) ?? [];
   const [showAccentChoice, setShowAccentChoice] = useState(false);
   const [logWeightOpen, setLogWeightOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
@@ -58,7 +61,7 @@ function HomePage() {
     </div>
   </div>
   {showAccentChoice && <div className="relative z-10 mt-3"><AccentChoiceCard accent={preferences.accent} onPreview={(accent) => setPreferences({ ...preferences, accent })} onSave={() => { completeAccentChoice(); setShowAccentChoice(false); }} /></div>}
-  <div className="relative z-10 -mt-5">{today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action overflow-hidden border-primary/15 bg-card p-3.5 shadow-[0_10px_32px_-22px_var(--primary)]"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}</div>
+  <div className="relative z-10 -mt-5">{activeWorkout ? <Card className="workout-action border-primary/20 bg-card p-4 shadow-sm"><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Workout in progress</div><h2 className="mt-1 truncate text-lg font-extrabold">{activeWorkout.name}</h2><p className="mt-1 text-xs text-muted-foreground">{activeSets.filter((set) => set.completed).length} of {activeSets.length} {activeWorkout.exercises.some((exercise) => exercise.tracking === "cardio") ? "entries" : "sets"} completed</p><Button asChild variant="primary" size="lg" className="mt-3 h-12 w-full"><Link to="/workout"><Dumbbell />Resume workout</Link></Button></Card> : today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action overflow-hidden border-primary/15 bg-card p-3.5 shadow-[0_10px_32px_-22px_var(--primary)]"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}</div>
   {status === "demo" && <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-border/70 bg-secondary/55 px-3 py-2">
     <UserPlus className="size-4 shrink-0 text-primary" />
     <span className="min-w-[110px] flex-1 text-[0.7rem] font-semibold text-muted-foreground">Save your progress</span>

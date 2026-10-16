@@ -183,7 +183,7 @@ export async function renderWorkoutCard(workout: CompletedWorkout, prs: Pr[]): P
   plan.blocks.forEach((block, i) => {
     if (i) { y += plan.gap; ctx.fillStyle = C.border; ctx.fillRect(PAD, y - 12, inner, 2); y += plan.gap; }
     if(block.groupLabel){ctx.font=`800 22px ${SANS}`;spacing(ctx,2);ctx.fillStyle=brand.accent;ctx.fillText(block.groupLabel,PAD,y+4);spacing(ctx,0);y+=34;}
-    const grouped = !!workoutGroupId(workout.exercises.filter((e) => e.sets.length)[i]);
+    const grouped = !!block.groupLabel;
     const nameX = grouped ? PAD + 28 : PAD;
     if (grouped) { ctx.fillStyle = brand.tint; ctx.fillRect(PAD, y - 4, 8, Math.max(54, block.name.length * NAME_LH + 10 + block.sets.length * SET_LH)); }
     ctx.font = `700 ${NAME_SIZE}px ${SANS}`; ctx.fillStyle = C.text;
