@@ -341,3 +341,12 @@ function trainingInsight(coverage: MuscleCoverage[], workingSets: number) {
 
 export const formatEffectiveSets = (sets: number) =>
   Number(sets.toFixed(1)).toLocaleString("en-AU", { maximumFractionDigits: 1 });
+
+/** Rank shortfalls against each muscle's own target, never against another muscle. */
+export function suggestedMuscles(analysis: TrainingAnalysis) {
+  if (!analysis.workingSets) return [];
+  return analysis.coverage
+    .filter((row) => row.status === "Not trained" || row.status === "Lightly trained")
+    .sort((a, b) => a.weeklySets / a.target.min - b.weeklySets / b.target.min || (a.lastAt ?? 0) - (b.lastAt ?? 0))
+    .slice(0, 3);
+}

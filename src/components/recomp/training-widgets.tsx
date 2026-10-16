@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { bodyweightChange, dayKey, formatDay, formatDuration, formatKg, setCount, since, trainingPriority, trainingSummary, useTrainingData } from "@/lib/training-data";
+import { bodyweightChange, dayKey, formatDay, formatDuration, formatKg, setCount, since, trainingSummary, useTrainingData } from "@/lib/training-data";
 import { useUserPreferences } from "@/lib/user-preferences";
 import { localDateKey, useScheduledWorkouts } from "@/lib/workout-storage";
+import { useTrainingGuidance } from "@/hooks/use-training-guidance";
+import { MUSCLE_COLOURS } from "@/lib/training-analysis";
 import { Metric, SectionHeading, SummaryRow } from "./core";
 
 export function ProgressRing({ value = 75, current = 3, target = 4, size = 86 }: { value?: number; current?: number; target?: number; size?: number }) {
@@ -136,9 +138,10 @@ function WorkloadBar({ ratio, low, delay, color }: { ratio: number; low: boolean
 }
 
 export function TrainingPriority({ compact = false }: { compact?: boolean }) {
-  const data = useTrainingData();
-  const items = trainingPriority(data?.workouts ?? [], since("4W")).filter((item) => item.score > 0).slice(0, compact ? 3 : undefined);
-  return <section><SectionHeading>Muscle workload · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{items.length ? items.map((item, index) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="flex items-center gap-1.5 font-semibold"><span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: homeMuscleColor(item.muscle) }} />{item.muscle}</span><span className="shrink-0 font-bold text-muted-foreground">{item.level}</span></div><WorkloadBar ratio={item.ratio} low={item.level === "Low workload"} delay={index * 55} color={homeMuscleColor(item.muscle)} /></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle workload.</p>}</Card></section>;
+  const { analysis, suggestions } = useTrainingGuidance();
+  const ordered = [...suggestions, ...analysis.coverage.filter((row) => !suggestions.includes(row))];
+  const items = ordered.slice(0, compact ? 3 : undefined);
+  return <section><SectionHeading action={<Link to="/progress" className="text-xs font-bold text-primary">View all</Link>}>Muscle coverage · Last 4 weeks</SectionHeading><Card className="space-y-2.5 px-3.5 py-3">{analysis.workingSets > 0 ? items.map((item, index) => <div key={item.muscle}><div className="mb-1 flex items-center justify-between gap-3 text-xs"><span className="flex items-center gap-1.5 font-semibold"><span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: MUSCLE_COLOURS[item.muscle] }} />{item.muscle}</span><span className="shrink-0 font-bold text-muted-foreground">{item.status === "Above target" ? "Higher volume" : item.status}</span></div><WorkloadBar ratio={Math.min(1, item.weeklySets / (item.target.max * 1.25))} low={item.status === "Lightly trained" || item.status === "Not trained"} delay={index * 55} color={MUSCLE_COLOURS[item.muscle]} /></div>) : <p className="py-1 text-xs text-muted-foreground">Complete a workout to see your muscle coverage.</p>}</Card></section>;
 }
 
 function relativeDay(ts: number) {

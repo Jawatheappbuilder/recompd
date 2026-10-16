@@ -35,7 +35,7 @@ function WorkoutPage() {
   if (!hydrated) return <Screen>{null}</Screen>;
   if (!workout) return <Screen><EmptyWorkout/></Screen>;
   return <Screen className="pt-0">
-    <ActiveWorkout workout={workout} onChange={(next) => setWorkout(next)} onCancel={() => { sessionStorage.removeItem("recomp-active-workout"); setWorkout(null); }} />
+    <ActiveWorkout key={workout.id} workout={workout} onChange={(next) => setWorkout(next)} onCancel={() => { sessionStorage.removeItem("recomp-active-workout"); setWorkout(null); }} />
     {showWifeyHype && <WifeyWorkoutHype />}
   </Screen>;
 }

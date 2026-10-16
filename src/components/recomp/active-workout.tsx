@@ -60,6 +60,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { equipmentTypes, exercises, isCardioExercise, isTimedHold, muscleGroups, toWorkoutExercise, type Equipment, type Exercise, type Muscle } from "@/data/exercises";
 import { createActiveWorkout, type ActiveExercise, type ActiveSet, type ActiveWorkoutState } from "@/hooks/use-active-workout";
+import { useWorkoutRuntime } from "@/hooks/use-workout-runtime";
+import { applyPreviousSession } from "@/lib/previous-session";
+import type { WorkoutRuntime } from "@/lib/workout-runtime";
+import type { SetStateAction } from "react";
 import { NoteCard, NoteSheet } from "./note-card";
 import { personalRecords, recordCompletedWorkout, toCompletedWorkout, updateWorkout, useTrainingData } from "@/lib/training-data";
 import { defaultWorkoutName, loadSavedWorkouts, saveCustomExercise, saveWorkout, useCustomExercises } from "@/lib/workout-storage";
@@ -94,6 +98,11 @@ type FinishedWorkout = {
 const cssEscape = (value: string) => (CSS as unknown as { escape: (v: string) => string }).escape(value);
 const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 const formatDuration = (seconds: number) => seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+type RecentSession = { date: number; sets: Array<{ weight: number; reps: number }> };
+const benchmarkLabel = (set: { weight: number; reps: number }, timed = false) => set.weight > 0 ? `${set.weight} kg × ${set.reps}` : `${set.reps} ${timed ? "sec" : "reps"}`;
+function BenchmarkNote({ set, timed = false }: { set: { weight: number; reps: number } | undefined; timed?: boolean }) {
+  return set && Number.isFinite(set.reps) && set.reps > 0 ? <p className="pb-1 pl-8 text-[0.65rem] font-medium tabular-nums text-muted-foreground">Last session: <span className="font-semibold text-foreground/75">{benchmarkLabel(set, timed)}</span></p> : null;
+}
 
 export function ActiveWorkout({ workout, onChange, onCancel }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onCancel: () => void }) {
   const trainingData = useTrainingData();
@@ -103,7 +112,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     for (const previous of workouts) {
       for (const exercise of previous.exercises) {
         if (history[exercise.exerciseId]) continue;
-        const working = exercise.sets.filter((set) => set.kind !== "cardio");
+        const working = exercise.sets.filter((set) => set.kind !== "cardio" && set.kind !== "warmup" && set.completed !== false);
         const best = working.reduce<(typeof working)[number] | undefined>((current, set) => !current || (set.weight * set.reps) > (current.weight * current.reps) ? set : current, undefined);
         if (best) history[exercise.exerciseId] = best.weight > 0 ? `${best.weight} kg × ${best.reps}` : `${best.reps} ${isTimedHold(exercise) ? "sec" : "reps"}`;
       }
@@ -119,7 +128,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       for (const exercise of previous.exercises) {
         if ((history[exercise.exerciseId]?.length ?? 0) >= 5) continue;
         const sets = exercise.sets
-          .filter((set) => set.kind !== "cardio")
+          .filter((set) => set.kind !== "cardio" && set.kind !== "warmup" && set.completed !== false)
           .map((set) => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
         if (!sets.length) continue;
         (history[exercise.exerciseId] ??= []).push({ date: previous.startedAt, sets });
@@ -139,13 +148,14 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [finishOpen, setFinishOpen] = useState(false);
   const [restApply, setRestApply] = useState<{ key: string; seconds: number } | null>(null);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
-  const [rest, setRest] = useState<{ endsAt: number; expanded: boolean; duration: number } | null>(null);
+  const { runtime, update: updateRuntime, clear: clearRuntime } = useWorkoutRuntime(workout.id, workout.circuits ?? [], now);
+  const { rest, circuitRun, circuitMinimized, completedCircuits } = runtime;
+  const setRest = (value: SetStateAction<WorkoutRuntime["rest"]>) => updateRuntime("rest", value);
+  const setCircuitRun = (value: SetStateAction<WorkoutRuntime["circuitRun"]>) => updateRuntime("circuitRun", value);
+  const setCircuitMinimized = (value: SetStateAction<boolean>) => updateRuntime("circuitMinimized", value);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
-  const [circuitRun, setCircuitRun] = useState<{ id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null>(null);
-  const [circuitMinimized, setCircuitMinimized] = useState(false);
   const [expandedCircuit, setExpandedCircuit] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const [completedCircuits, setCompletedCircuits] = useState<string[]>([]);
   const restAudioRef = useRef<AudioContext | null>(null);
   const previousCurrentKeyRef = useRef(workout.currentKey);
   const restWasActiveRef = useRef(false);
@@ -294,7 +304,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         restAudioRef.current = audio;
         if (audio.state === "suspended") void audio.resume();
       }
-      window.setTimeout(() => setRest({ endsAt: Date.now() + (exerciseGroup?.restSeconds ?? exercise.restSeconds) * 1000, expanded: true, duration: exerciseGroup?.restSeconds ?? exercise.restSeconds }), 650);
+      setRest({ endsAt: Date.now() + (exerciseGroup?.restSeconds ?? exercise.restSeconds) * 1000, expanded: true, duration: exerciseGroup?.restSeconds ?? exercise.restSeconds });
     }
   };
 
@@ -390,6 +400,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
         saveWorkout({ ...source, exercises });
       }
     }
+    clearRuntime();
     localStorage.removeItem("recomp-active-workout-v1");
     setFinished(result);
     setFinishOpen(false);
@@ -400,8 +411,16 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   if (circuitRun && !circuitMinimized) {
     const circuit = workout.circuits?.find((item) => item.id === circuitRun.id);
     const members = workout.exercises.filter((exercise) => exercise.circuitId === circuitRun.id);
-    if (circuit) return <CircuitMode circuit={circuit} members={members} run={circuitRun} now={now} onRun={setCircuitRun} onExit={() => { setCircuitRun(null); setCircuitMinimized(false); }} onComplete={() => { setCompletedCircuits((ids) => ids.includes(circuit.id) ? ids : [...ids, circuit.id]); setCircuitRun(null); setCircuitMinimized(false); }} onMinimize={() => setCircuitMinimized(true)} />;
+    if (circuit) return <CircuitMode circuit={circuit} members={members} run={circuitRun} now={now} onRun={setCircuitRun} onExit={() => { setCircuitRun(null); setCircuitMinimized(false); }} onMinimize={() => setCircuitMinimized(true)} />;
   }
+
+  const useLastSession = (key: string) => {
+    const exercise = workout.exercises.find((item) => item.key === key);
+    const previous = exercise && exerciseHistory[exercise.id]?.[0];
+    if (!exercise || !previous) return;
+    updateExercise(key, (item) => applyPreviousSession(item, previous.sets));
+    toast.success("Last session applied to all matching sets");
+  };
 
   const renderExercise = (exercise: ActiveExercise, exerciseIndex: number) => {
               if (exercise.groupId) {
@@ -410,7 +429,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 if (group && firstMember?.key !== exercise.key) return null;
                 if (group) {
                   const members = group.memberKeys.map((key) => workout.exercises.find((item) => item.key === key)).filter(Boolean) as ActiveExercise[];
-                  return <div key={group.id}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise></div>;
+                  return <div key={group.id}><SortableActiveExercise exercise={exercise} index={exerciseIndex}><ExerciseGroupCard group={group} members={members} expanded={expandedGroup === group.id} onToggle={() => setExpandedGroup((id) => id === group.id ? null : group.id)} onSetChange={updateSet} onToggleSet={toggleSet} onUseLastSession={useLastSession} exerciseHistory={exerciseHistory} onActions={() => setSheet({ kind:"actions", key:exercise.key })}/></SortableActiveExercise></div>;
                 }
               }
               if (exercise.circuitId) {
@@ -431,6 +450,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
                 pairedName={workout.exercises.find((item) => item.key === exercise.supersetWith)?.name}
                 previous={previousPerformance[exercise.id]}
                 recentHistory={exerciseHistory[exercise.id] ?? []}
+                onUseLastSession={() => useLastSession(exercise.key)}
                 onToggle={() => { if (!current) setExpandedUpcoming((value) => value === exercise.key ? null : exercise.key); }}
                 onStart={() => startExercise(exercise.key)}
                 onSetChange={(setId, patch, propagate, propagateReps) => updateSet(exercise.key, setId, patch, propagate, propagateReps)}
@@ -469,7 +489,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-2xl bg-popover">
           <AlertDialogHeader><AlertDialogTitle>Cancel workout?</AlertDialogTitle><AlertDialogDescription>Your progress from this workout will be discarded.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Keep Workout</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { setRest(null); setSheet({ kind: "closed" }); setCancelOpen(false); onCancel(); }}>Cancel Workout</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogFooter><AlertDialogCancel>Keep Workout</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { setRest(null); setSheet({ kind: "closed" }); setCancelOpen(false); clearRuntime(); onCancel(); }}>Cancel Workout</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
@@ -549,8 +569,8 @@ function SortableActiveExercise({ exercise, index, children }: { exercise: Activ
   </div>;
 }
 
-function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, recentHistory, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
-  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined; recentHistory: Array<{ date: number; sets: Array<{ weight: number; reps: number }> }>;
+function ExerciseCard({ exercise, current, completed, expanded, pairedName, previous, recentHistory, onUseLastSession, onToggle, onStart, onSetChange, onToggleSet, onAddSet, onAddWarmup, onRemoveSet, onRest, onActions, circuit, onStartCircuit }: {
+  exercise: ActiveExercise; current: boolean; completed: boolean; expanded: boolean; pairedName: string | undefined; previous?: string | undefined; onUseLastSession: () => void; recentHistory: RecentSession[];
   onToggle: () => void; onStart: () => void; onSetChange: (setId: string, patch: Partial<ActiveSet>, propagateWeight?: boolean, propagateReps?: boolean) => void; onToggleSet: (set: ActiveSet) => void; onAddSet: () => void; onAddWarmup: () => void; onRemoveSet: (setId: string) => void; onRest: () => void; onActions: () => void; circuit?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> } | undefined; onStartCircuit?: (() => void) | undefined;
 }) {
   const workingSets = exercise.sessionSets.filter((set) => set.kind !== "warmup");
@@ -579,6 +599,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, prev
           {previous ? <p className="rounded-full border border-primary/10 bg-primary/[0.07] px-2.5 py-1.5 text-[0.68rem] font-semibold text-muted-foreground dark:bg-primary/[0.10]">Last best: <span className="font-extrabold text-foreground">{previous}</span></p> : <span />}
           {recentHistory.length > 0 && <button type="button" onClick={() => setHistoryOpen((open) => !open)} className="flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[0.68rem] font-extrabold text-primary hover:bg-primary/[0.08]" aria-expanded={historyOpen}><History className="size-3.5" />{historyOpen ? "Hide history" : "History"}</button>}
         </div>
+        {recentHistory.length > 0 && <button type="button" onClick={onUseLastSession} className="mb-2 flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs font-bold text-primary hover:bg-primary/10"><History className="size-4" />Use last session<span className="text-[0.65rem] font-medium text-muted-foreground">Replaces completed sets too</span></button>}
         {historyOpen && recentHistory.length > 0 && <div className="mb-3 overflow-hidden rounded-xl border border-border bg-secondary/35">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <span className="text-[0.65rem] font-black uppercase tracking-wide text-muted-foreground">Recent sessions</span>
@@ -602,7 +623,7 @@ function ExerciseCard({ exercise, current, completed, expanded, pairedName, prev
           </div>
         </div>}
         <div className="mb-1 grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 px-1 text-[0.6rem] font-bold uppercase text-muted-foreground"><span>Set</span><span className="text-center">kg</span><span className="text-center">{isTimedHold(exercise) ? "sec" : "reps"}</span><span /></div>
-        <div className="space-y-1">{warmupSets.length > 0 && workingStarted && <div className="mb-1 rounded-lg bg-secondary/60 px-2 py-2 text-[0.68rem] font-bold text-muted-foreground">✓ {warmupSets.filter((set) => set.completed).length} of {warmupSets.length} warm-up sets</div>}{exercise.sessionSets.map((set) => { const isWarmup = set.kind === "warmup"; const warmupIndex = warmupSets.findIndex((row) => row.id === set.id); const workingIndex = workingSets.findIndex((row) => row.id === set.id); if (isWarmup && workingStarted) return null; return <SetRow key={set.id} set={set} number={isWarmup ? `W${warmupIndex + 1}` : workingIndex + 1} active={current && set.id === exercise.sessionSets.find((row) => !row.completed)?.id} timed={isTimedHold(exercise)} canRemove={!isWarmup && workingSets.length > 1} onChange={(patch, propagateWeight, propagateReps) => onSetChange(set.id, patch, propagateWeight, propagateReps)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} />; })}</div>
+        <div className="space-y-1">{warmupSets.length > 0 && workingStarted && <div className="mb-1 rounded-lg bg-secondary/60 px-2 py-2 text-[0.68rem] font-bold text-muted-foreground">✓ {warmupSets.filter((set) => set.completed).length} of {warmupSets.length} warm-up sets</div>}{exercise.sessionSets.map((set) => { const isWarmup = set.kind === "warmup"; const warmupIndex = warmupSets.findIndex((row) => row.id === set.id); const workingIndex = workingSets.findIndex((row) => row.id === set.id); if (isWarmup && workingStarted) return null; return <div key={set.id}><SetRow set={set} number={isWarmup ? `W${warmupIndex + 1}` : workingIndex + 1} active={current && set.id === exercise.sessionSets.find((row) => !row.completed)?.id} timed={isTimedHold(exercise)} canRemove={!isWarmup && workingSets.length > 1} onChange={(patch, propagateWeight, propagateReps) => onSetChange(set.id, patch, propagateWeight, propagateReps)} onToggle={() => onToggleSet(set)} onRemove={() => onRemoveSet(set.id)} /><BenchmarkNote set={isWarmup ? undefined : recentHistory[0]?.sets[workingIndex]} timed={isTimedHold(exercise)} /></div>; })}</div>
         <div className="mt-2 flex items-center justify-between gap-2"><div className="flex items-center gap-1"><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddSet}><Plus /> Add set</Button><Button variant="ghost" size="sm" className="px-1.5 text-muted-foreground" onClick={onAddWarmup}><Plus /> Warm-up</Button></div><Button variant="ghost" size="icon" className="size-9 text-muted-foreground" aria-label={`Actions for ${exercise.name}`} onClick={onActions}><Ellipsis /></Button></div>
         <div className="mt-1 flex items-center justify-between gap-2 border-t border-border pt-2"><button type="button" onClick={onRest} className="flex min-h-9 items-center text-left text-[0.68rem] text-muted-foreground"><span className="font-semibold">Rest between sets</span><span className="ml-2 font-bold tabular-nums text-foreground">{exercise.restSeconds} sec</span><ChevronDown className="ml-1 size-3.5" aria-hidden="true" /></button>{!current && <Button variant="surface" size="sm" onClick={onStart}>Start this exercise</Button>}</div>
       </>}
@@ -945,9 +966,8 @@ function CircuitSetup({ workout, anchorKey, onCreate }: { workout: ActiveWorkout
   return <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="mb-3 space-y-1">{eligible.map((e) => { const selected = members.includes(e.key); return <div key={e.key} className="flex min-h-14 items-center gap-2 rounded-xl bg-secondary px-3"><button type="button" onClick={() => e.key !== anchorKey && setMembers((v) => v.includes(e.key) ? v.filter((k) => k !== e.key) : [...v,e.key])} className="flex min-w-0 flex-1 items-center justify-between text-left text-sm font-bold"><span className="truncate">{e.name}</span><span className="ml-2">{selected ? "✓" : "○"}</span></button>{selected && <div className="flex shrink-0 items-center gap-1 rounded-lg bg-background/70 px-1"><button type="button" className="grid size-9 place-items-center text-lg" onClick={() => setReps((v) => ({...v,[e.key]:Math.max(1,(v[e.key] ?? 10)-1)}))}>−</button><span className="min-w-12 text-center text-xs font-extrabold tabular-nums">{reps[e.key] ?? 10} reps</span><button type="button" className="grid size-9 place-items-center text-lg" onClick={() => setReps((v) => ({...v,[e.key]:Math.min(99,(v[e.key] ?? 10)+1)}))}>+</button></div>}</div>})}</div><div className="grid grid-cols-3 gap-2">{[["Work",work,setWork,60],["Rest",rest,setRest,15],["Rounds",rounds,setRounds,1]].map(([label,value,setter,step]: any) => <div key={label} className="rounded-xl bg-secondary p-2 text-center"><div className="text-[0.62rem] font-bold uppercase text-muted-foreground">{label}</div><div className="my-1 font-extrabold">{label === "Rounds" ? value : formatClock(value)}</div><div className="flex items-center justify-between px-2"><button type="button" className="grid size-9 place-items-center text-lg" onClick={() => setter(Math.max(step, value-step))}>−</button><button type="button" className="grid size-9 place-items-center text-lg" onClick={() => setter(value+step)}>+</button></div></div>)}</div><Button className="mt-4 w-full" disabled={members.length < 2} onClick={() => onCreate(members,work,rest,rounds,Object.fromEntries(members.map((key) => [key,reps[key] ?? 10])))}>Create circuit</Button></div>;
 }
 
-function CircuitMode({ circuit, members, run, now, onRun, onExit, onComplete, onMinimize }: { circuit: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }; members: ActiveExercise[]; run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number }; now: number; onRun: (run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null) => void; onExit: () => void; onComplete: () => void; onMinimize: () => void }) {
+function CircuitMode({ circuit, members, run, now, onRun, onExit, onMinimize }: { circuit: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }; members: ActiveExercise[]; run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number }; now: number; onRun: (run: { id: string; phase: "countdown" | "work" | "rest"; round: number; endsAt: number } | null) => void; onExit: () => void; onMinimize: () => void }) {
   const remaining = Math.max(0, Math.ceil((run.endsAt-now)/1000));
-  useEffect(() => { if (remaining > 0) return; if (run.phase === "countdown") onRun({ ...run, phase:"work", endsAt:Date.now()+circuit.workSeconds*1000 }); else if (run.phase === "work") { if (run.round >= circuit.rounds) onComplete(); else onRun({ ...run, phase:"rest", endsAt:Date.now()+circuit.restSeconds*1000 }); } else if (run.round >= circuit.rounds) onComplete(); else onRun({ ...run, phase:"work", round:run.round+1, endsAt:Date.now()+circuit.workSeconds*1000 }); }, [remaining, run.phase, run.round]);
   const countdown = run.phase === "countdown" ? remaining : run.phase === "rest" && remaining <= 3 ? remaining : null;
   if (countdown !== null) return createPortal(<div className="fixed inset-0 z-[9999] bg-background"><button className="absolute right-5 top-5 z-10 text-muted-foreground" onClick={onExit}><X /></button><div className="fixed inset-0 grid h-[100dvh] w-screen place-items-center pointer-events-none"><div key={countdown} className="circuit-count-pop text-[10rem] font-black leading-none text-primary">{countdown || "GO"}</div></div><style>{`@keyframes circuitCountPop{0%{opacity:0;transform:scale(.45)}35%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}.circuit-count-pop{animation:circuitCountPop .75s cubic-bezier(.16,1,.3,1)}`}</style></div>, document.body);
   return <div className="fixed inset-0 z-[100] flex flex-col bg-background px-5 pb-8 pt-[calc(1rem+env(safe-area-inset-top))]"><div className="flex justify-between"><button onClick={onExit}><X /></button><button type="button" onClick={onMinimize} className="rounded-full bg-secondary px-3 py-1.5 text-xs font-extrabold">Minimise</button><span className="text-xs font-extrabold">ROUND {run.round}/{circuit.rounds}</span></div><div className="flex flex-1 flex-col items-center justify-center translate-y-[6dvh]"><div className="text-xs font-black uppercase tracking-[.25em] text-muted-foreground">{run.phase === "rest" ? "Rest" : "Circuit"}</div><div className="mt-3 text-7xl font-black tabular-nums text-primary">{formatClock(remaining)}</div>{run.phase === "work" ? <div className="mt-10 w-full max-w-sm space-y-3">{members.map((e,i) => <div key={e.key} className="text-center"><div className="text-xl font-extrabold">{e.name}</div><div className="mt-1 text-sm font-bold text-muted-foreground">{circuit.reps?.[e.key] ?? 10} reps</div>{i < members.length-1 && <div className="mt-2 text-muted-foreground">↓</div>}</div>)}<p className="pt-4 text-center text-xs font-semibold text-muted-foreground">Keep cycling until time</p></div> : <div className="mt-10 flex flex-col items-center gap-5 text-center"><div className="text-sm font-bold text-muted-foreground">Next · Round {Math.min(run.round+1,circuit.rounds)}</div><Button variant="surface" className="w-full max-w-sm" onClick={() => onRun({ ...run, phase:"work", round:Math.min(run.round+1,circuit.rounds), endsAt:Date.now()+circuit.workSeconds*1000 })}>Skip rest</Button></div>}</div></div>;
@@ -962,4 +982,4 @@ function CircuitWorkoutCard({ circuit, members, expanded, run, now, onToggle, on
 
 function ExerciseGroupSetup({ workout, anchorKey, onCreate }: { workout:ActiveWorkoutState; anchorKey:string; onCreate:(keys:string[],rest:number)=>void }) { const [keys,setKeys]=useState<string[]>([anchorKey]); const [rest,setRest]=useState(90); const eligible=workout.exercises.filter(e=>!isCardioExercise(e)&&!e.circuitId&&!e.groupId&&!e.supersetWith); useEffect(()=>{setKeys([anchorKey]);setRest(90)},[anchorKey]); return <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="space-y-1">{eligible.map(e=><button key={e.key} type="button" className="flex min-h-12 w-full items-center justify-between rounded-xl bg-secondary px-3 text-sm font-bold" onClick={()=>e.key!==anchorKey&&setKeys(v=>v.includes(e.key)?v.filter(k=>k!==e.key):v.length<3?[...v,e.key]:v)}><span>{e.name}</span><span>{keys.includes(e.key)?"✓":"○"}</span></button>)}</div><div className="mt-3 flex items-center justify-between rounded-xl bg-secondary px-3 py-2"><span className="text-xs font-bold">Rest after round</span><div className="flex items-center gap-4"><button className="size-9 text-lg" onClick={()=>setRest(v=>Math.max(15,v-15))}>−</button><span className="min-w-12 text-center text-sm font-black">{rest}s</span><button className="size-9 text-lg" onClick={()=>setRest(v=>v+15)}>+</button></div></div><Button className="mt-4 w-full" disabled={keys.length<2 || keys.length>3 || !keys.every(key=>eligible.some(e=>e.key===key))} onClick={()=>onCreate(keys,rest)}>Create {keys.length===3?"tri-set":"superset"}</Button></div> }
 
-function ExerciseGroupCard({ group,members,expanded,onToggle,onSetChange,onToggleSet,onActions }: { group:{id:string;memberKeys:string[];restSeconds:number}; members:ActiveExercise[]; expanded:boolean; onToggle:()=>void; onSetChange:(exerciseKey:string,setId:string,patch:Partial<ActiveSet>,propagateWeight?:boolean,propagateReps?:boolean)=>void; onToggleSet:(exercise:ActiveExercise,set:ActiveSet)=>void; onActions:()=>void }) { const total=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup").length,0); const done=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup"&&s.completed).length,0); const complete=total>0&&done===total; const label=members.length===3?"TRI-SET":"SUPERSET"; return <Card className={cn("overflow-hidden border p-0",complete&&"border-emerald-500/25 bg-emerald-500/[0.08]")}><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 py-3 pl-11 pr-3 text-left"><span className="min-w-0"><span className={cn("text-xs font-black tracking-wide",complete&&"text-emerald-600")}>{complete&&"✓ "}{label}</span><span className="mt-2 block space-y-1">{members.map(e=><span key={e.key} className="block truncate text-sm font-bold">{e.name}</span>)}</span><span className="mt-2 block text-[0.68rem] text-muted-foreground">{Math.max(...members.map(e=>e.sessionSets.filter(s=>s.kind!=="warmup").length))} rounds · {group.restSeconds}s rest</span></span><span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">{done}/{total}{expanded?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}</span></button>{expanded&&<div className="border-t border-border px-3 pb-3 pt-2"><div className="space-y-4">{members.map(e=><div key={e.key} data-workout-group-member-key={e.key}><div className="mb-1 text-sm font-extrabold">{e.name}</div><div className="space-y-1">{e.sessionSets.filter(s=>s.kind!=="warmup").map((s,i)=>{ const completedBefore=members.slice(0,members.indexOf(e)).reduce((n,m)=>n+(m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed?1:0),0); const priorRounds=members.every(m=>m.sessionSets.filter(x=>x.kind!=="warmup").slice(0,i).every(x=>x.completed)); const isNext=!s.completed&&priorRounds&&completedBefore===members.indexOf(e)&&members.slice(0,members.indexOf(e)).every(m=>m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed); return <div key={s.id} data-workout-group-set-id={s.id}><SetRow set={s} number={i+1} active={isNext} attention={isNext} canRemove={false} onChange={(patch,propagate,propagateReps)=>onSetChange(e.key,s.id,patch,propagate,propagateReps)} onToggle={()=>{ if (!s.completed) { const memberIndex=members.findIndex(m=>m.key===e.key); const next=members[memberIndex+1]; if(next) window.setTimeout(()=>{ const nextSets=next.sessionSets.filter(x=>x.kind!=="warmup"); const targetSet=nextSets[i]; const target=document.querySelector<HTMLElement>(`[data-workout-group-set-id="${cssEscape(targetSet?.id ?? "")}"]`); if(target){ const top=target.getBoundingClientRect().top+window.scrollY-220; window.scrollTo({top:Math.max(0,top),behavior:"smooth"}); } },180); } onToggleSet(e,s); }} onRemove={()=>{}}/></div>; })}</div></div>)}</div><Button variant="ghost" size="sm" className="mt-2 w-full" onClick={onActions}><Ellipsis className="size-4"/> Group actions</Button></div>}</Card> }
+function ExerciseGroupCard({ group,members,expanded,onToggle,onSetChange,onToggleSet,onUseLastSession,exerciseHistory,onActions }: { group:{id:string;memberKeys:string[];restSeconds:number}; members:ActiveExercise[]; expanded:boolean; onToggle:()=>void; onSetChange:(exerciseKey:string,setId:string,patch:Partial<ActiveSet>,propagateWeight?:boolean,propagateReps?:boolean)=>void; onToggleSet:(exercise:ActiveExercise,set:ActiveSet)=>void; onUseLastSession:(key:string)=>void; exerciseHistory:Record<string, RecentSession[]>; onActions:()=>void }) { const total=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup").length,0); const done=members.reduce((n,e)=>n+e.sessionSets.filter(s=>s.kind!=="warmup"&&s.completed).length,0); const complete=total>0&&done===total; const label=members.length===3?"TRI-SET":"SUPERSET"; return <Card className={cn("overflow-hidden border p-0",complete&&"border-emerald-500/25 bg-emerald-500/[0.08]")}><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 py-3 pl-11 pr-3 text-left"><span className="min-w-0"><span className={cn("text-xs font-black tracking-wide",complete&&"text-emerald-600")}>{complete&&"✓ "}{label}</span><span className="mt-2 block space-y-1">{members.map(e=><span key={e.key} className="block truncate text-sm font-bold">{e.name}</span>)}</span><span className="mt-2 block text-[0.68rem] text-muted-foreground">{Math.max(...members.map(e=>e.sessionSets.filter(s=>s.kind!=="warmup").length))} rounds · {group.restSeconds}s rest</span></span><span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">{done}/{total}{expanded?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}</span></button>{expanded&&<div className="border-t border-border px-3 pb-3 pt-2"><div className="space-y-4">{members.map(e=><div key={e.key} data-workout-group-member-key={e.key}><div className="mb-1 text-sm font-extrabold">{e.name}</div>{exerciseHistory[e.id]?.length && <button type="button" onClick={()=>onUseLastSession(e.key)} className="mb-1 min-h-11 px-2 text-xs font-bold text-primary">Use last session <span className="font-medium text-muted-foreground">· Replaces completed sets too</span></button>}<div className="space-y-1">{e.sessionSets.filter(s=>s.kind!=="warmup").map((s,i)=>{ const completedBefore=members.slice(0,members.indexOf(e)).reduce((n,m)=>n+(m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed?1:0),0); const priorRounds=members.every(m=>m.sessionSets.filter(x=>x.kind!=="warmup").slice(0,i).every(x=>x.completed)); const isNext=!s.completed&&priorRounds&&completedBefore===members.indexOf(e)&&members.slice(0,members.indexOf(e)).every(m=>m.sessionSets.filter(x=>x.kind!=="warmup")[i]?.completed); return <div key={s.id} data-workout-group-set-id={s.id}><SetRow set={s} number={i+1} active={isNext} attention={isNext} canRemove={false} onChange={(patch,propagate,propagateReps)=>onSetChange(e.key,s.id,patch,propagate,propagateReps)} onToggle={()=>{ if (!s.completed) { const memberIndex=members.findIndex(m=>m.key===e.key); const next=members[memberIndex+1]; if(next) window.setTimeout(()=>{ const nextSets=next.sessionSets.filter(x=>x.kind!=="warmup"); const targetSet=nextSets[i]; const target=document.querySelector<HTMLElement>(`[data-workout-group-set-id="${cssEscape(targetSet?.id ?? "")}"]`); if(target){ const top=target.getBoundingClientRect().top+window.scrollY-220; window.scrollTo({top:Math.max(0,top),behavior:"smooth"}); } },180); } onToggleSet(e,s); }} onRemove={()=>{}}/><BenchmarkNote set={exerciseHistory[e.id]?.[0]?.sets[i]} timed={isTimedHold(e)} /></div>; })}</div></div>)}</div><Button variant="ghost" size="sm" className="mt-2 w-full" onClick={onActions}><Ellipsis className="size-4"/> Group actions</Button></div>}</Card> }
