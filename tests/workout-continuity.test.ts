@@ -64,10 +64,10 @@ const active: ActiveExercise = {
     { id: "extra", weight: "", reps: "10", completed: false, weightEdited: false },
   ],
 };
-test("use last session preserves warm-ups, completed sets, extra sets and set IDs", () => {
+test("use last session fills completed and unfinished working sets without changing completion status or warm-ups", () => {
   const next = applyPreviousSession(active, [{ weight: 10, reps: 20, kind: "warmup" }, ...exercise.sets]);
   assert.deepEqual(next.sessionSets[0], active.sessionSets[0]);
-  assert.deepEqual(next.sessionSets[1], active.sessionSets[1]);
+  assert.deepEqual(next.sessionSets[1], { ...active.sessionSets[1], weight: "80", reps: "10", weightEdited: true });
   assert.deepEqual(next.sessionSets[2], { ...active.sessionSets[2], weight: "80", reps: "8", weightEdited: true });
   assert.deepEqual(next.sessionSets[3], active.sessionSets[3]);
   assert.equal(active.sessionSets[2]?.weight, ""); // immutable
