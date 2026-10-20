@@ -772,9 +772,64 @@ function ExerciseActionsSheet({ sheet, workout, onClose, onShowReplace, onShowSu
 }
 
 function ExercisePicker({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (exercise: Exercise) => void }) {
-  const [query, setQuery] = useState(""); const [muscle, setMuscle] = useState<Muscle | null>(null); const [equipment, setEquipment] = useState<Equipment | null>(null);
-  const results = useMemo(() => [...exercises.filter((exercise) => (!muscle || exercise.muscle === muscle || exercise.muscles?.includes(muscle)) && (!equipment || exercise.equipment === equipment) && exercise.name.toLowerCase().includes(query.toLowerCase()))].sort((a, b) => a.name.localeCompare(b.name)), [query, muscle, equipment]);
-  return <Drawer open={open} onOpenChange={(value) => { if (!value) onClose(); }}><DrawerContent className="mx-auto h-[82dvh] max-w-[430px] rounded-t-2xl bg-popover"><DrawerHeader className="pb-2 text-left"><DrawerTitle>Add exercise</DrawerTitle></DrawerHeader><div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"><div className="relative mb-2"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><FilterRow items={muscleGroups} value={muscle} onSelect={(item) => setMuscle(item === muscle ? null : item)}/><FilterRow items={equipmentTypes} value={equipment} onSelect={(item) => setEquipment(item === equipment ? null : item)}/><div className="mt-2 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{results.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={onSelect}/>)}</div></div></DrawerContent></Drawer>;
+  const customExercises = useCustomExercises();
+  const [query, setQuery] = useState("");
+  const [muscle, setMuscle] = useState<Muscle | null>(null);
+  const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [creatingCustom, setCreatingCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customMuscles, setCustomMuscles] = useState<Muscle[]>([]);
+  const [customEquipment, setCustomEquipment] = useState<Equipment>("Dumbbell");
+  const results = useMemo(() => [...customExercises, ...exercises]
+    .filter((exercise) => !isCardioExercise(exercise) && (!muscle || exercise.muscle === muscle || exercise.muscles?.includes(muscle)) && (!equipment || exercise.equipment === equipment) && exercise.name.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name)), [customExercises, query, muscle, equipment]);
+  const close = () => {
+    setCreatingCustom(false);
+    setCustomName("");
+    setCustomMuscles([]);
+    onClose();
+  };
+  const createAndAdd = () => {
+    const first = customMuscles[0];
+    if (!customName.trim() || !first) return;
+    const exercise: Exercise = { id: `custom-${newId()}`, name: customName.trim(), muscle: first, muscles: customMuscles, equipment: customEquipment, type: customMuscles.length > 1 ? "Compound" : "Isolation", custom: true };
+    saveCustomExercise(exercise);
+    onSelect(exercise);
+    close();
+  };
+  return (
+    <Drawer open={open} onOpenChange={(value) => { if (!value) close(); }}>
+      <DrawerContent className="mx-auto h-[82dvh] max-w-[430px] rounded-t-2xl bg-popover">
+        <DrawerHeader className="flex-row items-center justify-between pb-2 text-left">
+          <DrawerTitle>{creatingCustom ? "Custom exercise" : "Add exercise"}</DrawerTitle>
+          <Button variant="ghost" size="sm" className="px-2 text-primary" onClick={() => setCreatingCustom((value) => !value)}>
+            {creatingCustom ? "Library" : <><Plus /> Create custom</>}
+          </Button>
+        </DrawerHeader>
+        {creatingCustom ? (
+          <div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <input value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder="Exercise name" className="mb-3 h-11 w-full rounded-xl border border-border bg-secondary px-3 text-sm outline-none focus:border-primary" />
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-1.5">
+                {muscleGroups.map((item) => { const active = customMuscles.includes(item); return <Button key={item} variant={active ? "choiceActive" : "choice"} className="h-9 justify-between px-3" onClick={() => setCustomMuscles((values) => active ? values.filter((value) => value !== item) : [...values, item])}>{item}{active && <Check />}</Button>; })}
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {equipmentTypes.map((item) => <Button key={item} variant={customEquipment === item ? "choiceActive" : "choice"} className="h-9 px-2 text-xs" onClick={() => setCustomEquipment(item)}>{item === "Plate-loaded Machine" ? "Plate loaded" : item === "Pin-loaded Machine" ? "Pin loaded" : item}</Button>)}
+              </div>
+            </div>
+            <Button variant="primary" size="lg" className="mt-3 w-full" disabled={!customName.trim() || !customMuscles.length} onClick={createAndAdd}>Create & add</Button>
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="relative mb-2"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search exercises" className="h-11 w-full rounded-xl border border-border bg-secondary pl-9 pr-3 text-sm outline-none focus:border-primary" /></div>
+            <FilterRow items={muscleGroups} value={muscle} onSelect={(item) => setMuscle(item === muscle ? null : item)} />
+            <FilterRow items={equipmentTypes} value={equipment} onSelect={(item) => setEquipment(item === equipment ? null : item)} />
+            <div className="mt-2 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card px-3">{results.map((exercise) => <ExerciseOption key={exercise.id} exercise={exercise} onSelect={onSelect} />)}</div>
+          </div>
+        )}
+      </DrawerContent>
+    </Drawer>
+  );
 }
 
 function CardioPicker({ open, onClose, onSelect }: { open: boolean; onClose: () => void; onSelect: (exercise: Exercise) => void }) {
