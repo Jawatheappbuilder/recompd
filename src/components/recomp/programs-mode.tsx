@@ -172,7 +172,7 @@ export function ProgramsMode() {
 
   if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
 
-  const managed = drafts.find((p) => p.id === manageId && p.status !== "draft");
+  const managed = drafts.find((p) => p.id === manageId);
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
   if (!current) return <div className="space-y-4 pb-5">
