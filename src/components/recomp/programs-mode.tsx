@@ -12,6 +12,7 @@ import { completionStats, createOccurrences, isPending, occurrencesFor, replan, 
 import { deleteProgramDraft, saveProgramDraft, useProgramDrafts, type ProgramWorkout, type TrainingProgram } from "@/lib/program-storage";
 import { WorkoutEditor } from "./workout-editor";
 import { ProgramOverview } from "./program-overview";
+import { buildProgramFromTemplate, programTemplates, type ProgramTemplate } from "@/data/program-templates";
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const weekdayOrder = [1, 2, 3, 4, 5, 6, 0];
@@ -24,22 +25,37 @@ const createDraft = (): TrainingProgram => ({
   startDate: today(), weekdays: [], status: "draft",
   workouts: [], createdAt: Date.now(), updatedAt: Date.now(),
 });
-/** Starter routine inspired by standard gym PPL templates; copied into an editable account draft. */
-function makePushPullLegs(): TrainingProgram {
-  const exercise = (name:string,sets:number,reps:string,restSeconds:number):WorkoutExercise => {
-    const match=exercises.find(e=>e.name===name);
-    if (!match) throw new Error("Missing exercise: "+name);
-    return {...toWorkoutExercise(match),key:newId(),sets,reps,restSeconds};
-  };
-  const day=(name:string,weekday:number,rows:[string,number,string,number][]):ProgramWorkout=>({
-    id:newId(),name,weekday,exercises:rows.map(([n,s,r,rest])=>exercise(n,s,r,rest)),
-  });
-  const program=createDraft();
-  return {...program,name:"Push / Pull / Legs",goal:"Hypertrophy",weeks:8,mode:"flexible",workouts:[
-    day("Push Day",1,[["Bench Press",3,"6–10",150],["Incline Dumbbell Press",3,"8–12",90],["Machine Shoulder Press",3,"8–12",90],["Lateral Raise",3,"12–15",60],["Rope Pushdown",3,"10–15",60]]),
-    day("Pull Day",3,[["Lat Pulldown",3,"8–12",120],["Seated Cable Row",3,"8–12",120],["Face Pull",3,"12–15",60],["Dumbbell Curl",3,"10–12",60],["Hammer Curl",3,"10–12",60]]),
-    day("Legs Day",5,[["Back Squat",3,"6–10",150],["Romanian Deadlift",3,"8–10",120],["Leg Press",3,"10–12",120],["Seated Leg Curl",3,"10–15",75],["Standing Calf Raise",3,"12–15",60]]),
-  ]};
+function TemplateCatalogue({ onPreview, onUse }: { onPreview: (t: ProgramTemplate) => void; onUse: (t: ProgramTemplate) => void }) {
+  const [goal, setGoal] = useState<string>("All");
+  const [days, setDays] = useState<number | null>(null);
+  const cards = programTemplates.map((t) => ({ t, minutes: durationMinutes(buildProgramFromTemplate(t).workouts) }));
+  const shown = cards.filter(({ t }) => (goal === "All" || t.goal === goal) && (days === null || t.days.length === days));
+  const goals = ["All", ...new Set(programTemplates.map((t) => t.goal))];
+  const pill = (active: boolean) => "h-7 shrink-0 rounded-full border px-3 text-[0.68rem] font-bold transition-colors " + (active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground");
+  return <section className="space-y-2.5">
+    <div className="flex items-baseline justify-between"><h3 className="text-sm font-extrabold">Starter programs</h3><span className="text-[0.65rem] text-muted-foreground">{shown.length} of {programTemplates.length}</span></div>
+    <div className="flex flex-wrap gap-1.5">
+      {goals.map((g) => <button key={g} type="button" aria-pressed={goal === g} className={pill(goal === g)} onClick={() => setGoal(g)}>{g}</button>)}
+      {[3, 4, 5].map((n) => <button key={n} type="button" aria-pressed={days === n} className={pill(days === n)} onClick={() => setDays(days === n ? null : n)}>{n} days</button>)}
+    </div>
+    <div className="space-y-2.5">
+      {shown.map(({ t, minutes }) => <article key={t.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0"><p className="text-[0.6rem] font-black uppercase tracking-widest text-primary">{t.tagline}</p><h4 className="mt-0.5 text-base font-black leading-tight">{t.name}</h4></div>
+            <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[0.62rem] font-bold text-muted-foreground">{t.difficulty}</span>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{t.description}</p>
+          <p className="mt-2 text-[0.68rem] font-semibold text-foreground">{t.goal} · {t.days.length} days/week · {t.weeks} weeks · ~{formatDuration(minutes)}/week</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button variant="surface" size="sm" onClick={() => onPreview(t)}>Preview</Button>
+            <Button variant="primary" size="sm" onClick={() => onUse(t)}><Plus />Use program</Button>
+          </div>
+        </div>
+      </article>)}
+      {!shown.length && <p className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No starter programs match those filters.</p>}
+    </div>
+  </section>;
 }
 const hasExercise = (workout: ProgramWorkout) => workout.exercises.some((exercise) => !exercise.note);
 const durationMinutes = (workouts: ProgramWorkout[]) => workouts.reduce((sum, workout) => {
@@ -110,6 +126,7 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const [current, setCurrent] = useState<TrainingProgram | null>(null);
   const [manageId, setManageId] = useState<string | null>(null);
   const [previewProgram, setPreviewProgram] = useState<TrainingProgram | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<ProgramTemplate | null>(null);
   const currentRef = useRef<TrainingProgram | null>(null);
   currentRef.current = current;
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
@@ -199,10 +216,15 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
   if (previewProgram) return <div className="space-y-3 pb-6">
-    <Button variant="ghost" size="sm" onClick={()=>setPreviewProgram(null)}><ArrowLeft/>All programs</Button>
+    <Button variant="ghost" size="sm" onClick={()=>{setPreviewProgram(null);setPreviewTemplate(null);}}><ArrowLeft/>All programs</Button>
     <div><h2 className="text-xl font-black">Program preview</h2><p className="mt-1 text-xs text-muted-foreground">Explore the entire routine before choosing it.</p></div>
+    {previewTemplate && <div className="rounded-2xl border border-border bg-card p-4 text-xs leading-relaxed">
+      <p className="text-muted-foreground">{previewTemplate.description}</p>
+      <p className="mt-2"><span className="font-extrabold">Progression: </span><span className="text-muted-foreground">{previewTemplate.progression}</span></p>
+      <p className="mt-2 text-[0.68rem] text-muted-foreground">Sessions run in order as a weekly cycle. Train them on any days that suit you, or switch to calendar scheduling.</p>
+    </div>}
     <ProgramOverview key={previewProgram.id} program={previewProgram}/>
-    <Button variant="primary" size="lg" className="w-full" onClick={()=>{setCurrent(structuredClone(previewProgram));setStep(1);setPreviewProgram(null);}}> {previewProgram.status==="draft"?"Customise program":"Use this program"} <ArrowRight/></Button>
+    <Button variant="primary" size="lg" className="w-full" onClick={()=>{ if (previewTemplate) { setCurrent(buildProgramFromTemplate(previewTemplate)); toast.success("Starter program ready — customise before saving"); } else setCurrent(structuredClone(previewProgram)); setStep(1);setPreviewProgram(null);setPreviewTemplate(null);}}> {previewTemplate?"Use this program":previewProgram.status==="draft"?"Customise program":"Use this program"} <ArrowRight/></Button>
   </div>;
 
   if (!current) return <div className="space-y-4 pb-5">
@@ -211,17 +233,7 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
       <Button variant="primary" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus />Create</Button>
     </div>
     <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"><Cloud className="size-4 shrink-0" />Drafts sync with your RECOMP'D account</div>
-    <section className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-sm">
-      <div className="bg-primary/[0.08] px-4 py-3"><span className="text-[0.65rem] font-black uppercase tracking-widest text-primary">STARTER PROGRAM</span><h3 className="mt-1 text-lg font-black">Push / Pull / Legs</h3><p className="mt-1 text-xs text-muted-foreground">Classic gym split · 3 workouts · Flexible schedule · 8 weeks</p></div>
-      <div className="space-y-3 p-4">
-        <div className="grid grid-cols-3 gap-2 text-center text-[0.7rem] font-bold"><span className="rounded-xl bg-secondary p-2">Push<br/><span className="font-normal text-muted-foreground">Chest / Tris</span></span><span className="rounded-xl bg-secondary p-2">Pull<br/><span className="font-normal text-muted-foreground">Back / Bis</span></span><span className="rounded-xl bg-secondary p-2">Legs<br/><span className="font-normal text-muted-foreground">Lower body</span></span></div>
-        <p className="text-xs text-muted-foreground">A balanced starting point with compound lifts and accessories. Adjust exercises, sets and training days to suit you.</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="surface" onClick={()=>setPreviewProgram(makePushPullLegs())}>Preview program</Button>
-          <Button variant="primary" onClick={()=>{setCurrent(makePushPullLegs());setStep(1);toast.success("Starter program ready — customise before saving");}}><Plus/>Use program</Button>
-        </div>
-      </div>
-    </section>
+    <TemplateCatalogue onPreview={(t)=>{setPreviewTemplate(t);setPreviewProgram(buildProgramFromTemplate(t));}} onUse={(t)=>{setCurrent(buildProgramFromTemplate(t));setStep(1);toast.success("Starter program ready — customise before saving");}}/>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
       <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary"><Dumbbell /></div>
       <h3 className="text-base font-black">Your training, your plan</h3>
