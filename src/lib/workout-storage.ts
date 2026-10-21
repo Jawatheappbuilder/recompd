@@ -41,6 +41,7 @@ export function handOffWorkout(handoff: WorkoutHandoff) {
     ...active,
     ...(handoff.scheduledId ? { scheduledId: handoff.scheduledId } : {}),
     ...(handoff.sourceSavedId ? { sourceSavedId: handoff.sourceSavedId } : {}),
+    ...(handoff.programId ? { programId: handoff.programId, programOccurrenceId: handoff.programOccurrenceId, programTemplateId: handoff.programTemplateId } : {}),
   };
   localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(next));
   sessionStorage.removeItem("recomp-active-workout");

@@ -5,6 +5,7 @@ import type { Equipment, Exercise, Muscle, WorkoutExercise } from "@/data/exerci
 import type { BodyweightEntry, CompletedExercise, CompletedNote, CompletedWorkout } from "./training-data";
 
 import { decodeExerciseSets, encodeExerciseSets } from "./workout-exercise-storage";
+import type { TrainingProgram } from "./program-storage";
 
 const NOTE_ROW_ID = "__note__";
 
@@ -18,7 +19,7 @@ const NOTE_ROW_ID = "__note__";
 export type SavedWorkout = { id: string; name: string; exercises: WorkoutExercise[]; createdAt: number };
 /** A planned instance of a workout on a date. `time` is "HH:MM" or undefined. `reminderOffsetMinutes` is reserved for native reminders. */
 export type ScheduledWorkout = { id: string; name: string; date: string; time?: string; exercises: WorkoutExercise[]; sourceSavedId?: string; reminderOffsetMinutes?: number; completedAt?: number; completedWorkoutId?: string; createdAt: number; updatedAt: number };
-export type CloudData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[]; saved: SavedWorkout[]; custom: Exercise[]; scheduled: ScheduledWorkout[] };
+export type CloudData = { workouts: CompletedWorkout[]; bodyweight: BodyweightEntry[]; saved: SavedWorkout[]; custom: Exercise[]; scheduled: ScheduledWorkout[]; programs: TrainingProgram[] };
 
 type Op =
   | { kind: "upsertWorkout"; workout: CompletedWorkout }
@@ -30,7 +31,9 @@ type Op =
   | { kind: "upsertCustom"; exercise: Exercise }
   | { kind: "deleteCustom"; id: string }
   | { kind: "upsertScheduled"; workout: ScheduledWorkout }
-  | { kind: "deleteScheduled"; id: string };
+  | { kind: "deleteScheduled"; id: string }
+  | { kind: "upsertProgram"; program: TrainingProgram }
+  | { kind: "deleteProgram"; id: string };
 
 let userId: string | null = null;
 let demoMode = false;
@@ -48,6 +51,7 @@ const sortData = (d: CloudData): CloudData => ({
   bodyweight: [...d.bodyweight].sort((a, b) => a.loggedAt - b.loggedAt),
   saved: [...d.saved].sort((a, b) => b.createdAt - a.createdAt),
   custom: d.custom,
+  programs: [...(d.programs ?? [])].sort((a,b) => b.updatedAt - a.updatedAt),
   scheduled: [...(d.scheduled ?? [])].sort((a, b) => `${a.date}${a.time ?? ""}`.localeCompare(`${b.date}${b.time ?? ""}`)),
 });
 
@@ -64,15 +68,16 @@ const toCustom = (row: { id: string; name: string; muscles: string[]; equipment:
 };
 
 async function fetchAll(): Promise<CloudData> {
-  const [w, e, b, s, c, sc] = await Promise.all([
+  const [w, e, b, s, c, sc, pr] = await Promise.all([
     supabase.from("workouts").select("*").eq("user_id", userId!),
     supabase.from("workout_exercises").select("*").eq("user_id", userId!).order("position"),
     supabase.from("bodyweight_entries").select("*").eq("user_id", userId!),
     supabase.from("saved_workouts").select("*").eq("user_id", userId!),
     supabase.from("custom_exercises").select("*").eq("user_id", userId!).order("created_at"),
     supabase.from("scheduled_workouts").select("*").eq("user_id", userId!),
+    supabase.from("training_programs").select("*").eq("user_id", userId!),
   ]);
-  const error = w.error ?? e.error ?? b.error ?? s.error ?? c.error ?? sc.error;
+  const error = w.error ?? e.error ?? b.error ?? s.error ?? c.error ?? sc.error ?? pr.error;
   if (error) throw error;
   const byWorkout = new Map<string, CompletedExercise[]>();
   const notesByWorkout = new Map<string, CompletedNote[]>();
@@ -92,6 +97,7 @@ async function fetchAll(): Promise<CloudData> {
     bodyweight: (b.data ?? []).map((row) => ({ id: row.id, kg: Number(row.kg), loggedAt: Date.parse(row.logged_at) })),
     saved: (s.data ?? []).map((row) => ({ id: row.id, name: row.name, exercises: row.exercises as unknown as WorkoutExercise[], createdAt: Date.parse(row.created_at) })),
     custom: (c.data ?? []).map(toCustom),
+    programs: (pr.data ?? []).map((row) => ({ ...(row.payload as unknown as TrainingProgram), id: row.id, createdAt: Date.parse(row.created_at), updatedAt: Date.parse(row.updated_at) })),
     scheduled: (sc.data ?? []).map((row) => ({
       id: row.id, name: row.name, date: row.scheduled_date, ...(row.scheduled_time ? { time: row.scheduled_time.slice(0, 5) } : {}),
       exercises: row.exercises as unknown as WorkoutExercise[], ...(row.source_saved_id ? { sourceSavedId: row.source_saved_id } : {}),
@@ -132,6 +138,8 @@ async function run(op: Op) {
       completed_at: sw.completedAt ? new Date(sw.completedAt).toISOString() : null, completed_workout_id: sw.completedWorkoutId ?? null, created_at: new Date(sw.createdAt).toISOString(),
     })); }
     case "deleteScheduled": return check(await supabase.from("scheduled_workouts").delete().eq("id", op.id));
+    case "upsertProgram": { const p = op.program; return check(await supabase.from("training_programs").upsert({ user_id: userId!, id: p.id, payload: p as unknown as Json, created_at: new Date(p.createdAt).toISOString(), updated_at: new Date(p.updatedAt).toISOString() })); }
+    case "deleteProgram": return check(await supabase.from("training_programs").delete().eq("id", op.id).eq("user_id", userId!));
   }
 }
 
@@ -164,7 +172,7 @@ if (typeof window !== "undefined") {
 
 // ---------- lifecycle (called by auth) ----------
 export async function loadCloudData(id: string) {
-  if (userId !== id) { userId = id; const snap = readJson<CloudData>(snapshotKey(id)); data = snap ? { ...snap, scheduled: snap.scheduled ?? [] } : null; notify(); }
+  if (userId !== id) { userId = id; const snap = readJson<CloudData>(snapshotKey(id)); data = snap ? { ...snap, scheduled: snap.scheduled ?? [], programs: snap.programs ?? [] } : null; notify(); }
   await flush();
   try {
     const fresh = await fetchAll();
@@ -174,7 +182,7 @@ export async function loadCloudData(id: string) {
     for (const op of readQueue()) merged = apply(merged, op);
     commit(merged);
   } catch {
-    if (!data) commit({ workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [] });
+    if (!data) commit({ workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [], programs: [] });
   }
 }
 
@@ -199,8 +207,9 @@ export async function importStagedDemoData() {
     ...staged.saved.map((workout) => ({ kind: "upsertSaved" as const, workout })),
     ...staged.custom.map((exercise) => ({ kind: "upsertCustom" as const, exercise })),
     ...staged.scheduled.map((workout) => ({ kind: "upsertScheduled" as const, workout })),
+    ...(staged.programs ?? []).map((program) => ({ kind: "upsertProgram" as const, program })),
   ];
-  for (const op of ops) { commit(apply(data ?? { workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [] }, op)); await run(op); }
+  for (const op of ops) { commit(apply(data ?? { workouts: [], bodyweight: [], saved: [], custom: [], scheduled: [], programs: [] }, op)); await run(op); }
   localStorage.removeItem(DEMO_IMPORT_KEY); return true;
 }
 
@@ -221,6 +230,8 @@ function apply(d: CloudData, op: Op): CloudData {
     case "deleteCustom": return { ...d, custom: d.custom.filter((c) => c.id !== op.id) };
     case "upsertScheduled": return { ...d, scheduled: [op.workout, ...(d.scheduled ?? []).filter((s) => s.id !== op.workout.id)] };
     case "deleteScheduled": return { ...d, scheduled: (d.scheduled ?? []).filter((s) => s.id !== op.id) };
+    case "upsertProgram": return { ...d, programs: [op.program, ...(d.programs ?? []).filter((p) => p.id !== op.program.id)] };
+    case "deleteProgram": return { ...d, programs: (d.programs ?? []).filter((p) => p.id !== op.id) };
   }
 }
 
