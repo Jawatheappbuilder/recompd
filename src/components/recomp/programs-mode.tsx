@@ -121,11 +121,11 @@ export function ProgramsMode() {
     if (current) saveProgramDraft({ ...current, updatedAt: Date.now() });
     setCurrent(null); setEditing(null); setAdding(false); setStep(1);
   };
-  const append = (workout: Omit<ProgramWorkout, "id">) => {
+  const append = (workout: Omit<ProgramWorkout, "id"> & { id?: string }) => {
     setCurrent((previous) => {
       if (!previous) return previous;
       const day = weekdayOrder.find((d) => !previous.workouts.some((w) => w.weekday === d));
-      return { ...previous, workouts: [...previous.workouts, { ...workout, id: newId(), ...(day !== undefined ? { weekday: day } : {}) }] };
+      return { ...previous, workouts: [...previous.workouts, { ...workout, id: workout.id ?? newId(), ...(day !== undefined ? { weekday: day } : {}) }] };
     });
     setAdding(false);
   };
@@ -260,7 +260,7 @@ export function ProgramsMode() {
       {current.workouts.length<5 && <Button variant="surface" className="w-full" onClick={()=>setAdding((value)=>!value)}><Plus/>Add workout</Button>}
       {adding && <div className="space-y-3 rounded-2xl border border-primary/20 bg-card p-3 shadow-sm">
         <p className="text-sm font-extrabold">Add a workout</p>
-        <Button variant="surface" className="w-full" onClick={()=>{append({name:"Workout "+(current.workouts.length+1),exercises:[]});}}>Build from scratch <Plus/></Button>
+        <Button variant="surface" className="w-full" onClick={()=>{ const id = newId(); append({name:"Workout "+(current.workouts.length+1),exercises:[], id} as ProgramWorkout); editTemplate(id); }}>Build from scratch <Plus/></Button>
         <div className="border-t border-border pt-3"><p className="mb-2 text-xs font-bold text-muted-foreground">Generate a workout</p><div className="flex flex-wrap gap-1.5">{quickSelects.map((group)=><Button key={group.label} size="sm" variant={group.muscles.every((muscle)=>muscles.includes(muscle))?"choiceActive":"surface"} onClick={()=>setMuscles(group.muscles)}>{group.label}</Button>)}</div><Button variant="primary" className="mt-2 w-full" disabled={!muscles.length} onClick={()=>append({name:muscles.join(" + ")+" Day",exercises:generateWorkout(muscles,exerciseCount,Date.now())})}><Sparkles/>Generate {exerciseCount} exercises</Button></div>
         {saved.length>0 && <div className="border-t border-border pt-3"><p className="mb-2 text-xs font-bold text-muted-foreground">Import a saved workout</p><div className="max-h-44 space-y-1 overflow-y-auto">{saved.map((workout)=><Button key={workout.id} variant="ghost" className="w-full justify-start" onClick={()=>append({name:workout.name,exercises:duplicateExercises(workout.exercises)})}>{workout.name}</Button>)}</div></div>}
       </div>}
