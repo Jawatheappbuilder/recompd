@@ -54,7 +54,7 @@ function HomePage() {
     <div aria-hidden className="pointer-events-none absolute -left-12 bottom-0 size-40 rounded-full bg-white/[0.05] blur-3xl" />
     <header className="relative flex items-center justify-between gap-4">
       <div className="wordmark text-primary-foreground">RECOMP'D</div>
-      <div className="flex items-center gap-2"><Link to="/social" aria-label="Social" className="relative grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Users className="size-5" /><span className="absolute -right-0.5 -top-0.5 rounded-full bg-white px-1 py-0.5 text-[8px] font-black leading-none text-primary">NEW</span></Link><Link to="/settings" aria-label="Settings" className="grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Settings className="size-5" /></Link></div>
+      <div className="flex items-center gap-2"><Link to="/social" aria-label="Social" className="relative grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Users className="size-5" /></Link><Link to="/settings" aria-label="Settings" className="grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><Settings className="size-5" /></Link></div>
     </header>
     <div className="relative mt-5">
       <p className="text-sm font-semibold text-primary-foreground/75">{firstName ? `Hey, ${firstName}` : "Hey"}</p>
