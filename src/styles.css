@@ -323,3 +323,19 @@
 /* The workout header uses red to distinguish a live session, complemented
    by the neutral exercise cards and the green/yellow progress semantics. */
 :root[data-accent="spectrum"] main .bg-primary:has(+ .relative) { border-bottom-color: #f0ba3c; }
+
+
+/* Spectrum refinement: restore the striking red hero and quiet navigation. */
+:root[data-accent="spectrum"] main > div > .bg-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) {
+  background: linear-gradient(130deg, #bd202e 0%, #d32c40 58%, #e04750 100%);
+  border-bottom: 0;
+  color: #ffffff;
+}
+:root[data-accent="spectrum"] nav[aria-label="Primary"] {
+  border-top: 1px solid var(--border);
+  border-image: none;
+}
+:root[data-accent="spectrum"] main .bg-primary:has(+ .relative) {
+  border-bottom: 0;
+}
