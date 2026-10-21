@@ -1,3 +1,4 @@
+import type { ProgramOccurrence } from "./program-schedule";
 import type { WorkoutExercise } from "@/data/exercises";
 
 export type ProgramMode = "flexible" | "calendar";
@@ -13,6 +14,8 @@ export type TrainingProgram = {
   weekdays: number[];
   status: ProgramStatus;
   workouts: ProgramWorkout[];
+  occurrences?: ProgramOccurrence[];
+  activatedAt?: number;
   createdAt: number;
   updatedAt: number;
 };
