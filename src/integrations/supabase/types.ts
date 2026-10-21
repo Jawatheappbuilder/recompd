@@ -167,30 +167,6 @@ export type Database = {
         }
         Relationships: []
       }
-      training_programs: {
-        Row: {
-          created_at: string
-          id: string
-          payload: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          payload: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          payload?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       scheduled_workouts: {
         Row: {
           completed_at: string | null
