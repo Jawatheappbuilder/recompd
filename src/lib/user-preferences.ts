@@ -44,6 +44,13 @@ export function completeAccentChoice() {
 export function applyAccentPreference(accent: AccentPreference) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset["accent"] = accent;
+  const inherentlyDark = accent === "voltage" || accent === "neon" || accent === "heavyduty";
+  const inherentlyLight = accent === "vintage" || accent === "coastal" || accent === "colourpop";
+  if (inherentlyDark || inherentlyLight) {
+    document.documentElement.classList.toggle("dark", inherentlyDark);
+    document.documentElement.classList.toggle("light", inherentlyLight);
+    document.documentElement.style.colorScheme = inherentlyDark ? "dark" : "light";
+  }
 }
 
 export function applyThemePreference(theme: ThemePreference) {
