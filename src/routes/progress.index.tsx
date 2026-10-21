@@ -54,7 +54,7 @@ function ProgressPage() {
             <div className="p-4"><h2 className="truncate text-lg font-black">{program.name}</h2>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">Week {currentWeek} of {program.weeks} · {programStats.completed}/{programStats.total} sessions completed</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{width:(programStats.total?100*programStats.completed/programStats.total:0)+"%"}}/></div>
-              <div className="mt-3 flex items-center justify-between"><span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="size-4"/>{programStats.completed} complete</span><Link to="/build" search={{mode:"programs",programId:program.id}} className="flex items-center gap-1 text-xs font-extrabold text-primary">View program <ChevronRight className="size-4"/></Link></div>
+              <div className="mt-3 flex items-center justify-between"><span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="size-4"/>{programStats.completed} complete</span><Link to="/programs" search={{programId:program.id}} className="flex items-center gap-1 text-xs font-extrabold text-primary">View program <ChevronRight className="size-4"/></Link></div>
             </div>
           </section>}
           <PeriodSelector value={period} options={periods} onChange={setPeriod} className="relative z-10 border-primary/15 bg-card p-1 shadow-sm" />
