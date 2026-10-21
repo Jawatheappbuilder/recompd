@@ -172,9 +172,9 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
     updateWorkout(id, { exercises: next });
   };
 
-  if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
-
   useEffect(() => { if (focusProgramId && drafts.some(p => p.id === focusProgramId)) setManageId(focusProgramId); }, [focusProgramId, drafts]);
+
+  if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
   const managed = drafts.find((p) => p.id === manageId);
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
