@@ -17,32 +17,39 @@ export type TrainingProgram = {
   updatedAt: number;
 };
 
-// Phase 1 stores drafts on this device. Cloud-backed storage and the session
-// progression engine will be introduced together in the next implementation phase.
-const STORAGE_KEY = "recomp-programs-drafts-v1";
-const changedEvent = "recomp-programs-changed";
+// Account-backed programs share the existing cloud cache, offline queue, and
+// per-user snapshot used by RECOMP'D workouts and scheduled sessions.
+import { getCloudData, mutate, useCloudData } from "./cloud-data";
+import { useEffect } from "react";
 
-export function loadProgramDrafts(): TrainingProgram[] {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    if (!Array.isArray(value)) return [];
-    return value.filter((item): item is TrainingProgram =>
-      item !== null && typeof item === "object" && typeof item.id === "string" &&
-      typeof item.name === "string" && Array.isArray(item.workouts)
-    );
-  } catch { return []; }
+const LEGACY_DRAFTS_KEY = "recomp-programs-drafts-v1";
+
+export const loadProgramDrafts = () => getCloudData()?.programs ?? [];
+export function useProgramDrafts() {
+  const cloud = useCloudData();
+  useEffect(() => {
+    if (!cloud) return;
+    // Migrate any device-only Phase 1 drafts without replacing newer cloud copies.
+    try {
+      const old = localStorage.getItem(LEGACY_DRAFTS_KEY);
+      if (!old) return;
+      const parsed: unknown = JSON.parse(old);
+      const drafts = Array.isArray(parsed) ? parsed as TrainingProgram[] : [];
+      localStorage.removeItem(LEGACY_DRAFTS_KEY);
+      for (const draft of drafts) {
+        if (typeof draft?.id === "string" && Array.isArray(draft.workouts) &&
+          !cloud.programs.some((program) => program.id === draft.id)) {
+          mutate({ kind: "upsertProgram", program: draft });
+        }
+      }
+    } catch { /* no valid legacy drafts */ }
+  }, [cloud]);
+  return cloud?.programs ?? [];
 }
 
 export function saveProgramDraft(program: TrainingProgram) {
-  const current = loadProgramDrafts();
-  const next = [program, ...current.filter((item) => item.id !== program.id)];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event(changedEvent));
+  mutate({ kind: "upsertProgram", program });
 }
-
 export function deleteProgramDraft(id: string) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(loadProgramDrafts().filter((item) => item.id !== id)));
-  window.dispatchEvent(new Event(changedEvent));
+  mutate({ kind: "deleteProgram", id });
 }
-
-export const programsChangedEvent = changedEvent;
