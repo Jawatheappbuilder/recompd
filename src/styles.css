@@ -263,3 +263,63 @@
 :root[data-accent="spectrum"] .text-amber-300 { color: var(--spectrum-yellow); }
 :root[data-accent="spectrum"] nav[aria-label="Primary"] { border-top: 2px solid var(--spectrum-yellow); }
 :root[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: var(--primary); }
+
+
+/* Spectrum uses a colour hierarchy rather than tinting every surface red:
+   charcoal architecture, red actions, yellow prompts, green completion,
+   cyan secondary information and neutral white/graphite surfaces. */
+:root[data-accent="spectrum"] {
+  --primary: #242c3a;
+  --primary-foreground: #ffffff;
+  --ring: #2382b6;
+  --soft: #9da8b7;
+}
+.dark[data-accent="spectrum"] {
+  --primary: #c6d3e0;
+  --primary-foreground: #11161e;
+  --ring: #6fc9ff;
+  --soft: #66788a;
+}
+:root[data-accent="spectrum"] main > div > .bg-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) {
+  background: linear-gradient(118deg, #18202c 0%, #303946 65%, #176f83 100%);
+  color: #ffffff;
+  border-bottom: 4px solid #f0b933;
+}
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .text-primary-foreground,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .wordmark { color: #ffffff; }
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .wordmark {
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+}
+:root[data-accent="spectrum"] button.bg-primary,
+:root[data-accent="spectrum"] a.bg-primary,
+:root[data-accent="spectrum"] [role="button"].bg-primary {
+  background: #cf2f42;
+  color: #ffffff;
+}
+:root[data-accent="spectrum"] button.bg-primary:hover,
+:root[data-accent="spectrum"] a.bg-primary:hover { background: #ad2134; }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg,#e34c54,#f0ba3c,#2cbd8d,#4ea9df,#8e98a7) 1;
+}
+:root[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: #167bae; }
+.dark[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: #79d1ff; }
+:root[data-accent="spectrum"] .rounded-2xl.border,
+:root[data-accent="spectrum"] .rounded-xl.border { border-color: var(--border); }
+:root[data-accent="spectrum"] .text-emerald-600,
+:root[data-accent="spectrum"] .text-emerald-400 { color: var(--spectrum-green); }
+:root[data-accent="spectrum"] .bg-emerald-500\/15,
+:root[data-accent="spectrum"] .bg-emerald-500\/10 { background-color: color-mix(in srgb,var(--spectrum-green) 15%,transparent); }
+:root[data-accent="spectrum"] .text-amber-700,
+:root[data-accent="spectrum"] .text-amber-300 { color: var(--spectrum-yellow); }
+:root[data-accent="spectrum"] .bg-primary\/10,
+:root[data-accent="spectrum"] .bg-primary\/\[0\.08\] { background-color: color-mix(in srgb,var(--spectrum-blue) 12%,transparent); }
+:root[data-accent="spectrum"] .text-primary { color: #1c82b6; }
+.dark[data-accent="spectrum"] .text-primary { color: #78cafa; }
+:root[data-accent="spectrum"] button.bg-primary .text-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .text-primary { color: #ffffff; }
+/* The workout header uses red to distinguish a live session, complemented
+   by the neutral exercise cards and the green/yellow progress semantics. */
+:root[data-accent="spectrum"] main .bg-primary:has(+ .relative) { border-bottom-color: #f0ba3c; }
