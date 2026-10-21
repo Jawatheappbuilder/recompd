@@ -49,7 +49,7 @@ function TemplateCatalogue({ onPreview, onUse }: { onPreview: (t: ProgramTemplat
           <p className="mt-2 text-[0.68rem] font-semibold text-foreground">{t.goal} · {t.days.length} days/week · {t.weeks} weeks · ~{formatDuration(minutes)}/week</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button variant="surface" size="sm" onClick={() => onPreview(t)}>Preview</Button>
-            <Button variant="primary" size="sm" onClick={() => onUse(t)}><Plus />Use program</Button>
+            <Button variant="primary" size="sm" onClick={() => onUse(t)}><Plus />Choose program</Button>
           </div>
         </div>
       </article>)}
@@ -191,6 +191,22 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
     setCurrent(null); setEditing(null); setStep(1);
   };
 
+  const startTemplate = (template: ProgramTemplate) => {
+    const existing = drafts.find(p => p.status === "active");
+    if (existing && !window.confirm(`Switch to ${template.name}? Your current program "${existing.name}" will be paused. Your progress will be kept.`)) return;
+    const next = buildProgramFromTemplate(template);
+    if (next.workouts.length < 2 || next.workouts.some(w => !hasExercise(w))) {
+      toast.error("This program needs complete workouts before activation."); return;
+    }
+    const activated: TrainingProgram = {
+      ...next, status: "active", activatedAt: Date.now(),
+      occurrences: createOccurrences(next),
+    };
+    if (existing) saveProgramDraft({...existing, status:"paused", updatedAt:Date.now()});
+    saveProgramDraft(activated);
+    setPreviewProgram(null); setPreviewTemplate(null); setManageId(activated.id);
+    toast.success("Program activated! Your first workout is ready.");
+  };
   const editTemplate = (id: string) => {
     const template = current?.workouts.find((workout) => workout.id === id);
     const strength = template?.exercises.filter((exercise) => !exercise.note) ?? [];
@@ -224,14 +240,18 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
       <p className="mt-2 text-[0.68rem] text-muted-foreground">Sessions run in order as a weekly cycle. Train them on any days that suit you, or switch to calendar scheduling.</p>
     </div>}
     <ProgramOverview key={previewProgram.id} program={previewProgram}/>
-    <Button variant="primary" size="lg" className="w-full" onClick={()=>{ if (previewTemplate) { setCurrent(buildProgramFromTemplate(previewTemplate)); toast.success("Starter program ready — customise before saving"); } else setCurrent(structuredClone(previewProgram)); setStep(1);setPreviewProgram(null);setPreviewTemplate(null);}}> {previewTemplate?"Use this program":previewProgram.status==="draft"?"Customise program":"Use this program"} <ArrowRight/></Button>
+    {previewTemplate ? <div className="space-y-2">
+      <Button variant="primary" size="lg" className="w-full" onClick={()=>startTemplate(previewTemplate)}><Sparkles/>Start this program <ArrowRight/></Button>
+      <Button variant="surface" size="lg" className="w-full" onClick={()=>{setCurrent(buildProgramFromTemplate(previewTemplate));setStep(1);setPreviewProgram(null);setPreviewTemplate(null);}}>Customise first <Pencil/></Button>
+      <p className="text-center text-[0.68rem] text-muted-foreground">Starts with a flexible schedule. You can adjust training days later.</p>
+    </div> : <Button variant="primary" className="w-full" onClick={()=>{setCurrent(structuredClone(previewProgram));setStep(1);setPreviewProgram(null);}}>Customise program <ArrowRight/></Button>}
   </div>;
 
   if (!current) return <div className="space-y-4 pb-5">
     <div className="flex items-center justify-between gap-2">
       <div><h2 className="text-lg font-black">Discover programs</h2><p className="text-xs text-muted-foreground">Curated training plans for your goals</p></div>
     </div>
-    <TemplateCatalogue onPreview={(t)=>{setPreviewTemplate(t);setPreviewProgram(buildProgramFromTemplate(t));}} onUse={(t)=>{setCurrent(buildProgramFromTemplate(t));setStep(1);toast.success("Starter program ready — customise before saving");}}/>
+    <TemplateCatalogue onPreview={(t)=>{setPreviewTemplate(t);setPreviewProgram(buildProgramFromTemplate(t));}} onUse={(t)=>{setPreviewTemplate(t);setPreviewProgram(buildProgramFromTemplate(t));}}/>
     <div className="flex items-center justify-between gap-2 border-t border-border pt-4"><div><h2 className="text-lg font-black">My Programs</h2><p className="text-xs text-muted-foreground">Saved, active and completed plans</p></div><Button variant="surface" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus/>Create</Button></div>
     <div className="flex items-center gap-2 text-[0.69rem] text-muted-foreground"><Cloud className="size-3.5"/>Programs sync with your account</div>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
@@ -516,10 +536,6 @@ function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; a
     <div className="space-y-3">
       <div className="flex items-center justify-between"><div><h3 className="text-lg font-black">Your weekly journey</h3><p className="text-[0.68rem] text-muted-foreground">One week at a time. Your pace.</p></div><span className="text-xs font-bold text-primary">{weekDone}/{week.length} done</span></div>
       <div className="flex items-center gap-2"><Button variant="surface" size="icon" aria-label="Previous week" disabled={cycle===0} onClick={()=>setSelectedCycle(cycle-1)}><ChevronLeft/></Button><div className="flex-1 text-center"><p className="text-sm font-extrabold">Week {cycle+1} of {program.weeks}</p><p className="text-[0.65rem] text-muted-foreground">{cycle===currentCycle?"Your current cycle":"Program timeline"}</p></div><Button variant="surface" size="icon" aria-label="Next week" disabled={cycle===program.weeks-1} onClick={()=>setSelectedCycle(cycle+1)}><ChevronRight/></Button></div>
-      <div className="flex gap-1.5">{Array.from({length:program.weeks},(_,i)=>{
-        const items=occurrences.filter(o=>o.cycle===i), complete=items.length>0&&items.every(o=>o.status==="completed");
-        return <button key={i} type="button" aria-label={"Week "+(i+1)} aria-pressed={cycle===i} onClick={()=>setSelectedCycle(i)} className={"grid h-9 min-w-0 flex-1 place-items-center rounded-lg text-[0.7rem] font-extrabold transition-all "+(cycle===i?"bg-primary text-primary-foreground shadow-sm":complete?"bg-emerald-500/15 text-emerald-600":"bg-secondary text-muted-foreground")}>{complete?<Check className="size-3.5"/>:i+1}</button>;
-      })}</div>
       <div className="space-y-2">{week.map(sessionCard)}</div>
       {week.length>0&&week.every(o=>o.status==="completed")&&<div className="rounded-xl bg-emerald-500/10 p-3 text-center text-sm font-bold text-emerald-600"><Sparkles className="mr-2 inline size-4"/>Week {cycle+1} complete — great work!</div>}
       {stats.pending>0&&<p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300">{stats.pending} overdue session{stats.pending===1?"":"s"} waiting for you — never automatically skipped.</p>}
