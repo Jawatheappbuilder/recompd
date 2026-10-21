@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Dumbbell, Hammer, House } from "lucide-react";
+import { BarChart3, CalendarRange, Dumbbell, Hammer, House } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/recomp/auth-context";
@@ -10,6 +10,7 @@ import { ACTIVE_WORKOUT_KEY, type ActiveWorkoutState } from "@/hooks/use-active-
 const destinations = [
   { label: "Home", to: "/", icon: House },
   { label: "Build", to: "/build", icon: Hammer },
+  { label: "Programs", to: "/programs", icon: CalendarRange },
   { label: "Workout", to: "/workout", icon: Dumbbell },
   { label: "Progress", to: "/progress", icon: BarChart3 },
 ] as const;
@@ -77,11 +78,11 @@ export function BottomNavigation() {
   const liveTime = elapsed >= 3600 ? `${Math.floor(elapsed / 3600)}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0")}` : `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] border-t border-border bg-nav/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
-      <div className="grid h-[4.75rem] grid-cols-4 px-2">
+      <div className="grid h-[4.75rem] grid-cols-5 px-1">
         {destinations.map(({ label, to, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : to === "/build" ? pathname.startsWith("/build") || pathname === "/generated-workout" : pathname.startsWith(to);
           return (
-            <Link key={to} to={to} aria-current={active ? "page" : undefined} className={cn("flex min-w-0 flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold text-muted-foreground transition-colors", active && "text-primary")}>
+            <Link key={to} to={to} aria-current={active ? "page" : undefined} className={cn("flex min-w-0 flex-col items-center justify-center gap-1 text-[0.59rem] font-semibold text-muted-foreground transition-colors", active && "text-primary")}>
               {label === "Workout" && activeWorkout ? <span className="min-w-[3.25rem] rounded-full bg-primary px-2 py-1 text-center text-[0.66rem] font-extrabold tabular-nums text-primary-foreground shadow-sm motion-safe:animate-pulse">{liveTime}</span> : <Icon className="size-[1.3rem]" strokeWidth={active ? 2.5 : 2} />}
               <span>{label === "Workout" && activeWorkout ? "Live" : label}</span>
             </Link>
