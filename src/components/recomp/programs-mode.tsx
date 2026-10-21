@@ -4,7 +4,7 @@ import { useTrainingData } from "@/lib/training-data";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, Clock3, Cloud, Copy, Dumbbell, LockKeyholeOpen, MoreHorizontal, Pencil, Plus, RefreshCw, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
+import { exercises, toWorkoutExercise, generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { newId, useCloudData } from "@/lib/cloud-data";
 import { cloneExercises, useSavedWorkouts, handOffWorkout, hasActiveWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
@@ -23,6 +23,23 @@ const createDraft = (): TrainingProgram => ({
   startDate: today(), weekdays: [], status: "draft",
   workouts: [], createdAt: Date.now(), updatedAt: Date.now(),
 });
+/** Starter routine inspired by standard gym PPL templates; copied into an editable account draft. */
+function makePushPullLegs(): TrainingProgram {
+  const exercise = (name:string,sets:number,reps:string,restSeconds:number):WorkoutExercise => {
+    const match=exercises.find(e=>e.name===name);
+    if (!match) throw new Error("Missing exercise: "+name);
+    return {...toWorkoutExercise(match),key:newId(),sets,reps,restSeconds};
+  };
+  const day=(name:string,weekday:number,rows:[string,number,string,number][]):ProgramWorkout=>({
+    id:newId(),name,weekday,exercises:rows.map(([n,s,r,rest])=>exercise(n,s,r,rest)),
+  });
+  const program=createDraft();
+  return {...program,name:"Push / Pull / Legs",goal:"Hypertrophy",weeks:8,mode:"flexible",workouts:[
+    day("Push Day",1,[["Bench Press",3,"6–10",150],["Incline Dumbbell Press",3,"8–12",90],["Machine Shoulder Press",3,"8–12",90],["Lateral Raise",3,"12–15",60],["Rope Pushdown",3,"10–15",60]]),
+    day("Pull Day",3,[["Lat Pulldown",3,"8–12",120],["Seated Cable Row",3,"8–12",120],["Face Pull",3,"12–15",60],["Dumbbell Curl",3,"10–12",60],["Hammer Curl",3,"10–12",60]]),
+    day("Legs Day",5,[["Back Squat",3,"6–10",150],["Romanian Deadlift",3,"8–10",120],["Leg Press",3,"10–12",120],["Seated Leg Curl",3,"10–15",75],["Standing Calf Raise",3,"12–15",60]]),
+  ]};
+}
 const hasExercise = (workout: ProgramWorkout) => workout.exercises.some((exercise) => !exercise.note);
 const durationMinutes = (workouts: ProgramWorkout[]) => workouts.reduce((sum, workout) => {
   const estimate = workoutTimeEstimate(workout.exercises);
@@ -85,7 +102,7 @@ function Stat({ label, value }: {label: string; value: string}) {
   return <div className="rounded-xl bg-secondary/70 p-3 text-center"><div className="text-lg font-black text-foreground">{value}</div><div className="text-[0.64rem] font-semibold text-muted-foreground">{label}</div></div>;
 }
 
-export function ProgramsMode() {
+export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const saved = useSavedWorkouts();
   const cloud = useCloudData();
   const drafts = useProgramDrafts();
@@ -96,6 +113,7 @@ export function ProgramsMode() {
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
   const [step, setStep] = useState(1);
   const [editing, setEditing] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -172,8 +190,9 @@ export function ProgramsMode() {
     updateWorkout(id, { exercises: next });
   };
 
-  if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
+  useEffect(() => { if (focusProgramId && drafts.some(p => p.id === focusProgramId)) setManageId(focusProgramId); }, [focusProgramId, drafts]);
 
+  if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
   const managed = drafts.find((p) => p.id === manageId);
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
@@ -183,6 +202,14 @@ export function ProgramsMode() {
       <Button variant="primary" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus />Create</Button>
     </div>
     <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"><Cloud className="size-4 shrink-0" />Drafts sync with your RECOMP'D account</div>
+    <section className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-sm">
+      <div className="bg-primary/[0.08] px-4 py-3"><span className="text-[0.65rem] font-black uppercase tracking-widest text-primary">STARTER PROGRAM</span><h3 className="mt-1 text-lg font-black">Push / Pull / Legs</h3><p className="mt-1 text-xs text-muted-foreground">Classic gym split · 3 workouts · Flexible schedule · 8 weeks</p></div>
+      <div className="space-y-3 p-4">
+        <div className="grid grid-cols-3 gap-2 text-center text-[0.7rem] font-bold"><span className="rounded-xl bg-secondary p-2">Push<br/><span className="font-normal text-muted-foreground">Chest / Tris</span></span><span className="rounded-xl bg-secondary p-2">Pull<br/><span className="font-normal text-muted-foreground">Back / Bis</span></span><span className="rounded-xl bg-secondary p-2">Legs<br/><span className="font-normal text-muted-foreground">Lower body</span></span></div>
+        <p className="text-xs text-muted-foreground">A balanced starting point with compound lifts and accessories. Adjust exercises, sets and training days to suit you.</p>
+        <Button variant="primary" className="w-full" onClick={()=>{setCurrent(makePushPullLegs());setStep(1);toast.success("Starter program ready — customise before saving");}}><Plus/>Use this program <ArrowRight/></Button>
+      </div>
+    </section>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
       <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary"><Dumbbell /></div>
       <h3 className="text-base font-black">Your training, your plan</h3>
@@ -266,6 +293,20 @@ export function ProgramsMode() {
           <Button variant="ghost" size="icon" aria-label="Move workout down" disabled={index===current.workouts.length-1} onClick={()=>update({workouts:move(current.workouts,index,index+1)})}><ArrowDown /></Button>
         </div>
         {current.mode==="calendar" && <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-secondary/60 px-2 py-1.5"><span className="text-[0.7rem] font-semibold text-muted-foreground">Training day</span><select aria-label={"Training day for "+workout.name} className="max-w-[55%] rounded-lg border border-border bg-card px-2 py-1.5 text-xs font-bold" value={workout.weekday ?? ""} onChange={(event) => updateWorkout(workout.id,{weekday:event.target.value === "" ? undefined : Number(event.target.value)})}><option value="">Choose day</option>{weekdayOrder.map((day)=><option key={day} value={day}>{dayLabels[day]}</option>)}</select></div>}
+        <div className="mt-3 overflow-hidden rounded-xl border border-border/70 bg-secondary/35">
+          <button type="button" aria-expanded={previewId===workout.id} onClick={()=>setPreviewId(previewId===workout.id?null:workout.id)} className="flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-xs font-extrabold text-primary">
+            <span className="flex items-center gap-2"><Dumbbell className="size-4"/>{previewId===workout.id?"Hide exercises":"Preview workout"}</span>
+            {previewId===workout.id?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}
+          </button>
+          {previewId===workout.id&&<div className="space-y-1.5 border-t border-border/70 px-3 py-3">
+            {workout.exercises.filter(ex=>!ex.note).length===0?<p className="text-xs text-muted-foreground">No exercises yet — tap Edit to add some.</p>:workout.exercises.filter(ex=>!ex.note).map((ex,index)=><div key={ex.key} className="flex items-center gap-3 rounded-lg bg-card px-3 py-2">
+              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-[0.65rem] font-black text-primary">{index+1}</span>
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{ex.name}</p><p className="text-[0.65rem] text-muted-foreground">{ex.muscle} · {ex.equipment}</p></div>
+              <span className="shrink-0 text-[0.7rem] font-extrabold tabular-nums text-foreground">{ex.sets} × {ex.reps}</span>
+            </div>)}
+            <p className="pt-1 text-[0.66rem] text-muted-foreground">Tap Edit below to change the exercises, sets or reps.</p>
+          </div>}
+        </div>
         <div className="mt-3 grid grid-cols-3 gap-2"><Button variant="surface" size="sm" onClick={()=>editTemplate(workout.id)}><Pencil/>Edit</Button><Button variant="surface" size="sm" disabled={current.workouts.length>=5} onClick={()=>duplicate(workout)}><Copy/>Copy</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={()=>update({workouts:current.workouts.filter((item)=>item.id!==workout.id)})}><Trash2/>Remove</Button></div>
       </div>)}
       {current.workouts.length<5 && <Button variant="surface" className="w-full" onClick={()=>setAdding((value)=>!value)}><Plus/>Add workout</Button>}

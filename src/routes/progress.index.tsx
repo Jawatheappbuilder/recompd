@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Dumbbell, Settings } from "lucide-react";
+import { CheckCircle2, ChevronRight, Dumbbell, Settings } from "lucide-react";
+import { useProgramDrafts } from "@/lib/program-storage";
+import { completionStats, occurrencesFor } from "@/lib/program-schedule";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +22,10 @@ const periods = ["4W", "3M", "6M", "1Y"] as const;
 
 function ProgressPage() {
   const data = useTrainingData();
+  const programs = useProgramDrafts();
+  const program = programs.find(item=>item.status==="active")??programs.find(item=>item.status==="paused");
+  const programStats = program ? completionStats(program) : null;
+  const currentWeek = program ? (occurrencesFor(program).find(item=>item.status==="upcoming")?.cycle??program.weeks-1)+1 : 0;
   const workouts = data?.workouts;
   const [preferences] = useUserPreferences();
   const [period, setPeriod] = useState<Period>("4W");
@@ -43,6 +49,14 @@ function ProgressPage() {
       </div>
       {data && summary && (
         <div className="relative z-10 -mt-5 space-y-5">
+          {program && programStats && <section className="overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm">
+            <div className="flex items-center justify-between bg-primary/[0.07] px-4 py-3"><span className="text-[0.65rem] font-black uppercase tracking-wider text-primary">Your program journey</span><span className={"rounded-full px-2 py-1 text-[0.65rem] font-extrabold "+(program.status==="active"?"bg-emerald-500/15 text-emerald-600":"bg-secondary text-muted-foreground")}>{program.status==="active"?"● Active":"Paused"}</span></div>
+            <div className="p-4"><h2 className="truncate text-lg font-black">{program.name}</h2>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">Week {currentWeek} of {program.weeks} · {programStats.completed}/{programStats.total} sessions completed</p>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{width:(programStats.total?100*programStats.completed/programStats.total:0)+"%"}}/></div>
+              <div className="mt-3 flex items-center justify-between"><span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="size-4"/>{programStats.completed} complete</span><Link to="/build" search={{mode:"programs",programId:program.id}} className="flex items-center gap-1 text-xs font-extrabold text-primary">View program <ChevronRight className="size-4"/></Link></div>
+            </div>
+          </section>}
           <PeriodSelector value={period} options={periods} onChange={setPeriod} className="relative z-10 border-primary/15 bg-card p-1 shadow-sm" />
           {data.workouts.length ? (
             <>
