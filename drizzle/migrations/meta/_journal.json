@@ -64,6 +64,13 @@
       "when": 1791029100000,
       "tag": "0008_owner_member_directory",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792576800000,
+      "tag": "0009_training_programs",
+      "breakpoints": true
     }
   ]
 }
