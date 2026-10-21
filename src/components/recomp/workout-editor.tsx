@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, ChevronDown, ChevronUp, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis, NotebookPen } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, LockKeyhole, LockKeyholeOpen, GripVertical, Link2, Unlink, Minus, Plus, Search, Shuffle, Trash2, X, Ellipsis, NotebookPen } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,8 +56,10 @@ function useLibrary() {
 }
 
 /** Shared editor used by both generated and manually built workouts. */
-export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange, initialPickerMuscle, supersets = false }: {
+export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenChange, initialPickerMuscle, supersets = false, lockedKeys, onToggleLock }: {
   supersets?: boolean | undefined;
+  lockedKeys?: ReadonlySet<string> | undefined;
+  onToggleLock?: ((key: string) => void) | undefined;
   workout: WorkoutExercise[];
   setWorkout: Dispatch<SetStateAction<WorkoutExercise[]>>;
   pickerOpen?: boolean | undefined;
@@ -128,6 +130,8 @@ export function WorkoutEditor({ workout, setWorkout, pickerOpen, onPickerOpenCha
                   key={exercise.key}
                   exercise={exercise}
                   index={index}
+                  locked={lockedKeys?.has(exercise.key) ?? false}
+                  onToggleLock={onToggleLock ? () => onToggleLock(exercise.key) : undefined}
                   onSets={(sets) => update(exercise.key, { sets })}
                   onReplace={() => setSheet({ kind: "replace", key: exercise.key })}
                   onReps={() => setSheet({ kind: "reps", key: exercise.key })}
@@ -203,8 +207,10 @@ function PlannedGroupCard({ id, members, circuit, expanded, onToggle, onEdit, on
   return <Card className="overflow-hidden border-primary/30 p-0"><button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-3 bg-primary/[0.06] px-4 py-3 text-left"><span className="min-w-0"><span className="flex items-center gap-1.5 text-xs font-black tracking-wide text-primary">{circuit?<span>⏱</span>:<Link2 className="size-3.5"/>}{label}</span><span className="mt-2 block space-y-1">{members.map(m=><span key={m.key} className="block truncate text-sm font-extrabold">{m.name}</span>)}</span><span className="mt-2 block text-[0.68rem] font-semibold text-muted-foreground">{detail}</span></span>{expanded?<ChevronUp className="mt-1 size-4 text-primary"/>:<ChevronDown className="mt-1 size-4 text-primary"/>}</button>{expanded&&<div className="border-t border-border px-3 py-2"><div className="divide-y divide-border">{members.map(m=><div key={m.key} className="flex items-center justify-between gap-2 py-2"><div className="min-w-0"><div className="truncate text-sm font-bold">{m.name}</div><div className="text-[0.68rem] text-muted-foreground">{m.sets} sets · {m.reps} reps</div></div><Button variant="ghost" size="sm" onClick={()=>onEdit(m)}><Ellipsis/>Edit</Button></div>)}</div><Button variant="ghost" size="sm" className="mt-1 w-full text-muted-foreground" onClick={onUnlink}><Unlink/>Unlink {circuit?"circuit":"group"}</Button></div>}</Card>;
 }
 
-function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onActions, partnerName, linkedAbove, linkedBelow }: {
+function SortableExercise({ exercise, index, locked, onToggleLock, onSets, onReplace, onReps, onDuration, onRemove, onSuperset, onActions, partnerName, linkedAbove, linkedBelow }: {
   onSuperset: (() => void) | undefined;
+  locked: boolean;
+  onToggleLock: (() => void) | undefined;
   onActions: (() => void) | undefined;
   partnerName: string | undefined;
   linkedAbove: boolean;
@@ -241,7 +247,10 @@ function SortableExercise({ exercise, index, onSets, onReplace, onReps, onDurati
             <p className="mt-0.5 text-[0.7rem] font-medium text-muted-foreground">{muscleLabel(exercise)} · {exercise.equipment}</p>
             {partnerName && <p className="mt-1 flex items-center gap-1 truncate text-[0.65rem] font-semibold text-primary"><Link2 className="size-3 shrink-0" />{partnerName}</p>}
           </div>
-          <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-9 text-muted-foreground" aria-label={`Remove ${exercise.name}`} onClick={onRemove}><Trash2 /></Button>
+          <div className="flex items-center gap-0.5">
+            {onToggleLock && <Button variant={locked ? "surface" : "ghost"} size="sm" className={cn("h-9 gap-1 px-2 text-xs", locked ? "text-primary" : "text-muted-foreground")} aria-label={`${locked ? "Unlock" : "Lock"} ${exercise.name} for regeneration`} aria-pressed={locked} onClick={onToggleLock}>{locked ? <LockKeyhole className="size-4" /> : <LockKeyholeOpen className="size-4" />}{locked ? "Locked" : "Lock"}</Button>}
+            <Button variant="ghost" size="icon" className="-mr-2 -mt-2 size-9 text-muted-foreground" aria-label={`Remove ${exercise.name}`} onClick={onRemove}><Trash2 /></Button>
+          </div>
         </div>
         <div className="mt-2 flex items-center justify-between gap-2">
           {!isCardioExercise(exercise) && <div className="flex h-9 items-center rounded-lg border border-border bg-secondary">
