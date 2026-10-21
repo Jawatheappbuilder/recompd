@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUpcomingWorkouts } from "@/lib/workout-storage";
 import { UpcomingWorkoutCard } from "./scheduled-cards";
-import { ActiveProgramHome } from "./active-program-home";
 import { useProgramDrafts } from "@/lib/program-storage";
 
 export function EmptyWorkout() {
   const next = useUpcomingWorkouts()[0];
   const hasProgram = useProgramDrafts().some(p => p.status === "active" || p.status === "paused");
   return <><div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground"><div aria-hidden className="pointer-events-none absolute -right-12 top-5 size-44 rounded-full bg-white/[0.09] blur-3xl" /><div className="relative flex items-center justify-between"><div className="wordmark text-primary-foreground">RECOMP'D</div><Link to="/settings" aria-label="Settings" className="grid size-10 place-items-center rounded-xl border border-white/20 bg-white/10"><Settings className="size-5" /></Link></div><div className="relative mt-5"><p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/75">Your training</p><h1 className="mt-1 text-[1.7rem] font-extrabold">{hasProgram ? "Your training plan." : "Let's get to work."}</h1></div></div><div className="relative z-10 -mt-5 space-y-5 pb-5">
-    {hasProgram && <ActiveProgramHome />}
+    {hasProgram && <div className="rounded-xl border border-primary/20 bg-primary/[0.055] p-4"><p className="text-[0.68rem] font-black uppercase tracking-widest text-primary">Following a program</p><p className="mt-1 text-sm font-bold">Your next session is ready in Programs</p><Button asChild variant="primary" className="mt-3 w-full" size="sm"><Link to="/programs">View next workout <ArrowRight className="ml-auto size-4"/></Link></Button></div>}
     {!hasProgram ? <Card className="overflow-hidden border-primary/15 bg-card p-5 shadow-[0_10px_32px_-22px_var(--primary)]">
       <div className="mb-4 flex items-center justify-between">
         <div className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Dumbbell className="size-6" /></div>
