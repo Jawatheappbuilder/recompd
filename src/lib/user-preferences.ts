@@ -4,7 +4,7 @@ export type Gender = "Male" | "Female" | "Prefer not to say" | "";
 export type WeightUnit = "kg" | "lb";
 export type WeekStartsOn = "Monday" | "Sunday";
 export type ThemePreference = "system" | "dark" | "light";
-export type AccentPreference = "red" | "blue" | "black" | "pink" | "purple" | "spectrum";
+export type AccentPreference = "red" | "blue" | "black" | "pink" | "purple" | "spectrum" | "voltage" | "vintage" | "neon" | "coastal" | "colourpop" | "heavyduty" | "blush";
 export type TrainingGoal = "Build muscle" | "Get stronger" | "Lose fat" | "Improve fitness" | "General health";
 export type DefaultRepRange = "4–6" | "8–12";
 
@@ -44,6 +44,13 @@ export function completeAccentChoice() {
 export function applyAccentPreference(accent: AccentPreference) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset["accent"] = accent;
+  const inherentlyDark = accent === "voltage" || accent === "neon" || accent === "heavyduty";
+  const inherentlyLight = accent === "vintage" || accent === "coastal" || accent === "colourpop" || accent === "blush";
+  if (inherentlyDark || inherentlyLight) {
+    document.documentElement.classList.toggle("dark", inherentlyDark);
+    document.documentElement.classList.toggle("light", inherentlyLight);
+    document.documentElement.style.colorScheme = inherentlyDark ? "dark" : "light";
+  }
 }
 
 export function applyThemePreference(theme: ThemePreference) {
