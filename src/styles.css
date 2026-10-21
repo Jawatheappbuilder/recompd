@@ -542,3 +542,44 @@
 :root[data-accent="coastal"] nav[aria-label="Primary"] a[aria-current="page"] {
   color:#176d94;
 }
+
+
+/* Blush: feminine rose, mauve and lavender, with accessible plum ink. */
+:root[data-accent="blush"] {
+ --background:#f8eef2; --foreground:#4f3546; --card:#fffafb; --card-foreground:#4f3546;
+ --popover:#fffafb; --popover-foreground:#4f3546;
+ --primary:#b94f79; --primary-foreground:#ffffff;
+ --secondary:#f3dce6; --secondary-foreground:#4f3546;
+ --muted:#f5e5eb; --muted-foreground:#765b6b;
+ --accent:#e8d9f3; --accent-foreground:#594364;
+ --destructive:#bc365d; --destructive-foreground:#ffffff;
+ --border:#e7cfd9; --input:#dcc6cf; --ring:#b94f79;
+ --elevated:#f3dce6; --track:#ead7df; --soft:#c9b6e4;
+ --nav:#fff8fb; --app-canvas:#efe4e9; --overlay:#1b1118aa;
+ --theme-action:#b94f79; --theme-action-text:#ffffff;
+ --theme-highlight:#c9b6e4; --theme-info:#9450a3;
+ color-scheme:light;
+}
+:root[data-accent="blush"] main > div > .bg-primary,
+:root[data-accent="blush"] .bg-primary:has(.wordmark) {
+ background:linear-gradient(120deg,#be5b83 0%,#d582a5 55%,#bb9cd6 100%);
+ color:#ffffff; border-bottom:0;
+}
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .text-primary-foreground {
+ color:#ffffff; -webkit-text-fill-color:#ffffff;
+}
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .wordmark {background:none;}
+:root[data-accent="blush"] button.bg-primary,
+:root[data-accent="blush"] a.bg-primary {background:#b94f79;color:#ffffff;}
+:root[data-accent="blush"] button.bg-primary:hover,
+:root[data-accent="blush"] a.bg-primary:hover {background:#a23c67;}
+:root[data-accent="blush"] nav[aria-label="Primary"] {border-top:1px solid var(--border);border-image:none;}
+:root[data-accent="blush"] nav[aria-label="Primary"] a[aria-current="page"] {color:#ab4d78;}
+:root[data-accent="blush"] .text-emerald-600,
+:root[data-accent="blush"] .text-emerald-400 {color:#197a5b;}
+:root[data-accent="blush"] .bg-emerald-500\\/15,
+:root[data-accent="blush"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#197a5b 16%,transparent);}
+:root[data-accent="blush"] .text-amber-700,
+:root[data-accent="blush"] .text-amber-300 {color:#956a20;}
+:root[data-accent="blush"] .bg-amber-500\\/10 {background:#f3d9b144;}
