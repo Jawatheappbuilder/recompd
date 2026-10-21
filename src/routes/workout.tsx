@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ActiveWorkout } from "@/components/recomp/active-workout";
+import { ActiveProgramHome } from "@/components/recomp/active-program-home";
 import { useAuth } from "@/components/recomp/auth-context";
 import { EmptyWorkout } from "@/components/recomp/empty-workout";
 import { Screen } from "@/components/recomp/core";
@@ -33,7 +34,7 @@ function WorkoutPage() {
   }, [hydrated, workout?.id, user?.id]);
 
   if (!hydrated) return <Screen>{null}</Screen>;
-  if (!workout) return <Screen><EmptyWorkout/></Screen>;
+  if (!workout) return <Screen><ActiveProgramHome/><EmptyWorkout/></Screen>;
   return <Screen className="pt-0">
     <ActiveWorkout key={workout.id} workout={workout} onChange={(next) => setWorkout(next)} onCancel={() => { sessionStorage.removeItem("recomp-active-workout"); setWorkout(null); }} />
     {showWifeyHype && <WifeyWorkoutHype />}
