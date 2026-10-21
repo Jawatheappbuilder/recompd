@@ -85,7 +85,7 @@ function Stat({ label, value }: {label: string; value: string}) {
   return <div className="rounded-xl bg-secondary/70 p-3 text-center"><div className="text-lg font-black text-foreground">{value}</div><div className="text-[0.64rem] font-semibold text-muted-foreground">{label}</div></div>;
 }
 
-export function ProgramsMode() {
+export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const saved = useSavedWorkouts();
   const cloud = useCloudData();
   const drafts = useProgramDrafts();
@@ -174,6 +174,7 @@ export function ProgramsMode() {
 
   if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
 
+  useEffect(() => { if (focusProgramId && drafts.some(p => p.id === focusProgramId)) setManageId(focusProgramId); }, [focusProgramId, drafts]);
   const managed = drafts.find((p) => p.id === manageId);
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
