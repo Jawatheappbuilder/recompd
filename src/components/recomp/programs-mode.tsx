@@ -92,6 +92,8 @@ export function ProgramsMode() {
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
   const [step, setStep] = useState(1);
   const [editing, setEditing] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
   const [adding, setAdding] = useState(false);
   const [muscles, setMuscles] = useState<Muscle[]>(["Chest"]);
   const [exerciseCount, setExerciseCount] = useState(5);
@@ -119,7 +121,7 @@ export function ProgramsMode() {
   } : previous);
   const close = () => {
     if (current) saveProgramDraft({ ...current, updatedAt: Date.now() });
-    setCurrent(null); setEditing(null); setAdding(false); setStep(1);
+    setCurrent(null); setEditing(null); setPickerOpen(false); setAdding(false); setStep(1);
   };
   const append = (workout: Omit<ProgramWorkout, "id"> & { id?: string }) => {
     setCurrent((previous) => {
@@ -154,7 +156,7 @@ export function ProgramsMode() {
     const inferred = [...new Set(strength.map((exercise) => exercise.muscle))];
     setMuscles(inferred.length ? inferred : ["Chest"]);
     setExerciseCount(Math.max(3, Math.min(8, strength.length || 5)));
-    setEditing(id); setLocks(new Set()); setRejected(new Set()); setRegeneration(0);
+    setEditing(id); setPickerOpen(false); setShowGenerator(false); setLocks(new Set()); setRejected(new Set()); setRegeneration(0);
   };
   const generateIntoTemplate = (id: string, currentWorkout: WorkoutExercise[]) => {
     if (!muscles.length) { toast.error("Choose at least one muscle group."); return; }
@@ -203,22 +205,24 @@ export function ProgramsMode() {
     } : program);
     const unlocked = editingWorkout.exercises.filter((exercise) => !exercise.note && !locks.has(exercise.key)).length;
     return <div className="space-y-3 pb-8">
-      <div className="flex items-center justify-between gap-2"><Button variant="ghost" size="sm" onClick={() => setEditing(null)}><ArrowLeft />Program</Button><span className="flex items-center gap-1 text-[0.68rem] font-semibold text-muted-foreground"><Cloud className="size-3" />Auto-saved</span></div>
+      <div className="flex items-center justify-between gap-2"><Button variant="ghost" size="sm" onClick={() => { setEditing(null); setPickerOpen(false); }}><ArrowLeft />Program</Button><span className="flex items-center gap-1 text-[0.68rem] font-semibold text-muted-foreground"><Cloud className="size-3" />Auto-saved</span></div>
       <div className="rounded-2xl border border-border bg-card p-3"><p className="mb-2 text-[0.65rem] font-bold uppercase tracking-wide text-muted-foreground">Workout template</p><input aria-label="Workout name" className="h-11 w-full rounded-xl border border-border bg-secondary px-3 font-bold outline-none focus:border-primary" value={editingWorkout.name} onChange={(event) => updateWorkout(editingWorkout.id, { name: event.target.value })}/></div>
-      <div className="rounded-2xl border border-border bg-card p-3 space-y-3">
+      <Button variant="surface" className="w-full" onClick={() => setPickerOpen(true)}><Plus />Add exercise manually</Button>
+      <Button variant="ghost" className="w-full justify-between text-primary" onClick={() => setShowGenerator((value) => !value)}><Sparkles />{showGenerator ? "Hide generator" : "Generate exercises instead"}</Button>
+      {showGenerator && <div className="rounded-2xl border border-border bg-card p-3 space-y-3">
         <div className="flex items-center justify-between"><div><p className="font-extrabold">Generate exercises</p><p className="text-[0.68rem] text-muted-foreground">Lock favourites, regenerate the rest</p></div><Sparkles className="size-5 text-primary" /></div>
         <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1">{quickSelects.map((group) => <Button key={group.label} variant={group.muscles.every((muscle) => muscles.includes(muscle)) ? "choiceActive" : "surface"} size="sm" className="shrink-0" onClick={() => setMuscles(group.muscles)}>{group.label}</Button>)}</div>
         <div className="grid grid-cols-2 gap-1.5">{muscleGroups.map((muscle) => <Button key={muscle} size="sm" variant={muscles.includes(muscle) ? "choiceActive" : "choice"} onClick={() => setMuscles((list) => list.includes(muscle) ? list.filter((m) => m !== muscle) : [...list,muscle])}>{muscle}</Button>)}</div>
         <div className="flex items-center gap-2"><span className="shrink-0 text-xs font-bold text-muted-foreground">Exercises</span><div className="flex flex-1 gap-1">{[3,4,5,6,7,8].map((n) => <Button key={n} variant={exerciseCount===n ? "segmentActive" : "segment"} size="sm" className="h-9 min-w-0 flex-1 px-0" onClick={() => setExerciseCount(n)}>{n}</Button>)}</div></div>
         <Button variant="primary" className="w-full" disabled={!muscles.length || (editingWorkout.exercises.filter((exercise) => !exercise.note).length >= exerciseCount && !unlocked)} onClick={() => generateIntoTemplate(editingWorkout.id, editingWorkout.exercises)}><RefreshCw />{editingWorkout.exercises.length ? "Regenerate unlocked" : "Generate workout"}</Button>
         {locks.size > 0 && <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setLocks(new Set())}><LockKeyholeOpen />Unlock all ({locks.size})</Button>}
-      </div>
-      <WorkoutEditor supersets workout={editingWorkout.exercises} setWorkout={setExercises} lockedKeys={locks} onToggleLock={(key) => setLocks((previous) => {
+      </div>}
+      <WorkoutEditor supersets workout={editingWorkout.exercises} setWorkout={setExercises} pickerOpen={pickerOpen} onPickerOpenChange={setPickerOpen} lockedKeys={locks} onToggleLock={(key) => setLocks((previous) => {
         const next = new Set(previous);
         if (next.has(key)) next.delete(key); else next.add(key);
         return next;
       })}/>
-      <Button variant="primary" className="w-full" onClick={() => setEditing(null)}><Check />Done editing</Button>
+      <Button variant="primary" className="w-full" onClick={() => { setEditing(null); setPickerOpen(false); }}><Check />Done editing</Button>
     </div>;
   }
 
@@ -260,7 +264,7 @@ export function ProgramsMode() {
       {current.workouts.length<5 && <Button variant="surface" className="w-full" onClick={()=>setAdding((value)=>!value)}><Plus/>Add workout</Button>}
       {adding && <div className="space-y-3 rounded-2xl border border-primary/20 bg-card p-3 shadow-sm">
         <p className="text-sm font-extrabold">Add a workout</p>
-        <Button variant="surface" className="w-full" onClick={()=>{ const id = newId(); append({name:"Workout "+(current.workouts.length+1),exercises:[], id} as ProgramWorkout); editTemplate(id); }}>Build from scratch <Plus/></Button>
+        <Button variant="surface" className="w-full" onClick={()=>{ const id = newId(); append({name:"Workout "+(current.workouts.length+1),exercises:[], id}); editTemplate(id); setPickerOpen(true); }}>Build from scratch <Plus/></Button>
         <div className="border-t border-border pt-3"><p className="mb-2 text-xs font-bold text-muted-foreground">Generate a workout</p><div className="flex flex-wrap gap-1.5">{quickSelects.map((group)=><Button key={group.label} size="sm" variant={group.muscles.every((muscle)=>muscles.includes(muscle))?"choiceActive":"surface"} onClick={()=>setMuscles(group.muscles)}>{group.label}</Button>)}</div><Button variant="primary" className="mt-2 w-full" disabled={!muscles.length} onClick={()=>append({name:muscles.join(" + ")+" Day",exercises:generateWorkout(muscles,exerciseCount,Date.now())})}><Sparkles/>Generate {exerciseCount} exercises</Button></div>
         {saved.length>0 && <div className="border-t border-border pt-3"><p className="mb-2 text-xs font-bold text-muted-foreground">Import a saved workout</p><div className="max-h-44 space-y-1 overflow-y-auto">{saved.map((workout)=><Button key={workout.id} variant="ghost" className="w-full justify-start" onClick={()=>append({name:workout.name,exercises:duplicateExercises(workout.exercises)})}>{workout.name}</Button>)}</div></div>}
       </div>}
