@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarPlus, Dumbbell, Hammer, Plus, Settings, Sparkles, UserPlus, Users, X } from "lucide-react";
-import { completeAccentChoice, hasCompletedAccentChoice, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
+import { completeAccentChoice, hasCompletedAccentChoice, hasStoredUserPreferences, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, Screen } from "@/components/recomp/core";
@@ -36,7 +36,7 @@ function HomePage() {
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [showColourwayLaunch, setShowColourwayLaunch] = useState(false);
   useEffect(() => {
-    try { setShowColourwayLaunch(localStorage.getItem("recomp-colourways-launch-v1") !== "seen" && localStorage.getItem("recomp-accent-choice-complete-v1")==="1"); } catch { /* optional modal */ }
+    try { setShowColourwayLaunch(localStorage.getItem("recomp-colourways-launch-v1") !== "seen" && hasStoredUserPreferences() && localStorage.getItem("recomp-accent-choice-complete-v1")==="1"); } catch { /* optional modal */ }
   }, []);
   const closeColourwayLaunch=()=>{try {localStorage.setItem("recomp-colourways-launch-v1","seen");}catch{} setShowColourwayLaunch(false);};
   useEffect(() => { setShowAccentChoice(!hasCompletedAccentChoice()); }, []);
