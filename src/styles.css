@@ -212,3 +212,54 @@
   --border: oklch(0.87 0.035 295); --input: oklch(0.85 0.04 295); --ring: oklch(0.62 0.20 295); --elevated: oklch(0.92 0.05 295);
   --track: oklch(0.88 0.035 295); --soft: oklch(0.75 0.10 295); --nav: oklch(0.98 0.018 295); --app-canvas: oklch(0.93 0.035 295);
 }
+
+
+/* Spectrum — an opt-in multi-colour system with semantic accents. */
+:root[data-accent="spectrum"] {
+  --background: #f1f2f4; --foreground: #191d24;
+  --card: #ffffff; --card-foreground: #191d24;
+  --popover: #ffffff; --popover-foreground: #191d24;
+  --primary: #cc2935; --primary-foreground: #ffffff;
+  --secondary: #e5e8ec; --secondary-foreground: #242a33;
+  --muted: #e9ebee; --muted-foreground: #596270;
+  --accent: #fff0c5; --accent-foreground: #6d4909;
+  --destructive: #c72435; --destructive-foreground: #ffffff;
+  --border: #cbd0d7; --input: #bfc5ce; --ring: #cc2935;
+  --elevated: #e5e8ec; --track: #d7dce3; --soft: #b0b8c4;
+  --nav: #fbfcfd; --app-canvas: #d9dde4; --overlay: #11151b80;
+  --spectrum-green: #138b60; --spectrum-yellow: #c28a05; --spectrum-blue: #1873b2;
+}
+.dark[data-accent="spectrum"] {
+  --background: #101217; --foreground: #f6f7f9;
+  --card: #1c2028; --card-foreground: #f6f7f9;
+  --popover: #252a34; --popover-foreground: #f6f7f9;
+  --primary: #f24c57; --primary-foreground: #190d10;
+  --secondary: #2a303a; --secondary-foreground: #f1f3f5;
+  --muted: #282d36; --muted-foreground: #acb5c0;
+  --accent: #43391e; --accent-foreground: #ffe08b;
+  --destructive: #ff6470; --destructive-foreground: #1c0d10;
+  --border: #3e4550; --input: #454d5a; --ring: #f24c57;
+  --elevated: #2b313c; --track: #383e49; --soft: #5f6878;
+  --nav: #161920; --app-canvas: #0a0c10; --overlay: #000000c9;
+  --spectrum-green: #42d5a0; --spectrum-yellow: #ffd057; --spectrum-blue: #6fc9ff;
+}
+:root[data-accent="spectrum"] .wordmark {
+  background: linear-gradient(95deg, var(--foreground) 0 61%, var(--primary) 61% 77%, var(--spectrum-yellow) 77% 89%, var(--spectrum-green) 89% 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+:root[data-accent="spectrum"] .bg-primary .wordmark,
+:root[data-accent="spectrum"] .text-primary-foreground.wordmark {
+  background: none;
+  color: var(--primary-foreground);
+}
+:root[data-accent="spectrum"] .bg-emerald-500\/15,
+:root[data-accent="spectrum"] .bg-emerald-500\/10 { background-color: color-mix(in srgb, var(--spectrum-green) 16%, transparent); }
+:root[data-accent="spectrum"] .text-emerald-600,
+:root[data-accent="spectrum"] .text-emerald-400 { color: var(--spectrum-green); }
+:root[data-accent="spectrum"] .bg-amber-500\/10 { background-color: color-mix(in srgb, var(--spectrum-yellow) 14%, transparent); }
+:root[data-accent="spectrum"] .text-amber-700,
+:root[data-accent="spectrum"] .text-amber-300 { color: var(--spectrum-yellow); }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] { border-top: 2px solid var(--spectrum-yellow); }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: var(--primary); }
