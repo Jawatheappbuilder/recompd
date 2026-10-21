@@ -32,10 +32,10 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
   useEffect(() => { patchDraft({ mode }); }, [mode]);
   return <div className="space-y-4">
     <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
-      {([["generate", "Generate"], ["manual", "Build your own"], ["programs", "Programs"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn("relative", mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
+      {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn("relative", mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
     <RecentWorkoutNames />
-    {mode === "generate" ? <GenerateMode /> : mode === "manual" ? <ManualMode />}
+    {mode === "generate" ? <GenerateMode /> : <ManualMode />}
   </div>;
 }
 
