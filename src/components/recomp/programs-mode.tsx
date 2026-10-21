@@ -11,6 +11,7 @@ import { workoutTimeEstimate } from "@/lib/workout-time";
 import { completionStats, createOccurrences, isPending, occurrencesFor, replan, updateOccurrence } from "@/lib/program-schedule";
 import { deleteProgramDraft, saveProgramDraft, useProgramDrafts, type ProgramWorkout, type TrainingProgram } from "@/lib/program-storage";
 import { WorkoutEditor } from "./workout-editor";
+import { ProgramOverview } from "./program-overview";
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const weekdayOrder = [1, 2, 3, 4, 5, 6, 0];
@@ -108,6 +109,7 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const drafts = useProgramDrafts();
   const [current, setCurrent] = useState<TrainingProgram | null>(null);
   const [manageId, setManageId] = useState<string | null>(null);
+  const [previewProgram, setPreviewProgram] = useState<TrainingProgram | null>(null);
   const currentRef = useRef<TrainingProgram | null>(null);
   currentRef.current = current;
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
@@ -196,6 +198,13 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const managed = drafts.find((p) => p.id === manageId);
   if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
 
+  if (previewProgram) return <div className="space-y-3 pb-6">
+    <Button variant="ghost" size="sm" onClick={()=>setPreviewProgram(null)}><ArrowLeft/>All programs</Button>
+    <div><h2 className="text-xl font-black">Program preview</h2><p className="mt-1 text-xs text-muted-foreground">Explore the entire routine before choosing it.</p></div>
+    <ProgramOverview key={previewProgram.id} program={previewProgram}/>
+    <Button variant="primary" size="lg" className="w-full" onClick={()=>{setCurrent(structuredClone(previewProgram));setStep(1);setPreviewProgram(null);}}> {previewProgram.status==="draft"?"Customise program":"Use this program"} <ArrowRight/></Button>
+  </div>;
+
   if (!current) return <div className="space-y-4 pb-5">
     <div className="flex items-center justify-between gap-2">
       <div><h2 className="text-xl font-black">My Programs</h2><p className="text-xs text-muted-foreground">Build your training routine</p></div>
@@ -207,7 +216,10 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
       <div className="space-y-3 p-4">
         <div className="grid grid-cols-3 gap-2 text-center text-[0.7rem] font-bold"><span className="rounded-xl bg-secondary p-2">Push<br/><span className="font-normal text-muted-foreground">Chest / Tris</span></span><span className="rounded-xl bg-secondary p-2">Pull<br/><span className="font-normal text-muted-foreground">Back / Bis</span></span><span className="rounded-xl bg-secondary p-2">Legs<br/><span className="font-normal text-muted-foreground">Lower body</span></span></div>
         <p className="text-xs text-muted-foreground">A balanced starting point with compound lifts and accessories. Adjust exercises, sets and training days to suit you.</p>
-        <Button variant="primary" className="w-full" onClick={()=>{setCurrent(makePushPullLegs());setStep(1);toast.success("Starter program ready — customise before saving");}}><Plus/>Use this program <ArrowRight/></Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="surface" onClick={()=>setPreviewProgram(makePushPullLegs())}>Preview program</Button>
+          <Button variant="primary" onClick={()=>{setCurrent(makePushPullLegs());setStep(1);toast.success("Starter program ready — customise before saving");}}><Plus/>Use program</Button>
+        </div>
       </div>
     </section>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
@@ -224,6 +236,7 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
         <div className="p-4">
           <div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1"><p className="truncate text-base font-extrabold">{item.name.trim() || "Untitled program"}</p><p className="mt-1 text-xs text-muted-foreground">{item.goal} · {item.mode === "calendar" ? "Calendar" : "Flexible"} schedule</p></div><span className={"rounded-full px-2.5 py-1 text-[0.65rem] font-extrabold "+(item.status==="active"?"bg-emerald-500/15 text-emerald-600 dark:text-emerald-400":"bg-secondary text-muted-foreground")}>{item.status==="active"?"● Active":item.status==="draft"?"Draft":item.status==="paused"?"Paused":"Completed"}</span></div>
           <div className="mt-3 grid grid-cols-3 gap-2"><Stat label="Weeks" value={String(item.weeks)} /><Stat label="Workouts" value={String(total)} /><Stat label="Per cycle" value={minutes ? formatDuration(minutes) : "—"} /></div>
+          <Button variant="ghost" size="sm" className="mt-2 w-full justify-center text-primary" onClick={()=>setPreviewProgram(item)}>Preview program <ChevronRight/></Button>
           <div className="mt-3 flex gap-2"><Button variant="surface" className="flex-1" onClick={() => { if (item.status === "draft") { setCurrent(structuredClone(item)); setStep(1); } else setManageId(item.id); }}>{item.status === "draft" ? <Pencil /> : <CalendarDays />}{item.status === "draft" ? "Continue editing" : "View program"}</Button>{item.status === "draft" && <Button variant="primary" size="sm" onClick={() => setManageId(item.id)}>Activate</Button>}<Button variant="ghost" size="icon" aria-label={"Delete " + item.name} onClick={() => { if (window.confirm("Delete this program draft?")) deleteProgramDraft(item.id); }}><Trash2 /></Button></div>
         </div>
       </div>;
@@ -320,10 +333,8 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
       <div className="grid grid-cols-2 gap-2"><Button variant="surface" onClick={()=>setStep(1)}>Back</Button><Button variant="primary" onClick={()=>setStep(3)}>Review <ArrowRight/></Button></div>
     </div>}
     {step===3 && <div className="space-y-3">
-      <div><h2 className="text-xl font-black">Your program at a glance</h2><p className="mt-1 text-xs text-muted-foreground">Review everything before saving your draft.</p></div>
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="h-1 bg-primary"/><div className="p-4"><p className="text-lg font-extrabold">{current.name || "Untitled program"}</p><p className="text-xs text-muted-foreground">{current.goal} · {current.mode==="calendar"?"Calendar":"Flexible"}</p><div className="mt-3 grid grid-cols-3 gap-2"><Stat label="Weeks" value={String(current.weeks)}/><Stat label="Sessions" value={String(current.workouts.length*current.weeks)}/><Stat label="Per cycle" value={minutes?formatDuration(minutes):"—"}/></div></div></div>
-      <div className="rounded-2xl border border-border bg-card p-3"><p className="mb-2 text-sm font-extrabold">Workout rotation</p>{current.workouts.map((workout,index)=><div key={workout.id} className="flex items-center gap-2 border-b border-border py-2 last:border-0"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-xs font-black text-primary">{index+1}</span><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{workout.name}</p><p className="text-[0.65rem] text-muted-foreground">{workout.exercises.filter(ex=>!ex.note).length} exercises{current.mode==="calendar" && workout.weekday !== undefined ? " · "+dayLabels[workout.weekday] : ""}</p></div></div>)}</div>
-      <div className="rounded-2xl border border-border bg-card p-3"><p className="text-sm font-extrabold">Muscle coverage</p><div className="mt-2 flex flex-wrap gap-1.5">{uniqueMuscles.length?uniqueMuscles.map((muscle)=><span key={muscle} className="rounded-full bg-primary/10 px-2.5 py-1 text-[0.68rem] font-bold text-primary">{muscle}</span>):<p className="text-xs text-muted-foreground">Add exercises to see muscle coverage</p>}</div><div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3.5"/>Estimated training: {minutes ? formatDuration(minutes) : "—"} per cycle</div></div>
+      <div><h2 className="text-xl font-black">Your program at a glance</h2><p className="mt-1 text-xs text-muted-foreground">Review your workouts and muscle emphasis before saving.</p></div>
+      <ProgramOverview program={current} />
       <p className="text-xs text-muted-foreground">Drafts auto-save to your account. Activate your program after reviewing to start following it.</p>
       <div className="grid grid-cols-2 gap-2"><Button variant="surface" onClick={()=>setStep(2)}>Back</Button><Button variant="primary" onClick={finish}><Save/>Save program</Button></div>
     </div>}
