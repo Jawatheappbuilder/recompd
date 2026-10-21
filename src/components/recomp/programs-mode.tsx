@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock3, Cloud, Copy, Dumbbell, LockKeyholeOpen, MoreHorizontal, Pencil, Plus, RefreshCw, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { newId, useCloudData } from "@/lib/cloud-data";
-import { cloneExercises, useSavedWorkouts } from "@/lib/workout-storage";
+import { cloneExercises, useSavedWorkouts, handOffWorkout, hasActiveWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
 import { completionStats, createOccurrences, isPending, occurrencesFor, replan, updateOccurrence } from "@/lib/program-schedule";
 import { deleteProgramDraft, saveProgramDraft, useProgramDrafts, type ProgramWorkout, type TrainingProgram } from "@/lib/program-storage";
@@ -281,7 +282,7 @@ export function ProgramsMode() {
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="h-1 bg-primary"/><div className="p-4"><p className="text-lg font-extrabold">{current.name || "Untitled program"}</p><p className="text-xs text-muted-foreground">{current.goal} · {current.mode==="calendar"?"Calendar":"Flexible"}</p><div className="mt-3 grid grid-cols-3 gap-2"><Stat label="Weeks" value={String(current.weeks)}/><Stat label="Sessions" value={String(current.workouts.length*current.weeks)}/><Stat label="Per cycle" value={minutes?formatDuration(minutes):"—"}/></div></div></div>
       <div className="rounded-2xl border border-border bg-card p-3"><p className="mb-2 text-sm font-extrabold">Workout rotation</p>{current.workouts.map((workout,index)=><div key={workout.id} className="flex items-center gap-2 border-b border-border py-2 last:border-0"><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-xs font-black text-primary">{index+1}</span><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{workout.name}</p><p className="text-[0.65rem] text-muted-foreground">{workout.exercises.filter(ex=>!ex.note).length} exercises{current.mode==="calendar" && workout.weekday !== undefined ? " · "+dayLabels[workout.weekday] : ""}</p></div></div>)}</div>
       <div className="rounded-2xl border border-border bg-card p-3"><p className="text-sm font-extrabold">Muscle coverage</p><div className="mt-2 flex flex-wrap gap-1.5">{uniqueMuscles.length?uniqueMuscles.map((muscle)=><span key={muscle} className="rounded-full bg-primary/10 px-2.5 py-1 text-[0.68rem] font-bold text-primary">{muscle}</span>):<p className="text-xs text-muted-foreground">Add exercises to see muscle coverage</p>}</div><div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3.5"/>Estimated training: {minutes ? formatDuration(minutes) : "—"} per cycle</div></div>
-      <p className="text-xs text-muted-foreground">Drafts auto-save to your account. Activating a program and tracking completed or pending sessions will come in Phase 2.</p>
+      <p className="text-xs text-muted-foreground">Drafts auto-save to your account. Activate your program after reviewing to start following it.</p>
       <div className="grid grid-cols-2 gap-2"><Button variant="surface" onClick={()=>setStep(2)}>Back</Button><Button variant="primary" onClick={finish}><Save/>Save program</Button></div>
     </div>}
   </div>;
@@ -304,6 +305,7 @@ function displayWorkoutName(name: string, position: number, workout: ProgramWork
 }
 
 function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; all: TrainingProgram[]; onBack: () => void }) {
+  const navigate=useNavigate();
   const [managing,setManaging]=useState(false);
   const [switching,setSwitching]=useState(false);
   const [newMode,setNewMode]=useState(program.mode);
@@ -324,6 +326,14 @@ function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; a
   const template=(id:string)=>program.workouts.find(w=>w.id===id);
   const titleFor=(id:string)=>{const t=template(id);return displayWorkoutName(t?.name??"Workout",Math.max(0,program.workouts.findIndex(w=>w.id===id)),t);};
   const commit=(p:TrainingProgram)=>saveProgramDraft({...p,updatedAt:Date.now()});
+  const startSession=(occurrence:typeof occurrences[number])=>{
+    if(program.status!=="active") { toast.error("Resume the program to train."); return; }
+    const item=template(occurrence.templateId);
+    if(!item || occurrence.status!=="upcoming") return;
+    if(hasActiveWorkout()) { toast.info("You have an active workout. Resume or finish that session first."); void navigate({to:"/workout"}); return; }
+    if(!handOffWorkout({name:item.name,exercises:cloneExercises(item.exercises),programId:program.id,programTemplateId:item.id,programOccurrenceId:occurrence.id})) { toast.error("Could not start program workout."); return; }
+    void navigate({to:"/workout"});
+  };
   const activate=()=>{
     if(all.some(p=>p.id!==program.id&&p.status==="active")){toast.error("Pause your other active program first.");return;}
     if(program.workouts.length<2||program.workouts.length>5||program.workouts.some(w=>!w.exercises.some(e=>!e.note))){toast.error("Add 2–5 complete workouts first.");return;}
@@ -355,11 +365,12 @@ function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; a
         </div>
         <span className={"shrink-0 rounded-full px-2 py-1 text-[0.62rem] font-extrabold "+(done?"bg-emerald-500/10 text-emerald-600":skipped?"bg-secondary text-muted-foreground":pending?"bg-amber-500/15 text-amber-700 dark:text-amber-300":active?"bg-primary/10 text-primary":"bg-secondary text-muted-foreground")}>{done?"Done":skipped?"Skipped":pending?"Pending":active?"Next":"Planned"}</span>
       </div>
-      {program.status==="active"&&o.status==="upcoming"&&(pending||active)&&<div className="flex items-center justify-between border-t border-border/70 px-3 py-2">
+      {program.status==="active"&&o.status==="upcoming"&&<div className="flex items-center justify-between border-t border-border/70 px-3 py-2">
         <span className="text-[0.65rem] text-muted-foreground">{pending?"Missed date · still available":"Ready when you are"}</span>
         <div className="flex gap-2">
           {program.mode==="calendar"&&<input type="date" aria-label={"Reschedule "+titleFor(o.templateId)} className="h-8 max-w-28 rounded-lg border border-border bg-secondary px-1 text-[0.65rem]" value={o.date??""} onChange={e=>commit(updateOccurrence(program,o.id,{date:e.target.value||undefined}))}/>}
           <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={()=>{if(window.confirm("Skip this session? Skips won't count as completed."))commit(updateOccurrence(program,o.id,{status:"skipped"}));}}>Skip</Button>
+          <Button variant="primary" size="sm" className="h-8" onClick={()=>startSession(o)}>Start</Button>
         </div>
       </div>}
     </div>;
@@ -412,7 +423,7 @@ function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; a
         <h3 className="text-xl font-black tracking-tight">{titleFor(next.templateId)}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{template(next.templateId)?.exercises.filter(e=>!e.note).map(e=>e.muscle).filter((m,i,a)=>a.indexOf(m)===i).join(" · ")}</p>
         <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-muted-foreground"><span className="flex items-center gap-1"><Dumbbell className="size-4 text-primary"/>{template(next.templateId)?.exercises.filter(e=>!e.note).length} exercises</span><span className="flex items-center gap-1"><Clock3 className="size-4 text-primary"/>{workoutTimeEstimate(template(next.templateId)?.exercises??[])?.label??"—"}</span></div>
-        <div className="mt-4 rounded-xl border border-primary/15 bg-primary/[0.06] px-3 py-3 text-center text-xs font-semibold text-muted-foreground">Workout launch unlocks in Phase 3</div>
+        <Button variant="primary" size="lg" className="mt-4 w-full" disabled={program.status!=="active"} onClick={()=>startSession(next)}><Dumbbell/>Start this workout <ArrowRight/></Button>
       </div>
     </div>}
     <div className="space-y-3">
