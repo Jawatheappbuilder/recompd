@@ -72,7 +72,8 @@ import { useAuth } from "./auth-context";
 import { getMySharedWorkoutIds, shareWorkoutToSocial, unshareWorkoutFromSocial } from "@/lib/social";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { newId } from "@/lib/cloud-data";
+import { newId, getCloudData } from "@/lib/cloud-data";
+import { saveProgramDraft } from "@/lib/program-storage";
 
 type Sheet =
   | { kind: "closed" }
@@ -146,6 +147,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
   const [sheet, setSheet] = useState<Sheet>({ kind: "closed" });
   const [removeKey, setRemoveKey] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [futureReplacement, setFutureReplacement] = useState<{ key: string; name: string; alternative: Exercise } | null>(null);
   const [restApply, setRestApply] = useState<{ key: string; seconds: number } | null>(null);
   const [finished, setFinished] = useState<FinishedWorkout | null>(null);
   const { runtime, update: updateRuntime, clear: clearRuntime } = useWorkoutRuntime(workout.id, workout.circuits ?? [], now);
@@ -321,6 +323,7 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
     const current = workout.exercises.find((exercise) => exercise.key === key);
     if (current) rememberReplacement(current.id, alternative.id);
     updateExercise(key, (exercise) => ({ ...exercise, ...alternative, key: exercise.key }));
+    if (workout.programId && workout.programTemplateId && current) setFutureReplacement({ key, name: current.name, alternative });
     setSheet({ kind: "closed" });
   };
 
@@ -495,6 +498,28 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
       {rest && rest.expanded && restRemaining > 0 && <RestTimer seconds={restRemaining} duration={rest.duration} onMinimize={() => setRest({ ...rest, expanded: false })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000 })} onSkip={() => setRest(null)} />}
       <NoteSheet open={noteSheet !== null} initial={noteSheet?.key ? (workout.notes ?? []).find((n) => n.key === noteSheet.key) : undefined} onOpenChange={(open) => { if (!open) setNoteSheet(null); }} onSave={(note) => { if (!noteSheet) return; if (noteSheet.key) patchNote(noteSheet.key, (existing) => ({ ...existing, ...note, checked: existing.checked.filter((id) => note.checklist.some((row) => row.id === id)) })); else onChange({ ...workout, notes: [...(workout.notes ?? []), { ...note, key: newId(), afterKey: workout.exercises.at(-1)?.key ?? null, checked: [] }] }); setNoteSheet(null); }} />
+      <AlertDialog open={!!futureReplacement} onOpenChange={(open) => { if (!open) setFutureReplacement(null); }}>
+        <AlertDialogContent className="max-w-[410px] rounded-2xl bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update your program too?</AlertDialogTitle>
+            <AlertDialogDescription>You've replaced {futureReplacement?.name} with {futureReplacement?.alternative.name}. Use this change just today, or in future program workouts too. Past workouts stay untouched.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setFutureReplacement(null)}>Just this workout</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (!futureReplacement || !workout.programId || !workout.programTemplateId) return;
+              const program=getCloudData()?.programs.find(p=>p.id===workout.programId);
+              if (!program) { toast.error("Could not find the program template."); setFutureReplacement(null); return; }
+              const next={ ...program, updatedAt:Date.now(), workouts:program.workouts.map(item=>item.id===workout.programTemplateId?{
+                ...item, exercises:item.exercises.map(ex=>ex.key===futureReplacement.key?{...ex,...futureReplacement.alternative,key:ex.key,sets:ex.sets,reps:ex.reps,restSeconds:ex.restSeconds}:ex),
+              }:item)};
+              saveProgramDraft(next);
+              toast.success("Future program workouts updated");
+              setFutureReplacement(null);
+            }}>Update future workouts</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <ExerciseActionsSheet sheet={sheet} workout={workout} onClose={() => setSheet({ kind: "closed" })} onShowReplace={(key) => setSheet({ kind: "replace", key })} onShowSuperset={(key) => setSheet({ kind: "superset", key })} onShowGroup={(key) => setSheet({ kind: "group", key })} onShowCircuit={(key) => setSheet({ kind: "circuit", key })} onReplace={replaceExercise} onPair={pairSuperset} onCreateGroup={(memberKeys, restSeconds) => { const eligibleKeys = memberKeys.filter((key) => workout.exercises.some((e) => e.key === key && !e.groupId && !e.circuitId && !e.supersetWith)); if (eligibleKeys.length < 2 || eligibleKeys.length > 3 || new Set(eligibleKeys).size !== eligibleKeys.length) return; const id=`group-${Date.now()}`; onChange({ ...workout, exerciseGroups:[...(workout.exerciseGroups ?? []),{id,memberKeys:eligibleKeys,restSeconds}], exercises:workout.exercises.map((e)=>eligibleKeys.includes(e.key)?{...e,groupId:id,supersetWith:undefined}:e) }); setSheet({kind:"closed"}); }} onCreateCircuit={(key, memberKeys, workSeconds, restSeconds, rounds, reps) => { const id = `circuit-${Date.now()}`; onChange({ ...workout, circuits: [...(workout.circuits ?? []), { id, workSeconds, restSeconds, rounds, reps }], exercises: workout.exercises.map((exercise) => memberKeys.includes(exercise.key) ? { ...exercise, circuitId: id } : exercise) }); setSheet({ kind: "closed" }); }} onRemoveGroup={(key) => { const groupId=workout.exercises.find((exercise)=>exercise.key===key)?.groupId; if(!groupId)return; onChange({ ...workout, exerciseGroups:(workout.exerciseGroups??[]).filter((g)=>g.id!==groupId), exercises:workout.exercises.map((e)=>e.groupId===groupId?{...e,groupId:undefined}:e) }); setSheet({kind:"closed"}); }} onRemoveCircuit={(key) => { const circuitId = workout.exercises.find((exercise) => exercise.key === key)?.circuitId; if (!circuitId) return; onChange({ ...workout, circuits: (workout.circuits ?? []).filter((item) => item.id !== circuitId), exercises: workout.exercises.map((exercise) => exercise.circuitId === circuitId ? { ...exercise, circuitId: undefined } : exercise) }); setSheet({ kind: "closed" }); }} onRemovePair={removeSuperset} onRemove={(key) => { setSheet({ kind: "closed" }); setRemoveKey(key); }} onRest={(key, seconds) => { updateExercise(key, (exercise) => ({ ...exercise, restSeconds: seconds })); setSheet({ kind: "closed" }); setRestApply({ key, seconds }); }} onAdd={(exercise) => {
         const base = toWorkoutExercise(exercise);
         const active = createActiveWorkout([base])?.exercises[0];
