@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarPlus, Dumbbell, Hammer, Plus, Settings, Sparkles, UserPlus, Users, X } from "lucide-react";
-import { completeAccentChoice, hasCompletedAccentChoice, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
+import { completeAccentChoice, hasCompletedAccentChoice, hasStoredUserPreferences, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, Screen } from "@/components/recomp/core";
@@ -13,6 +13,7 @@ import { StepsCard } from "@/components/recomp/steps-card";
 import { ActiveProgramHome } from "@/components/recomp/active-program-home";
 import { useActiveWorkout } from "@/hooks/use-active-workout";
 import { LogWeightSheet } from "@/components/recomp/progress/bodyweight";
+import { ColourwayExplorer } from "@/components/recomp/colourway-explorer";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -33,6 +34,11 @@ function HomePage() {
   const [showAccentChoice, setShowAccentChoice] = useState(false);
   const [logWeightOpen, setLogWeightOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [showColourwayLaunch, setShowColourwayLaunch] = useState(false);
+  useEffect(() => {
+    try { setShowColourwayLaunch(localStorage.getItem("recomp-colourways-launch-v1") !== "seen" && hasStoredUserPreferences() && localStorage.getItem("recomp-accent-choice-complete-v1")==="1"); } catch { /* optional modal */ }
+  }, []);
+  const closeColourwayLaunch=()=>{try {localStorage.setItem("recomp-colourways-launch-v1","seen");}catch{} setShowColourwayLaunch(false);};
   useEffect(() => { setShowAccentChoice(!hasCompletedAccentChoice()); }, []);
   const { status } = useAuth();
   useEffect(() => {
@@ -49,7 +55,7 @@ function HomePage() {
   const upcoming = useUpcomingWorkouts();
   const today = upcoming.find((w) => w.date === localDateKey());
   const next = upcoming.find((w) => w !== today);
-  return <Screen>{showAnnouncement && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]"><div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"><div className="relative bg-primary px-5 pb-5 pt-6 text-primary-foreground"><button type="button" aria-label="Dismiss announcement" onClick={dismissAnnouncement} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button><div className="text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-80">What’s new</div><h2 id="whats-new-title" className="mt-1 pr-8 text-2xl font-black">Introducing Training Programs 💪</h2><p className="mt-1 text-sm font-semibold opacity-80">Your training plan, all in one place.</p></div><div className="p-5"><div className="space-y-3 text-sm font-semibold"><div>📅 Build multi-week training programs</div><div>🏋️ Start with our Push / Pull / Legs gym split</div><div>✨ Customise every workout to suit you</div><div>✅ Track your weeks and completed sessions</div><div>🏠 Start your next program workout from Home</div></div><p className="mt-5 text-sm font-extrabold">Find Programs under Build and give it a go.</p><Button variant="primary" size="lg" className="mt-4 h-12 w-full" onClick={dismissAnnouncement}>Let’s train</Button></div></div></div>}<div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
+  return <Screen>{showColourwayLaunch && <ColourwayExplorer modal initial={preferences.accent} onApply={accent=>setPreferences({...preferences,accent})} onClose={closeColourwayLaunch}/>}{!showColourwayLaunch && showAnnouncement && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]"><div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"><div className="relative bg-primary px-5 pb-5 pt-6 text-primary-foreground"><button type="button" aria-label="Dismiss announcement" onClick={dismissAnnouncement} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button><div className="text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-80">What’s new</div><h2 id="whats-new-title" className="mt-1 pr-8 text-2xl font-black">Introducing Training Programs 💪</h2><p className="mt-1 text-sm font-semibold opacity-80">Your training plan, all in one place.</p></div><div className="p-5"><div className="space-y-3 text-sm font-semibold"><div>📅 Build multi-week training programs</div><div>🏋️ Start with our Push / Pull / Legs gym split</div><div>✨ Customise every workout to suit you</div><div>✅ Track your weeks and completed sessions</div><div>🏠 Start your next program workout from Home</div></div><p className="mt-5 text-sm font-extrabold">Find Programs under Build and give it a go.</p><Button variant="primary" size="lg" className="mt-4 h-12 w-full" onClick={dismissAnnouncement}>Let’s train</Button></div></div></div>}<div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
     <div aria-hidden className="pointer-events-none absolute -right-16 top-12 size-56 rounded-full bg-white/[0.10] blur-3xl" />
     <div aria-hidden className="pointer-events-none absolute -left-12 bottom-0 size-40 rounded-full bg-white/[0.05] blur-3xl" />
     <header className="relative flex items-center justify-between gap-4">
@@ -61,7 +67,7 @@ function HomePage() {
       <h1 className="mt-1 text-[1.7rem] font-extrabold leading-tight">Ready to train?</h1>
     </div>
   </div>
-  {showAccentChoice && <div className="relative z-10 mt-3"><AccentChoiceCard accent={preferences.accent} onPreview={(accent) => setPreferences({ ...preferences, accent })} onSave={() => { completeAccentChoice(); setShowAccentChoice(false); }} /></div>}
+  {showAccentChoice && !showColourwayLaunch && <ColourwayExplorer modal initial={preferences.accent} onApply={accent=>{setPreferences({...preferences,accent});completeAccentChoice();setShowAccentChoice(false);}} onClose={()=>{completeAccentChoice();setShowAccentChoice(false);}}/>}
   <div className="relative z-10 -mt-5">{activeWorkout ? <Card className="workout-action border-primary/20 bg-card p-4 shadow-sm"><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Workout in progress</div><h2 className="mt-1 truncate text-lg font-extrabold">{activeWorkout.name}</h2><p className="mt-1 text-xs text-muted-foreground">{activeSets.filter((set) => set.completed).length} of {activeSets.length} {activeWorkout.exercises.some((exercise) => exercise.tracking === "cardio") ? "entries" : "sets"} completed</p><Button asChild variant="primary" size="lg" className="mt-3 h-12 w-full"><Link to="/workout"><Dumbbell />Resume workout</Link></Button></Card> : today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action overflow-hidden border-primary/15 bg-card p-3.5 shadow-[0_10px_32px_-22px_var(--primary)]"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}</div>
   <ActiveProgramHome />
   {status === "demo" && <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-border/70 bg-secondary/55 px-3 py-2">
