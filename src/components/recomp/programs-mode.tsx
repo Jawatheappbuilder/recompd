@@ -113,6 +113,7 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
   const [step, setStep] = useState(1);
   const [editing, setEditing] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -292,6 +293,20 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
           <Button variant="ghost" size="icon" aria-label="Move workout down" disabled={index===current.workouts.length-1} onClick={()=>update({workouts:move(current.workouts,index,index+1)})}><ArrowDown /></Button>
         </div>
         {current.mode==="calendar" && <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-secondary/60 px-2 py-1.5"><span className="text-[0.7rem] font-semibold text-muted-foreground">Training day</span><select aria-label={"Training day for "+workout.name} className="max-w-[55%] rounded-lg border border-border bg-card px-2 py-1.5 text-xs font-bold" value={workout.weekday ?? ""} onChange={(event) => updateWorkout(workout.id,{weekday:event.target.value === "" ? undefined : Number(event.target.value)})}><option value="">Choose day</option>{weekdayOrder.map((day)=><option key={day} value={day}>{dayLabels[day]}</option>)}</select></div>}
+        <div className="mt-3 overflow-hidden rounded-xl border border-border/70 bg-secondary/35">
+          <button type="button" aria-expanded={previewId===workout.id} onClick={()=>setPreviewId(previewId===workout.id?null:workout.id)} className="flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-xs font-extrabold text-primary">
+            <span className="flex items-center gap-2"><Dumbbell className="size-4"/>{previewId===workout.id?"Hide exercises":"Preview workout"}</span>
+            {previewId===workout.id?<ChevronUp className="size-4"/>:<ChevronDown className="size-4"/>}
+          </button>
+          {previewId===workout.id&&<div className="space-y-1.5 border-t border-border/70 px-3 py-3">
+            {workout.exercises.filter(ex=>!ex.note).length===0?<p className="text-xs text-muted-foreground">No exercises yet — tap Edit to add some.</p>:workout.exercises.filter(ex=>!ex.note).map((ex,index)=><div key={ex.key} className="flex items-center gap-3 rounded-lg bg-card px-3 py-2">
+              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-[0.65rem] font-black text-primary">{index+1}</span>
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{ex.name}</p><p className="text-[0.65rem] text-muted-foreground">{ex.muscle} · {ex.equipment}</p></div>
+              <span className="shrink-0 text-[0.7rem] font-extrabold tabular-nums text-foreground">{ex.sets} × {ex.reps}</span>
+            </div>)}
+            <p className="pt-1 text-[0.66rem] text-muted-foreground">Tap Edit below to change the exercises, sets or reps.</p>
+          </div>}
+        </div>
         <div className="mt-3 grid grid-cols-3 gap-2"><Button variant="surface" size="sm" onClick={()=>editTemplate(workout.id)}><Pencil/>Edit</Button><Button variant="surface" size="sm" disabled={current.workouts.length>=5} onClick={()=>duplicate(workout)}><Copy/>Copy</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={()=>update({workouts:current.workouts.filter((item)=>item.id!==workout.id)})}><Trash2/>Remove</Button></div>
       </div>)}
       {current.workouts.length<5 && <Button variant="surface" className="w-full" onClick={()=>setAdding((value)=>!value)}><Plus/>Add workout</Button>}
