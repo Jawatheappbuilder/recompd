@@ -339,3 +339,179 @@
 :root[data-accent="spectrum"] main .bg-primary:has(+ .relative) {
   border-bottom: 0;
 }
+
+/* Six fully coordinated RECOMP'D colourways. Palette roles stay consistent across screens. */
+:root[data-accent="voltage"] {
+ --background:#14171d; --foreground:#f6f7f9; --card:#242932; --card-foreground:#f6f7f9;
+ --popover:#242932; --popover-foreground:#f6f7f9; --primary:#f1bd42; --primary-foreground:#ffffff;
+ --secondary:#303640; --secondary-foreground:#f6f7f9; --muted:#303640; --muted-foreground:#b5bec9;
+ --accent:#39c78d25; --accent-foreground:#f6f7f9; --border:#464b56; --input:#555b67;
+ --ring:#f1bd42; --elevated:#303640; --track:#3e4550; --soft:#39c78d; --nav:#191e26;
+ --app-canvas:#090b10; --overlay:#070b10b0;
+ --theme-action:#e84550; --theme-action-text:#ffffff; --theme-highlight:#39c78d; --theme-info:#61c0e2;
+ color-scheme:dark;
+}
+:root[data-accent="voltage"] main > div > .bg-primary,
+:root[data-accent="voltage"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#f1bd42,#303640 95%);
+ color:#ffffff; border-bottom:0;
+}
+:root[data-accent="voltage"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="voltage"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#ffffff;}
+:root[data-accent="voltage"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#ffffff; }
+:root[data-accent="voltage"] button.bg-primary, :root[data-accent="voltage"] a.bg-primary {background:#e84550;color:#ffffff;}
+:root[data-accent="voltage"] button.bg-primary:hover,:root[data-accent="voltage"] a.bg-primary:hover {background:color-mix(in srgb,#e84550 84%,black);}
+:root[data-accent="voltage"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="voltage"] nav[aria-label="Primary"] a[aria-current="page"] {color:#61c0e2;}
+:root[data-accent="voltage"] .text-emerald-600,:root[data-accent="voltage"] .text-emerald-400 {color:#5cdbab;}
+:root[data-accent="voltage"] .bg-emerald-500\\/15,:root[data-accent="voltage"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#5cdbab 16%,transparent);}
+:root[data-accent="voltage"] .text-amber-700,:root[data-accent="voltage"] .text-amber-300 {color:#ffd35c;}
+:root[data-accent="voltage"] .bg-amber-500\\/10 {background:color-mix(in srgb,#39c78d 17%,transparent);}
+:root[data-accent="voltage"] .text-primary {color:#f1bd42;}
+:root[data-accent="voltage"] .bg-primary:has(.wordmark) .text-primary {color:#ffffff;}
+:root[data-accent="voltage"] .bg-primary\\/10 {background-color:color-mix(in srgb,#61c0e2 14%,transparent);}
+:root[data-accent="vintage"] {
+ --background:#f5efe3; --foreground:#263f3b; --card:#fffaf0; --card-foreground:#263f3b;
+ --popover:#fffaf0; --popover-foreground:#263f3b; --primary:#263f3b; --primary-foreground:#ffffff;
+ --secondary:#e9dfce; --secondary-foreground:#263f3b; --muted:#e9dfce; --muted-foreground:#6e756c;
+ --accent:#dca84925; --accent-foreground:#263f3b; --border:#cfd1d3; --input:#b9c2c6;
+ --ring:#263f3b; --elevated:#e9dfce; --track:#d7dde0; --soft:#dca849; --nav:#f9f3e9;
+ --app-canvas:#dfe3e5; --overlay:#070b10b0;
+ --theme-action:#c45a39; --theme-action-text:#ffffff; --theme-highlight:#dca849; --theme-info:#4e9f91;
+ color-scheme:light;
+}
+:root[data-accent="vintage"] main > div > .bg-primary,
+:root[data-accent="vintage"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#263f3b,#263f3b 95%);
+ color:#ffffff; border-bottom:0;
+}
+:root[data-accent="vintage"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="vintage"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#ffffff;}
+:root[data-accent="vintage"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#ffffff; }
+:root[data-accent="vintage"] button.bg-primary, :root[data-accent="vintage"] a.bg-primary {background:#c45a39;color:#ffffff;}
+:root[data-accent="vintage"] button.bg-primary:hover,:root[data-accent="vintage"] a.bg-primary:hover {background:color-mix(in srgb,#c45a39 84%,black);}
+:root[data-accent="vintage"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="vintage"] nav[aria-label="Primary"] a[aria-current="page"] {color:#4e9f91;}
+:root[data-accent="vintage"] .text-emerald-600,:root[data-accent="vintage"] .text-emerald-400 {color:#147a5b;}
+:root[data-accent="vintage"] .bg-emerald-500\\/15,:root[data-accent="vintage"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#147a5b 16%,transparent);}
+:root[data-accent="vintage"] .text-amber-700,:root[data-accent="vintage"] .text-amber-300 {color:#93660a;}
+:root[data-accent="vintage"] .bg-amber-500\\/10 {background:color-mix(in srgb,#dca849 17%,transparent);}
+:root[data-accent="vintage"] .text-primary {color:#263f3b;}
+:root[data-accent="vintage"] .bg-primary:has(.wordmark) .text-primary {color:#ffffff;}
+:root[data-accent="vintage"] .bg-primary\\/10 {background-color:color-mix(in srgb,#4e9f91 14%,transparent);}
+:root[data-accent="neon"] {
+ --background:#121524; --foreground:#f6f6fc; --card:#22243a; --card-foreground:#f6f6fc;
+ --popover:#22243a; --popover-foreground:#f6f6fc; --primary:#a98aff; --primary-foreground:#10121e;
+ --secondary:#2e3150; --secondary-foreground:#f6f6fc; --muted:#2e3150; --muted-foreground:#bec2db;
+ --accent:#36d3e825; --accent-foreground:#f6f6fc; --border:#464b56; --input:#555b67;
+ --ring:#a98aff; --elevated:#2e3150; --track:#3e4550; --soft:#36d3e8; --nav:#191c2e;
+ --app-canvas:#090b10; --overlay:#070b10b0;
+ --theme-action:#9d7bf3; --theme-action-text:#10121e; --theme-highlight:#36d3e8; --theme-info:#b8ea56;
+ color-scheme:dark;
+}
+:root[data-accent="neon"] main > div > .bg-primary,
+:root[data-accent="neon"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#a98aff,#2e3150 95%);
+ color:#10121e; border-bottom:0;
+}
+:root[data-accent="neon"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="neon"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#10121e;}
+:root[data-accent="neon"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#10121e; }
+:root[data-accent="neon"] button.bg-primary, :root[data-accent="neon"] a.bg-primary {background:#9d7bf3;color:#10121e;}
+:root[data-accent="neon"] button.bg-primary:hover,:root[data-accent="neon"] a.bg-primary:hover {background:color-mix(in srgb,#9d7bf3 84%,black);}
+:root[data-accent="neon"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="neon"] nav[aria-label="Primary"] a[aria-current="page"] {color:#b8ea56;}
+:root[data-accent="neon"] .text-emerald-600,:root[data-accent="neon"] .text-emerald-400 {color:#5cdbab;}
+:root[data-accent="neon"] .bg-emerald-500\\/15,:root[data-accent="neon"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#5cdbab 16%,transparent);}
+:root[data-accent="neon"] .text-amber-700,:root[data-accent="neon"] .text-amber-300 {color:#ffd35c;}
+:root[data-accent="neon"] .bg-amber-500\\/10 {background:color-mix(in srgb,#36d3e8 17%,transparent);}
+:root[data-accent="neon"] .text-primary {color:#a98aff;}
+:root[data-accent="neon"] .bg-primary:has(.wordmark) .text-primary {color:#10121e;}
+:root[data-accent="neon"] .bg-primary\\/10 {background-color:color-mix(in srgb,#b8ea56 14%,transparent);}
+:root[data-accent="coastal"] {
+ --background:#eaf4f5; --foreground:#163849; --card:#ffffff; --card-foreground:#163849;
+ --popover:#ffffff; --popover-foreground:#163849; --primary:#195c8a; --primary-foreground:#163849;
+ --secondary:#d4eaeb; --secondary-foreground:#163849; --muted:#d4eaeb; --muted-foreground:#55737d;
+ --accent:#2cbbae25; --accent-foreground:#163849; --border:#cfd1d3; --input:#b9c2c6;
+ --ring:#195c8a; --elevated:#d4eaeb; --track:#d7dde0; --soft:#2cbbae; --nav:#f2fbfa;
+ --app-canvas:#dfe3e5; --overlay:#070b10b0;
+ --theme-action:#f07d6c; --theme-action-text:#163849; --theme-highlight:#2cbbae; --theme-info:#e7bd4f;
+ color-scheme:light;
+}
+:root[data-accent="coastal"] main > div > .bg-primary,
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#195c8a,#195c8a 95%);
+ color:#163849; border-bottom:0;
+}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#163849;}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#163849; }
+:root[data-accent="coastal"] button.bg-primary, :root[data-accent="coastal"] a.bg-primary {background:#f07d6c;color:#163849;}
+:root[data-accent="coastal"] button.bg-primary:hover,:root[data-accent="coastal"] a.bg-primary:hover {background:color-mix(in srgb,#f07d6c 84%,black);}
+:root[data-accent="coastal"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="coastal"] nav[aria-label="Primary"] a[aria-current="page"] {color:#e7bd4f;}
+:root[data-accent="coastal"] .text-emerald-600,:root[data-accent="coastal"] .text-emerald-400 {color:#147a5b;}
+:root[data-accent="coastal"] .bg-emerald-500\\/15,:root[data-accent="coastal"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#147a5b 16%,transparent);}
+:root[data-accent="coastal"] .text-amber-700,:root[data-accent="coastal"] .text-amber-300 {color:#93660a;}
+:root[data-accent="coastal"] .bg-amber-500\\/10 {background:color-mix(in srgb,#2cbbae 17%,transparent);}
+:root[data-accent="coastal"] .text-primary {color:#195c8a;}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .text-primary {color:#163849;}
+:root[data-accent="coastal"] .bg-primary\\/10 {background-color:color-mix(in srgb,#e7bd4f 14%,transparent);}
+:root[data-accent="colourpop"] {
+ --background:#f1ede7; --foreground:#25212c; --card:#ffffff; --card-foreground:#25212c;
+ --popover:#ffffff; --popover-foreground:#25212c; --primary:#426acf; --primary-foreground:#ffffff;
+ --secondary:#e5e4f1; --secondary-foreground:#25212c; --muted:#e5e4f1; --muted-foreground:#676373;
+ --accent:#ed604e25; --accent-foreground:#25212c; --border:#cfd1d3; --input:#b9c2c6;
+ --ring:#426acf; --elevated:#e5e4f1; --track:#d7dde0; --soft:#ed604e; --nav:#fffdfa;
+ --app-canvas:#dfe3e5; --overlay:#070b10b0;
+ --theme-action:#426acf; --theme-action-text:#ffffff; --theme-highlight:#ed604e; --theme-info:#72cba5;
+ color-scheme:light;
+}
+:root[data-accent="colourpop"] main > div > .bg-primary,
+:root[data-accent="colourpop"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#426acf,#426acf 95%);
+ color:#ffffff; border-bottom:0;
+}
+:root[data-accent="colourpop"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="colourpop"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#ffffff;}
+:root[data-accent="colourpop"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#ffffff; }
+:root[data-accent="colourpop"] button.bg-primary, :root[data-accent="colourpop"] a.bg-primary {background:#426acf;color:#ffffff;}
+:root[data-accent="colourpop"] button.bg-primary:hover,:root[data-accent="colourpop"] a.bg-primary:hover {background:color-mix(in srgb,#426acf 84%,black);}
+:root[data-accent="colourpop"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="colourpop"] nav[aria-label="Primary"] a[aria-current="page"] {color:#72cba5;}
+:root[data-accent="colourpop"] .text-emerald-600,:root[data-accent="colourpop"] .text-emerald-400 {color:#147a5b;}
+:root[data-accent="colourpop"] .bg-emerald-500\\/15,:root[data-accent="colourpop"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#147a5b 16%,transparent);}
+:root[data-accent="colourpop"] .text-amber-700,:root[data-accent="colourpop"] .text-amber-300 {color:#93660a;}
+:root[data-accent="colourpop"] .bg-amber-500\\/10 {background:color-mix(in srgb,#ed604e 17%,transparent);}
+:root[data-accent="colourpop"] .text-primary {color:#426acf;}
+:root[data-accent="colourpop"] .bg-primary:has(.wordmark) .text-primary {color:#ffffff;}
+:root[data-accent="colourpop"] .bg-primary\\/10 {background-color:color-mix(in srgb,#72cba5 14%,transparent);}
+:root[data-accent="heavyduty"] {
+ --background:#111214; --foreground:#fafafa; --card:#282a2e; --card-foreground:#fafafa;
+ --popover:#282a2e; --popover-foreground:#fafafa; --primary:#f5bf40; --primary-foreground:#18191a;
+ --secondary:#34373b; --secondary-foreground:#fafafa; --muted:#34373b; --muted-foreground:#c0c2c4;
+ --accent:#e34a4825; --accent-foreground:#fafafa; --border:#464b56; --input:#555b67;
+ --ring:#f5bf40; --elevated:#34373b; --track:#3e4550; --soft:#e34a48; --nav:#181a1d;
+ --app-canvas:#090b10; --overlay:#070b10b0;
+ --theme-action:#f5bf40; --theme-action-text:#18191a; --theme-highlight:#e34a48; --theme-info:#40be83;
+ color-scheme:dark;
+}
+:root[data-accent="heavyduty"] main > div > .bg-primary,
+:root[data-accent="heavyduty"] .bg-primary:has(.wordmark) {
+ background: linear-gradient(125deg,#f5bf40,#34373b 95%);
+ color:#18191a; border-bottom:0;
+}
+:root[data-accent="heavyduty"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="heavyduty"] .bg-primary:has(.wordmark) .text-primary-foreground {color:#18191a;}
+:root[data-accent="heavyduty"] .bg-primary:has(.wordmark) .wordmark { background:none; -webkit-text-fill-color:#18191a; }
+:root[data-accent="heavyduty"] button.bg-primary, :root[data-accent="heavyduty"] a.bg-primary {background:#f5bf40;color:#18191a;}
+:root[data-accent="heavyduty"] button.bg-primary:hover,:root[data-accent="heavyduty"] a.bg-primary:hover {background:color-mix(in srgb,#f5bf40 84%,black);}
+:root[data-accent="heavyduty"] nav[aria-label="Primary"] { border-top:1px solid var(--border);border-image:none; }
+:root[data-accent="heavyduty"] nav[aria-label="Primary"] a[aria-current="page"] {color:#40be83;}
+:root[data-accent="heavyduty"] .text-emerald-600,:root[data-accent="heavyduty"] .text-emerald-400 {color:#5cdbab;}
+:root[data-accent="heavyduty"] .bg-emerald-500\\/15,:root[data-accent="heavyduty"] .bg-emerald-500\\/10 {background:color-mix(in srgb,#5cdbab 16%,transparent);}
+:root[data-accent="heavyduty"] .text-amber-700,:root[data-accent="heavyduty"] .text-amber-300 {color:#ffd35c;}
+:root[data-accent="heavyduty"] .bg-amber-500\\/10 {background:color-mix(in srgb,#e34a48 17%,transparent);}
+:root[data-accent="heavyduty"] .text-primary {color:#f5bf40;}
+:root[data-accent="heavyduty"] .bg-primary:has(.wordmark) .text-primary {color:#18191a;}
+:root[data-accent="heavyduty"] .bg-primary\\/10 {background-color:color-mix(in srgb,#40be83 14%,transparent);}
