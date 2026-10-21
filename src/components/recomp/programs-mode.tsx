@@ -35,7 +35,7 @@ function makePushPullLegs(): TrainingProgram {
   });
   const program=createDraft();
   return {...program,name:"Push / Pull / Legs",goal:"Hypertrophy",weeks:8,mode:"flexible",workouts:[
-    day("Push Day",1,[["Bench Press",3,"6–10",150],["Incline Dumbbell Press",3,"8–12",90],["Machine Shoulder Press",3,"8–12",90],["Lateral Raise",3,"12–15",60],["Triceps Rope Pushdown",3,"10–15",60]]),
+    day("Push Day",1,[["Bench Press",3,"6–10",150],["Incline Dumbbell Press",3,"8–12",90],["Machine Shoulder Press",3,"8–12",90],["Lateral Raise",3,"12–15",60],["Rope Pushdown",3,"10–15",60]]),
     day("Pull Day",3,[["Lat Pulldown",3,"8–12",120],["Seated Cable Row",3,"8–12",120],["Face Pull",3,"12–15",60],["Dumbbell Curl",3,"10–12",60],["Hammer Curl",3,"10–12",60]]),
     day("Legs Day",5,[["Back Squat",3,"6–10",150],["Romanian Deadlift",3,"8–10",120],["Leg Press",3,"10–12",120],["Seated Leg Curl",3,"10–15",75],["Standing Calf Raise",3,"12–15",60]]),
   ]};
