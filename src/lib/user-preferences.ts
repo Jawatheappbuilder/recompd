@@ -65,7 +65,7 @@ export const defaultUserPreferences: UserPreferences = {
   weeklyWorkoutTarget: 4,
   weekStartsOn: "Monday",
   theme: "system",
-  accent: "red",
+  accent: "spectrum",
   goals: [],
   onboardingComplete: false,
 };
