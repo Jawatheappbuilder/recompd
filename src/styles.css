@@ -583,3 +583,34 @@
 :root[data-accent="blush"] .text-amber-700,
 :root[data-accent="blush"] .text-amber-300 {color:#956a20;}
 :root[data-accent="blush"] .bg-amber-500\\/10 {background:#f3d9b144;}
+
+/* Pastel Blush refinement: use the light pink feeling of the private Pink theme,
+   with lavender as a soft supporting colour, not a dark mauve wash. */
+:root[data-accent="blush"] {
+ --background:#fff4f8; --foreground:#573d4c; --card:#fffdfd; --card-foreground:#573d4c;
+ --popover:#fffdfd; --popover-foreground:#573d4c;
+ --primary:#e58eaf; --primary-foreground:#492636;
+ --secondary:#fbe3ec; --secondary-foreground:#573d4c;
+ --muted:#f9e9f0; --muted-foreground:#795d6c;
+ --accent:#f0e5fb; --accent-foreground:#62486f;
+ --border:#edcfdd; --input:#e7c9d8; --ring:#cb6891;
+ --elevated:#f9e2ed; --track:#f1dce5; --soft:#d9bcec;
+ --nav:#fffafd; --app-canvas:#faeaf2;
+ --theme-action:#e58eaf; --theme-action-text:#492636;
+ --theme-highlight:#d9bcec; --theme-info:#b56f9c;
+}
+:root[data-accent="blush"] main > div > .bg-primary,
+:root[data-accent="blush"] .bg-primary:has(.wordmark) {
+ background:linear-gradient(120deg,#f9c8dc 0%,#f5b8d2 58%,#e7ceef 100%);
+ color:#58344b;
+}
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .text-primary-foreground,
+:root[data-accent="blush"] .bg-primary:has(.wordmark) .text-primary {
+ color:#58344b; -webkit-text-fill-color:#58344b;
+}
+:root[data-accent="blush"] button.bg-primary,
+:root[data-accent="blush"] a.bg-primary {background:#e58eaf;color:#492636;}
+:root[data-accent="blush"] button.bg-primary:hover,
+:root[data-accent="blush"] a.bg-primary:hover {background:#df7ca3;color:#492636;}
+:root[data-accent="blush"] nav[aria-label="Primary"] a[aria-current="page"] {color:#b65d8d;}
