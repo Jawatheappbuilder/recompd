@@ -11,7 +11,7 @@ export const colourways: {id:AccentPreference;label:string;colors:[string,string
  {id:"coastal",label:"Coastal Energy",colors:["#195c8a","#eaf4f5","#ffffff","#2cbbae","#f07d6c"],dark:false},
  {id:"colourpop",label:"Colour Pop",colors:["#426acf","#f1ede7","#ffffff","#ed604e","#72cba5"],dark:false},
  {id:"heavyduty",label:"Heavy Duty",colors:["#f5bf40","#111214","#282a2e","#40be83","#e34a48"],dark:true},
- {id:"blush",label:"Blush",colors:["#cc6f96","#fff7fb","#ffffff","#b79ad9","#f3d9b1"],dark:false},
+ {id:"blush",label:"Blush",colors:["#f5b8d2","#fff4f8","#fffdfd","#d9bcec","#e58eaf"],dark:false},
  {id:"red",label:"RECOMP'D Red",colors:["#c82c3c","#f6f0e9","#ffffff","#199b71","#e2ac45"],dark:false},
  {id:"blue",label:"Blue",colors:["#317dcb","#f5f0e9","#ffffff","#199b71","#e2ac45"],dark:false},
  {id:"black",label:"Black",colors:["#262626","#f5f0e9","#ffffff","#199b71","#e2ac45"],dark:false},
