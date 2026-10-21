@@ -29,5 +29,5 @@ export function createDemoData(now = Date.now()): CloudData {
   const savedNames = [["Upper Builder", ["Bench Press","Lat Pulldown","Seated Dumbbell Press","Cable Curl","Rope Pushdown"]], ["Lower Strength", ["Back Squat","Romanian Deadlift","Leg Press","Seated Leg Curl"]]] as const;
   const saved = savedNames.map(([name,names],i)=>({ id:`demo-saved-${i}`, name, exercises:names.map(n=>toWorkoutExercise(byName(n))), createdAt:now-(20+i)*DAY }));
   const tomorrow = new Date(now + DAY); const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,"0")}-${String(tomorrow.getDate()).padStart(2,"0")}`;
-  return { workouts, bodyweight, saved, custom: [], scheduled: [{ id:"demo-scheduled-1", name:"Upper Builder", date, time:"18:00", exercises:saved[0]!.exercises, createdAt:now, updatedAt:now }] };
+  return { workouts, bodyweight, saved, custom: [], programs: [], scheduled: [{ id:"demo-scheduled-1", name:"Upper Builder", date, time:"18:00", exercises:saved[0]!.exercises, createdAt:now, updatedAt:now }] };
 }
