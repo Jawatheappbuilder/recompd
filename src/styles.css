@@ -212,3 +212,130 @@
   --border: oklch(0.87 0.035 295); --input: oklch(0.85 0.04 295); --ring: oklch(0.62 0.20 295); --elevated: oklch(0.92 0.05 295);
   --track: oklch(0.88 0.035 295); --soft: oklch(0.75 0.10 295); --nav: oklch(0.98 0.018 295); --app-canvas: oklch(0.93 0.035 295);
 }
+
+
+/* Spectrum — an opt-in multi-colour system with semantic accents. */
+:root[data-accent="spectrum"] {
+  --background: #f1f2f4; --foreground: #191d24;
+  --card: #ffffff; --card-foreground: #191d24;
+  --popover: #ffffff; --popover-foreground: #191d24;
+  --primary: #cc2935; --primary-foreground: #ffffff;
+  --secondary: #e5e8ec; --secondary-foreground: #242a33;
+  --muted: #e9ebee; --muted-foreground: #596270;
+  --accent: #fff0c5; --accent-foreground: #6d4909;
+  --destructive: #c72435; --destructive-foreground: #ffffff;
+  --border: #cbd0d7; --input: #bfc5ce; --ring: #cc2935;
+  --elevated: #e5e8ec; --track: #d7dce3; --soft: #b0b8c4;
+  --nav: #fbfcfd; --app-canvas: #d9dde4; --overlay: #11151b80;
+  --spectrum-green: #138b60; --spectrum-yellow: #c28a05; --spectrum-blue: #1873b2;
+}
+.dark[data-accent="spectrum"] {
+  --background: #101217; --foreground: #f6f7f9;
+  --card: #1c2028; --card-foreground: #f6f7f9;
+  --popover: #252a34; --popover-foreground: #f6f7f9;
+  --primary: #f24c57; --primary-foreground: #190d10;
+  --secondary: #2a303a; --secondary-foreground: #f1f3f5;
+  --muted: #282d36; --muted-foreground: #acb5c0;
+  --accent: #43391e; --accent-foreground: #ffe08b;
+  --destructive: #ff6470; --destructive-foreground: #1c0d10;
+  --border: #3e4550; --input: #454d5a; --ring: #f24c57;
+  --elevated: #2b313c; --track: #383e49; --soft: #5f6878;
+  --nav: #161920; --app-canvas: #0a0c10; --overlay: #000000c9;
+  --spectrum-green: #42d5a0; --spectrum-yellow: #ffd057; --spectrum-blue: #6fc9ff;
+}
+:root[data-accent="spectrum"] .wordmark {
+  background: linear-gradient(95deg, var(--foreground) 0 61%, var(--primary) 61% 77%, var(--spectrum-yellow) 77% 89%, var(--spectrum-green) 89% 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+:root[data-accent="spectrum"] .bg-primary .wordmark,
+:root[data-accent="spectrum"] .text-primary-foreground.wordmark {
+  background: none;
+  color: var(--primary-foreground);
+}
+:root[data-accent="spectrum"] .bg-emerald-500\/15,
+:root[data-accent="spectrum"] .bg-emerald-500\/10 { background-color: color-mix(in srgb, var(--spectrum-green) 16%, transparent); }
+:root[data-accent="spectrum"] .text-emerald-600,
+:root[data-accent="spectrum"] .text-emerald-400 { color: var(--spectrum-green); }
+:root[data-accent="spectrum"] .bg-amber-500\/10 { background-color: color-mix(in srgb, var(--spectrum-yellow) 14%, transparent); }
+:root[data-accent="spectrum"] .text-amber-700,
+:root[data-accent="spectrum"] .text-amber-300 { color: var(--spectrum-yellow); }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] { border-top: 2px solid var(--spectrum-yellow); }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: var(--primary); }
+
+
+/* Spectrum uses a colour hierarchy rather than tinting every surface red:
+   charcoal architecture, red actions, yellow prompts, green completion,
+   cyan secondary information and neutral white/graphite surfaces. */
+:root[data-accent="spectrum"] {
+  --primary: #242c3a;
+  --primary-foreground: #ffffff;
+  --ring: #2382b6;
+  --soft: #9da8b7;
+}
+.dark[data-accent="spectrum"] {
+  --primary: #c6d3e0;
+  --primary-foreground: #11161e;
+  --ring: #6fc9ff;
+  --soft: #66788a;
+}
+:root[data-accent="spectrum"] main > div > .bg-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) {
+  background: linear-gradient(118deg, #18202c 0%, #303946 65%, #176f83 100%);
+  color: #ffffff;
+  border-bottom: 4px solid #f0b933;
+}
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .text-primary-foreground,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .wordmark { color: #ffffff; }
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .wordmark {
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+}
+:root[data-accent="spectrum"] button.bg-primary,
+:root[data-accent="spectrum"] a.bg-primary,
+:root[data-accent="spectrum"] [role="button"].bg-primary {
+  background: #cf2f42;
+  color: #ffffff;
+}
+:root[data-accent="spectrum"] button.bg-primary:hover,
+:root[data-accent="spectrum"] a.bg-primary:hover { background: #ad2134; }
+:root[data-accent="spectrum"] nav[aria-label="Primary"] {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg,#e34c54,#f0ba3c,#2cbd8d,#4ea9df,#8e98a7) 1;
+}
+:root[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: #167bae; }
+.dark[data-accent="spectrum"] nav[aria-label="Primary"] a[aria-current="page"] { color: #79d1ff; }
+:root[data-accent="spectrum"] .rounded-2xl.border,
+:root[data-accent="spectrum"] .rounded-xl.border { border-color: var(--border); }
+:root[data-accent="spectrum"] .text-emerald-600,
+:root[data-accent="spectrum"] .text-emerald-400 { color: var(--spectrum-green); }
+:root[data-accent="spectrum"] .bg-emerald-500\/15,
+:root[data-accent="spectrum"] .bg-emerald-500\/10 { background-color: color-mix(in srgb,var(--spectrum-green) 15%,transparent); }
+:root[data-accent="spectrum"] .text-amber-700,
+:root[data-accent="spectrum"] .text-amber-300 { color: var(--spectrum-yellow); }
+:root[data-accent="spectrum"] .bg-primary\/10,
+:root[data-accent="spectrum"] .bg-primary\/\[0\.08\] { background-color: color-mix(in srgb,var(--spectrum-blue) 12%,transparent); }
+:root[data-accent="spectrum"] .text-primary { color: #1c82b6; }
+.dark[data-accent="spectrum"] .text-primary { color: #78cafa; }
+:root[data-accent="spectrum"] button.bg-primary .text-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) .text-primary { color: #ffffff; }
+/* The workout header uses red to distinguish a live session, complemented
+   by the neutral exercise cards and the green/yellow progress semantics. */
+:root[data-accent="spectrum"] main .bg-primary:has(+ .relative) { border-bottom-color: #f0ba3c; }
+
+
+/* Spectrum refinement: restore the striking red hero and quiet navigation. */
+:root[data-accent="spectrum"] main > div > .bg-primary,
+:root[data-accent="spectrum"] .bg-primary:has(.wordmark) {
+  background: linear-gradient(130deg, #bd202e 0%, #d32c40 58%, #e04750 100%);
+  border-bottom: 0;
+  color: #ffffff;
+}
+:root[data-accent="spectrum"] nav[aria-label="Primary"] {
+  border-top: 1px solid var(--border);
+  border-image: none;
+}
+:root[data-accent="spectrum"] main .bg-primary:has(+ .relative) {
+  border-bottom: 0;
+}

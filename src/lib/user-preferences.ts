@@ -4,7 +4,7 @@ export type Gender = "Male" | "Female" | "Prefer not to say" | "";
 export type WeightUnit = "kg" | "lb";
 export type WeekStartsOn = "Monday" | "Sunday";
 export type ThemePreference = "system" | "dark" | "light";
-export type AccentPreference = "red" | "blue" | "black" | "pink" | "purple";
+export type AccentPreference = "red" | "blue" | "black" | "pink" | "purple" | "spectrum";
 export type TrainingGoal = "Build muscle" | "Get stronger" | "Lose fat" | "Improve fitness" | "General health";
 export type DefaultRepRange = "4–6" | "8–12";
 
@@ -65,7 +65,7 @@ export const defaultUserPreferences: UserPreferences = {
   weeklyWorkoutTarget: 4,
   weekStartsOn: "Monday",
   theme: "system",
-  accent: "red",
+  accent: "spectrum",
   goals: [],
   onboardingComplete: false,
 };
