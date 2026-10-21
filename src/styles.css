@@ -515,3 +515,30 @@
 :root[data-accent="heavyduty"] .text-primary {color:#f5bf40;}
 :root[data-accent="heavyduty"] .bg-primary:has(.wordmark) .text-primary {color:#18191a;}
 :root[data-accent="heavyduty"] .bg-primary\\/10 {background-color:color-mix(in srgb,#40be83 14%,transparent);}
+
+/* Coastal Energy: sunny, airy header with readable deep-ocean typography. */
+:root[data-accent="coastal"] {
+  --primary:#2279a2;
+  --primary-foreground:#ffffff;
+  --theme-action:#ed7868;
+}
+:root[data-accent="coastal"] main > div > .bg-primary,
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) {
+  background:linear-gradient(125deg,#bde8eb 0%,#a3dbe6 58%,#80cbdc 100%);
+  color:#163e52;
+}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .wordmark,
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .text-primary-foreground,
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .text-primary {
+  color:#163e52;
+  -webkit-text-fill-color:#163e52;
+}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .border-white\/20 {
+  border-color:#255c74;
+}
+:root[data-accent="coastal"] .bg-primary:has(.wordmark) .bg-white\/10 {
+  background:rgba(255,255,255,.35);
+}
+:root[data-accent="coastal"] nav[aria-label="Primary"] a[aria-current="page"] {
+  color:#176d94;
+}
