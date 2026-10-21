@@ -6,6 +6,7 @@ import { generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutE
 import { newId, useCloudData } from "@/lib/cloud-data";
 import { cloneExercises, useSavedWorkouts } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
+import { completionStats, createOccurrences, isPending, occurrencesFor, replan, updateOccurrence } from "@/lib/program-schedule";
 import { deleteProgramDraft, saveProgramDraft, useProgramDrafts, type ProgramWorkout, type TrainingProgram } from "@/lib/program-storage";
 import { WorkoutEditor } from "./workout-editor";
 
@@ -87,6 +88,7 @@ export function ProgramsMode() {
   const cloud = useCloudData();
   const drafts = useProgramDrafts();
   const [current, setCurrent] = useState<TrainingProgram | null>(null);
+  const [manageId, setManageId] = useState<string | null>(null);
   const currentRef = useRef<TrainingProgram | null>(null);
   currentRef.current = current;
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
@@ -170,6 +172,9 @@ export function ProgramsMode() {
 
   if (!cloud) return <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">Loading your programs…</div>;
 
+  const managed = drafts.find((p) => p.id === manageId && p.status !== "draft");
+  if (managed) return <ProgramSchedule program={managed} all={drafts} onBack={() => setManageId(null)} />;
+
   if (!current) return <div className="space-y-4 pb-5">
     <div className="flex items-center justify-between gap-2">
       <div><h2 className="text-xl font-black">My Programs</h2><p className="text-xs text-muted-foreground">Build your training routine</p></div>
@@ -188,9 +193,9 @@ export function ProgramsMode() {
       return <div key={item.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="h-1 bg-primary/70" />
         <div className="p-4">
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1"><p className="truncate text-base font-extrabold">{item.name.trim() || "Untitled program"}</p><p className="mt-1 text-xs text-muted-foreground">{item.goal} · {item.mode === "calendar" ? "Calendar" : "Flexible"} schedule</p></div><span className="rounded-lg bg-secondary px-2 py-1 text-[0.65rem] font-bold text-muted-foreground">Draft</span></div>
+          <div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1"><p className="truncate text-base font-extrabold">{item.name.trim() || "Untitled program"}</p><p className="mt-1 text-xs text-muted-foreground">{item.goal} · {item.mode === "calendar" ? "Calendar" : "Flexible"} schedule</p></div><span className="rounded-lg bg-secondary px-2 py-1 text-[0.65rem] font-bold text-muted-foreground">{item.status === "draft" ? "Draft" : item.status === "active" ? "Active" : item.status === "paused" ? "Paused" : "Completed"}</span></div>
           <div className="mt-3 grid grid-cols-3 gap-2"><Stat label="Weeks" value={String(item.weeks)} /><Stat label="Workouts" value={String(total)} /><Stat label="Per cycle" value={minutes ? formatDuration(minutes) : "—"} /></div>
-          <div className="mt-3 flex gap-2"><Button variant="surface" className="flex-1" onClick={() => { setCurrent(structuredClone(item)); setStep(1); }}><Pencil />Continue editing</Button><Button variant="ghost" size="icon" aria-label={"Delete " + item.name} onClick={() => { if (window.confirm("Delete this program draft?")) deleteProgramDraft(item.id); }}><Trash2 /></Button></div>
+          <div className="mt-3 flex gap-2"><Button variant="surface" className="flex-1" onClick={() => { if (item.status === "draft") { setCurrent(structuredClone(item)); setStep(1); } else setManageId(item.id); }}>{item.status === "draft" ? <Pencil /> : <CalendarDays />}{item.status === "draft" ? "Continue editing" : "View program"}</Button><Button variant="ghost" size="icon" aria-label={"Delete " + item.name} onClick={() => { if (window.confirm("Delete this program draft?")) deleteProgramDraft(item.id); }}><Trash2 /></Button></div>
         </div>
       </div>;
     })}
@@ -286,4 +291,64 @@ function move<T>(items: T[], from: number, to: number): T[] {
   const [item] = next.splice(from, 1);
   if (item !== undefined) next.splice(to, 0, item);
   return next;
+}
+
+function ProgramSchedule({ program, all, onBack }: { program: TrainingProgram; all: TrainingProgram[]; onBack: () => void }) {
+  const [switching, setSwitching] = useState(false);
+  const [startDate, setStartDate] = useState(() => program.startDate || new Date().toLocaleDateString("en-CA"));
+  const [newMode, setNewMode] = useState(program.mode);
+  const todayKey = (() => { const d = new Date(); return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); })();
+  const occurrences = occurrencesFor(program);
+  const stats = completionStats(program);
+  const next = occurrences.find((item) => item.status === "upcoming");
+  const templateName = (id: string) => program.workouts.find((w) => w.id === id)?.name ?? "Workout";
+  const commit = (nextProgram: TrainingProgram) => saveProgramDraft({ ...nextProgram, updatedAt: Date.now() });
+  const activate = () => {
+    if (all.some((p) => p.id !== program.id && p.status === "active")) { toast.error("Pause your existing active program first."); return; }
+    if (program.workouts.length < 2 || program.workouts.length > 5 || program.workouts.some(w => !w.exercises.some(e => !e.note))) { toast.error("Finish all 2–5 workout templates first."); return; }
+    const weekdays = program.workouts.map((w) => w.weekday);
+    if (program.mode === "calendar" && (weekdays.some(d => d === undefined) || new Set(weekdays).size !== weekdays.length)) { toast.error("Every calendar workout needs its own weekday."); return; }
+    commit({ ...program, startDate: todayKey, status: "active", activatedAt: Date.now(), occurrences: createOccurrences({ ...program, startDate: todayKey }) });
+    toast.success("Program activated");
+  };
+  const changeMode = () => {
+    if (newMode === "calendar" && (program.workouts.some(w=>w.weekday===undefined) || new Set(program.workouts.map(w=>w.weekday)).size !== program.workouts.length)) {
+      toast.error("Assign distinct weekdays in the builder before using Calendar mode."); return;
+    }
+    commit(replan(program, newMode, startDate));
+    setSwitching(false);
+  };
+  return <div className="space-y-4 pb-8">
+    <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft />Programs</Button>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between"><span className="text-[0.68rem] font-bold uppercase tracking-wide text-primary">Training program</span><span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">{program.status}</span></div>
+      <h2 className="mt-2 text-xl font-black">{program.name}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{program.weeks} cycles · {program.workouts.length} workouts/cycle · {program.mode === "calendar" ? "Calendar" : "Flexible"}</p>
+      <div className="mt-4 grid grid-cols-3 gap-2"><Stat label="Completed" value={String(stats.completed)} /><Stat label="Skipped" value={String(stats.skipped)} /><Stat label="Remaining" value={String(stats.remaining)} /></div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: (stats.total ? stats.completed / stats.total * 100 : 0) + "%" }} /></div>
+    </div>
+    {program.status === "draft" ? <Button variant="primary" className="w-full" onClick={activate}>Activate program</Button> : <>
+      <div className="flex gap-2">
+        <Button variant="surface" className="flex-1" onClick={() => commit({ ...program, status: program.status === "active" ? "paused" : "active" })}>{program.status === "active" ? "Pause program" : "Resume program"}</Button>
+        <Button variant="surface" className="flex-1" onClick={() => {setNewMode(program.mode);setSwitching(v=>!v);}}>Scheduling <Pencil /></Button>
+      </div>
+      {switching && <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+        <p className="text-xs font-bold">Change future scheduling</p>
+        <div className="grid grid-cols-2 gap-2">{(["flexible","calendar"] as const).map(mode=><Button key={mode} variant={newMode===mode?"choiceActive":"choice"} onClick={()=>setNewMode(mode)}>{mode==="flexible"?"Flexible":"Calendar"}</Button>)}</div>
+        {newMode === "calendar" && <label className="block text-xs font-bold">Replan from<input type="date" className="mt-1 h-10 w-full rounded-lg border border-border bg-secondary px-2" value={startDate} min={todayKey} onChange={e=>setStartDate(e.target.value)}/></label>}
+        <p className="text-xs text-muted-foreground">Completed and skipped sessions stay untouched. Only unresolved sessions get new dates.</p>
+        <Button variant="primary" className="w-full" onClick={changeMode}>Apply schedule</Button>
+      </div>}
+    </>}
+    {next && <div className="rounded-xl border border-primary/25 bg-primary/10 p-3"><p className="text-[0.65rem] font-bold text-primary">UP NEXT</p><p className="mt-1 font-extrabold">{templateName(next.templateId)}</p><p className="mt-1 text-xs text-muted-foreground">Cycle {next.cycle+1}{next.date ? " · "+next.date : ""} · Training launch arrives in Phase 3</p></div>}
+    <div className="space-y-2">
+      <h3 className="text-sm font-extrabold">Sessions</h3>
+      {stats.pending>0 && <p className="text-xs font-bold text-primary">{stats.pending} pending workout{stats.pending===1?"":"s"} waiting for you</p>}
+      {occurrences.map((occurrence,index)=><div key={occurrence.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-black">{index+1}</span>
+        <div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold">{templateName(occurrence.templateId)}</p><p className="text-[0.68rem] text-muted-foreground">Cycle {occurrence.cycle+1} · {occurrence.status==="skipped"?"Skipped":occurrence.status==="completed"?"Completed":isPending(occurrence,todayKey)?"Pending":occurrence.date??"Up next"}</p></div>
+        {program.status === "active" && occurrence.status==="upcoming" && <Button variant="ghost" size="sm" className="text-destructive" onClick={()=>{if(window.confirm("Skip this workout? It will not count as completed."))commit(updateOccurrence(program,occurrence.id,{status:"skipped"}));}}>Skip</Button>}
+      </div>)}
+    </div>
+  </div>;
 }
