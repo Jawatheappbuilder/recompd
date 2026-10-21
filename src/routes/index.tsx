@@ -13,6 +13,7 @@ import { StepsCard } from "@/components/recomp/steps-card";
 import { ActiveProgramHome } from "@/components/recomp/active-program-home";
 import { useActiveWorkout } from "@/hooks/use-active-workout";
 import { LogWeightSheet } from "@/components/recomp/progress/bodyweight";
+import { ColourwayExplorer } from "@/components/recomp/colourway-explorer";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -33,6 +34,11 @@ function HomePage() {
   const [showAccentChoice, setShowAccentChoice] = useState(false);
   const [logWeightOpen, setLogWeightOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [showColourwayLaunch, setShowColourwayLaunch] = useState(false);
+  useEffect(() => {
+    try { setShowColourwayLaunch(localStorage.getItem("recomp-colourways-launch-v1") !== "seen" && localStorage.getItem("recomp-accent-choice-complete-v1")==="1"); } catch { /* optional modal */ }
+  }, []);
+  const closeColourwayLaunch=()=>{try {localStorage.setItem("recomp-colourways-launch-v1","seen");}catch{} setShowColourwayLaunch(false);};
   useEffect(() => { setShowAccentChoice(!hasCompletedAccentChoice()); }, []);
   const { status } = useAuth();
   useEffect(() => {
@@ -49,7 +55,7 @@ function HomePage() {
   const upcoming = useUpcomingWorkouts();
   const today = upcoming.find((w) => w.date === localDateKey());
   const next = upcoming.find((w) => w !== today);
-  return <Screen>{showAnnouncement && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]"><div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"><div className="relative bg-primary px-5 pb-5 pt-6 text-primary-foreground"><button type="button" aria-label="Dismiss announcement" onClick={dismissAnnouncement} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button><div className="text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-80">What’s new</div><h2 id="whats-new-title" className="mt-1 pr-8 text-2xl font-black">Introducing Training Programs 💪</h2><p className="mt-1 text-sm font-semibold opacity-80">Your training plan, all in one place.</p></div><div className="p-5"><div className="space-y-3 text-sm font-semibold"><div>📅 Build multi-week training programs</div><div>🏋️ Start with our Push / Pull / Legs gym split</div><div>✨ Customise every workout to suit you</div><div>✅ Track your weeks and completed sessions</div><div>🏠 Start your next program workout from Home</div></div><p className="mt-5 text-sm font-extrabold">Find Programs under Build and give it a go.</p><Button variant="primary" size="lg" className="mt-4 h-12 w-full" onClick={dismissAnnouncement}>Let’s train</Button></div></div></div>}<div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
+  return <Screen>{showColourwayLaunch && <ColourwayExplorer modal initial={preferences.accent} onApply={accent=>setPreferences({...preferences,accent})} onClose={closeColourwayLaunch}/>}{!showColourwayLaunch && showAnnouncement && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]"><div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"><div className="relative bg-primary px-5 pb-5 pt-6 text-primary-foreground"><button type="button" aria-label="Dismiss announcement" onClick={dismissAnnouncement} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button><div className="text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-80">What’s new</div><h2 id="whats-new-title" className="mt-1 pr-8 text-2xl font-black">Introducing Training Programs 💪</h2><p className="mt-1 text-sm font-semibold opacity-80">Your training plan, all in one place.</p></div><div className="p-5"><div className="space-y-3 text-sm font-semibold"><div>📅 Build multi-week training programs</div><div>🏋️ Start with our Push / Pull / Legs gym split</div><div>✨ Customise every workout to suit you</div><div>✅ Track your weeks and completed sessions</div><div>🏠 Start your next program workout from Home</div></div><p className="mt-5 text-sm font-extrabold">Find Programs under Build and give it a go.</p><Button variant="primary" size="lg" className="mt-4 h-12 w-full" onClick={dismissAnnouncement}>Let’s train</Button></div></div></div>}<div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
     <div aria-hidden className="pointer-events-none absolute -right-16 top-12 size-56 rounded-full bg-white/[0.10] blur-3xl" />
     <div aria-hidden className="pointer-events-none absolute -left-12 bottom-0 size-40 rounded-full bg-white/[0.05] blur-3xl" />
     <header className="relative flex items-center justify-between gap-4">
