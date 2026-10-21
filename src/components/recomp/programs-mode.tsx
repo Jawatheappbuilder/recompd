@@ -45,7 +45,8 @@ function duplicateExercises(items: WorkoutExercise[]): WorkoutExercise[] {
 function regenExercises(workout: WorkoutExercise[], selected: Muscle[], count: number, seed: number, locked: Set<string>, rejected: Set<string>) {
   const original = workout.filter((item) => !item.note);
   const notes = workout.filter((item) => item.note);
-  const target = Math.max(count, original.filter((item) => locked.has(item.key)).length);
+  const lastLockedIndex = original.reduce((max, item, index) => locked.has(item.key) ? Math.max(max, index) : max, -1);
+  const target = Math.max(count, lastLockedIndex + 1);
   const reserved = new Set(original.filter((item) => locked.has(item.key)).map((item) => item.id));
   const next: WorkoutExercise[] = [];
   for (let index = 0; index < target; index++) {
@@ -66,7 +67,12 @@ function regenExercises(workout: WorkoutExercise[], selected: Muscle[], count: n
     const result = picked ?? fallback ?? previous;
     if (result) {
       reserved.add(result.id);
-      next.push(result === previous ? result : { ...result, key: previous?.key ?? newId() });
+      next.push(result === previous ? result : {
+        ...result, key: previous?.key ?? newId(),
+        ...(previous?.supersetWith ? { supersetWith: previous.supersetWith } : {}),
+        ...(previous?.groupId ? { groupId: previous.groupId, groupRestSeconds: previous.groupRestSeconds } : {}),
+        ...(previous?.circuitId ? { circuitId: previous.circuitId, circuitWorkSeconds: previous.circuitWorkSeconds, circuitRestSeconds: previous.circuitRestSeconds, circuitRounds: previous.circuitRounds, circuitReps: previous.circuitReps } : {}),
+      });
     }
   }
   return [...next, ...notes];
@@ -142,7 +148,14 @@ export function ProgramsMode() {
     setCurrent(null); setEditing(null); setStep(1);
   };
 
-  const editTemplate = (id: string) => { setEditing(id); setLocks(new Set()); setRejected(new Set()); setRegeneration(0); };
+  const editTemplate = (id: string) => {
+    const template = current?.workouts.find((workout) => workout.id === id);
+    const strength = template?.exercises.filter((exercise) => !exercise.note) ?? [];
+    const inferred = [...new Set(strength.map((exercise) => exercise.muscle))];
+    setMuscles(inferred.length ? inferred : ["Chest"]);
+    setExerciseCount(Math.max(3, Math.min(8, strength.length || 5)));
+    setEditing(id); setLocks(new Set()); setRejected(new Set()); setRegeneration(0);
+  };
   const generateIntoTemplate = (id: string, currentWorkout: WorkoutExercise[]) => {
     if (!muscles.length) { toast.error("Choose at least one muscle group."); return; }
     const nextSeed = Date.now() + regeneration;
