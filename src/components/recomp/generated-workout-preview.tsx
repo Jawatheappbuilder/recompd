@@ -68,7 +68,7 @@ export function GeneratedWorkoutPreview({ muscles, count, seed }: { muscles: Mus
           <h1 className="truncate text-xl font-extrabold">{muscles.join(" + ")}</h1>
           <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{workout.filter((e) => !e.note).length} exercises{estimate && <> · <span className="text-primary">Est. {estimate.label}</span></>}</p>
         </div>
-        <Button variant="ghost" size="sm" className="px-2 text-muted-foreground" onClick={regenerateUnlocked} disabled={!unlockedCount}>
+        <Button variant="primary" size="sm" className="px-3" onClick={regenerateUnlocked} disabled={!unlockedCount}>
           <RefreshCw /> {lockedCount ? `Regenerate ${unlockedCount}` : "Regenerate"}
         </Button>
       </div>
