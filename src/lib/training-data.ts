@@ -1,6 +1,7 @@
 import { exercises as exerciseLibrary, type CardioMetric, type Equipment, type Muscle } from "@/data/exercises";
 import { getCloudData, mutate, useCloudData } from "./cloud-data";
 import type { ActiveWorkoutState } from "@/hooks/use-active-workout";
+import { occurrencesFor, updateOccurrence } from "./program-schedule";
 
 /*
  * Single source of truth for completed training + bodyweight.
@@ -64,6 +65,15 @@ export function recordCompletedWorkout(active: ActiveWorkoutState, durationSec: 
   mutate({ kind: "upsertWorkout", workout });
   const scheduled = active.scheduledId ? getCloudData()?.scheduled.find((item) => item.id === active.scheduledId) : undefined;
   if (scheduled) mutate({ kind: "upsertScheduled", workout: { ...scheduled, completedAt: Date.now(), completedWorkoutId: workout.id, updatedAt: Date.now() } });
+  if (active.programId && active.programOccurrenceId) {
+    const program = getCloudData()?.programs.find((entry) => entry.id === active.programId);
+    const occurrence = program && occurrencesFor(program).find((entry) => entry.id === active.programOccurrenceId);
+    if (program && occurrence && occurrence.status !== "completed" && occurrence.status !== "skipped") {
+      mutate({ kind: "upsertProgram", program: updateOccurrence(program, occurrence.id, {
+        status: "completed", completedWorkoutId: workout.id, completedAt: Date.now(),
+      }) });
+    }
+  }
 }
 export const updateWorkout = (workout: CompletedWorkout) => mutate({ kind: "upsertWorkout", workout });
 export const deleteWorkout = (id: string) => mutate({ kind: "deleteWorkout", id });

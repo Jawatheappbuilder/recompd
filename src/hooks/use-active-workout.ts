@@ -42,6 +42,9 @@ export type ActiveWorkoutState = {
   exercises: ActiveExercise[];
   scheduledId?: string;
   sourceSavedId?: string;
+  programId?: string;
+  programOccurrenceId?: string;
+  programTemplateId?: string;
   exerciseGroups?: { id: string; memberKeys: string[]; restSeconds: number }[];
   notes?: ActiveNote[];
   circuits?: { id: string; workSeconds: number; restSeconds: number; rounds: number; reps?: Record<string, number> }[];
@@ -49,7 +52,7 @@ export type ActiveWorkoutState = {
 
 const repsFromTarget = (target: string) => target.match(/\d+/)?.[0] ?? "10";
 
-export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; scheduledId?: string; sourceSavedId?: string };
+export type WorkoutHandoff = { name?: string; exercises: WorkoutExercise[]; scheduledId?: string; sourceSavedId?: string; programId?: string; programOccurrenceId?: string; programTemplateId?: string };
 
 export function createActiveWorkout(items: WorkoutExercise[], customName?: string): ActiveWorkoutState | null {
   const notes: ActiveNote[] = [];
@@ -124,7 +127,7 @@ export function useActiveWorkout() {
         if (legacy) {
           const parsed = JSON.parse(legacy) as WorkoutExercise[] | WorkoutHandoff;
           const base = Array.isArray(parsed) ? createActiveWorkout(parsed) : createActiveWorkout(parsed.exercises, parsed.name);
-          const created = base && !Array.isArray(parsed) ? { ...base, ...(parsed.scheduledId ? { scheduledId: parsed.scheduledId } : {}), ...(parsed.sourceSavedId ? { sourceSavedId: parsed.sourceSavedId } : {}) } : base;
+          const created = base && !Array.isArray(parsed) ? { ...base, ...(parsed.scheduledId ? { scheduledId: parsed.scheduledId } : {}), ...(parsed.sourceSavedId ? { sourceSavedId: parsed.sourceSavedId } : {}), ...(parsed.programId ? { programId: parsed.programId, programOccurrenceId: parsed.programOccurrenceId, programTemplateId: parsed.programTemplateId } : {}) } : base;
           if (created) {
             localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(created));
             sessionStorage.removeItem(LEGACY_WORKOUT_KEY);
