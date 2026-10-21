@@ -229,18 +229,18 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
 
   if (!current) return <div className="space-y-4 pb-5">
     <div className="flex items-center justify-between gap-2">
-      <div><h2 className="text-xl font-black">My Programs</h2><p className="text-xs text-muted-foreground">Build your training routine</p></div>
-      <Button variant="primary" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus />Create</Button>
+      <div><h2 className="text-lg font-black">Discover programs</h2><p className="text-xs text-muted-foreground">Curated training plans for your goals</p></div>
     </div>
-    <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"><Cloud className="size-4 shrink-0" />Drafts sync with your RECOMP'D account</div>
     <TemplateCatalogue onPreview={(t)=>{setPreviewTemplate(t);setPreviewProgram(buildProgramFromTemplate(t));}} onUse={(t)=>{setCurrent(buildProgramFromTemplate(t));setStep(1);toast.success("Starter program ready — customise before saving");}}/>
+    <div className="flex items-center justify-between gap-2 border-t border-border pt-4"><div><h2 className="text-lg font-black">My Programs</h2><p className="text-xs text-muted-foreground">Saved, active and completed plans</p></div><Button variant="surface" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus/>Create</Button></div>
+    <div className="flex items-center gap-2 text-[0.69rem] text-muted-foreground"><Cloud className="size-3.5"/>Programs sync with your account</div>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
       <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary"><Dumbbell /></div>
       <h3 className="text-base font-black">Your training, your plan</h3>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Create a program with 2–5 repeating workouts. Choose flexible or calendar scheduling and customise every exercise.</p>
       <Button variant="primary" className="mt-4" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus />Build my first program</Button>
     </div>}
-    {drafts.map((item) => {
+    {drafts.filter(item => item.status !== "active" && item.status !== "paused").map((item) => {
       const total = item.workouts.length;
       const minutes = durationMinutes(item.workouts);
       return <div key={item.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
