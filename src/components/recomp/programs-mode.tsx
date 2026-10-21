@@ -4,7 +4,7 @@ import { useTrainingData } from "@/lib/training-data";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, Clock3, Cloud, Copy, Dumbbell, LockKeyholeOpen, MoreHorizontal, Pencil, Plus, RefreshCw, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
+import { exercises, toWorkoutExercise, generateWorkout, muscleGroups, quickSelects, type Muscle, type WorkoutExercise } from "@/data/exercises";
 import { newId, useCloudData } from "@/lib/cloud-data";
 import { cloneExercises, useSavedWorkouts, handOffWorkout, hasActiveWorkout } from "@/lib/workout-storage";
 import { workoutTimeEstimate } from "@/lib/workout-time";
@@ -23,6 +23,23 @@ const createDraft = (): TrainingProgram => ({
   startDate: today(), weekdays: [], status: "draft",
   workouts: [], createdAt: Date.now(), updatedAt: Date.now(),
 });
+/** Starter routine inspired by standard gym PPL templates; copied into an editable account draft. */
+function makePushPullLegs(): TrainingProgram {
+  const exercise = (name:string,sets:number,reps:string,restSeconds:number):WorkoutExercise => {
+    const match=exercises.find(e=>e.name===name);
+    if (!match) throw new Error("Missing exercise: "+name);
+    return {...toWorkoutExercise(match),key:newId(),sets,reps,restSeconds};
+  };
+  const day=(name:string,weekday:number,rows:[string,number,string,number][]):ProgramWorkout=>({
+    id:newId(),name,weekday,exercises:rows.map(([n,s,r,rest])=>exercise(n,s,r,rest)),
+  });
+  const program=createDraft();
+  return {...program,name:"Push / Pull / Legs",goal:"Hypertrophy",weeks:8,mode:"flexible",workouts:[
+    day("Push Day",1,[["Bench Press",3,"6–10",150],["Incline Dumbbell Press",3,"8–12",90],["Machine Shoulder Press",3,"8–12",90],["Lateral Raise",3,"12–15",60],["Triceps Rope Pushdown",3,"10–15",60]]),
+    day("Pull Day",3,[["Lat Pulldown",3,"8–12",120],["Seated Cable Row",3,"8–12",120],["Face Pull",3,"12–15",60],["Dumbbell Curl",3,"10–12",60],["Hammer Curl",3,"10–12",60]]),
+    day("Legs Day",5,[["Back Squat",3,"6–10",150],["Romanian Deadlift",3,"8–10",120],["Leg Press",3,"10–12",120],["Seated Leg Curl",3,"10–15",75],["Standing Calf Raise",3,"12–15",60]]),
+  ]};
+}
 const hasExercise = (workout: ProgramWorkout) => workout.exercises.some((exercise) => !exercise.note);
 const durationMinutes = (workouts: ProgramWorkout[]) => workouts.reduce((sum, workout) => {
   const estimate = workoutTimeEstimate(workout.exercises);
@@ -184,6 +201,14 @@ export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
       <Button variant="primary" size="sm" onClick={() => { setCurrent(createDraft()); setStep(1); }}><Plus />Create</Button>
     </div>
     <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"><Cloud className="size-4 shrink-0" />Drafts sync with your RECOMP'D account</div>
+    <section className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-sm">
+      <div className="bg-primary/[0.08] px-4 py-3"><span className="text-[0.65rem] font-black uppercase tracking-widest text-primary">STARTER PROGRAM</span><h3 className="mt-1 text-lg font-black">Push / Pull / Legs</h3><p className="mt-1 text-xs text-muted-foreground">Classic gym split · 3 workouts · Flexible schedule · 8 weeks</p></div>
+      <div className="space-y-3 p-4">
+        <div className="grid grid-cols-3 gap-2 text-center text-[0.7rem] font-bold"><span className="rounded-xl bg-secondary p-2">Push<br/><span className="font-normal text-muted-foreground">Chest / Tris</span></span><span className="rounded-xl bg-secondary p-2">Pull<br/><span className="font-normal text-muted-foreground">Back / Bis</span></span><span className="rounded-xl bg-secondary p-2">Legs<br/><span className="font-normal text-muted-foreground">Lower body</span></span></div>
+        <p className="text-xs text-muted-foreground">A balanced starting point with compound lifts and accessories. Adjust exercises, sets and training days to suit you.</p>
+        <Button variant="primary" className="w-full" onClick={()=>{setCurrent(makePushPullLegs());setStep(1);toast.success("Starter program ready — customise before saving");}}><Plus/>Use this program <ArrowRight/></Button>
+      </div>
+    </section>
     {!drafts.length && <div className="rounded-2xl border border-dashed border-primary/30 bg-card p-7 text-center">
       <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary"><Dumbbell /></div>
       <h3 className="text-base font-black">Your training, your plan</h3>
