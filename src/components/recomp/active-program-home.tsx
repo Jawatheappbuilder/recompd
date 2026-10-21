@@ -18,7 +18,7 @@ export function ActiveProgramHome() {
   const template = next ? program.workouts.find(w => w.id === next.templateId) : undefined;
   const percent = stats.total ? Math.round(100 * stats.completed / stats.total) : 0;
   const circumference = 2 * Math.PI * 30;
-  const openProgram = () => void navigate({to:"/build",search:{mode:"programs",programId:program.id}});
+  const openProgram = () => void navigate({to:"/programs",search:{programId:program.id}});
   const start = () => {
     if (!active || !next || !template) return;
     if (hasActiveWorkout()) {

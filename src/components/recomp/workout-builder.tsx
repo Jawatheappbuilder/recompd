@@ -14,10 +14,9 @@ import { useTrainingGuidance } from "@/hooks/use-training-guidance";
 import { WorkoutEditor } from "./workout-editor";
 import { SectionHeading } from "./core";
 import { ScheduleSheet, scheduleNewWorkout } from "./schedule-sheet";
-import { ProgramsMode } from "./programs-mode";
 
 const DRAFT_KEY = "recomp-workout-builder-draft";
-type BuilderDraft = { mode?: "generate" | "manual" | "programs"; selected?: Muscle[]; count?: number; name?: string; workout?: WorkoutExercise[]; savedId?: string | null };
+type BuilderDraft = { mode?: "generate" | "manual"; selected?: Muscle[]; count?: number; name?: string; workout?: WorkoutExercise[]; savedId?: string | null };
 function readDraft(): BuilderDraft { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "{}") as BuilderDraft; } catch { return {}; } }
 function patchDraft(patch: Partial<BuilderDraft>) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...readDraft(), ...patch })); } catch {} }
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
@@ -28,16 +27,15 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   return <button type="button" aria-pressed={active} onClick={onClick} className={chip(active)}>{children}</button>;
 }
 
-export function WorkoutBuilder({ initialMode = "generate", floatingSelector = false, programId }: { initialMode?: "generate" | "manual" | "programs"; floatingSelector?: boolean; programId?: string }) {
-  const [mode, setMode] = useState<"generate" | "manual" | "programs">(() => programId ? "programs" : readDraft().mode ?? initialMode);
+export function WorkoutBuilder({ initialMode = "generate", floatingSelector = false }: { initialMode?: "generate" | "manual"; floatingSelector?: boolean }) {
+  const [mode, setMode] = useState<"generate" | "manual">(() => readDraft().mode === "manual" ? "manual" : initialMode);
   useEffect(() => { patchDraft({ mode }); }, [mode]);
-  useEffect(() => { if (programId) setMode("programs"); }, [programId]);
   return <div className="space-y-4">
-    <div className={cn("relative z-10 grid grid-cols-3 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
-      {([["generate", "Generate"], ["manual", "Build your own"], ["programs", "Programs"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn("relative", mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}{value==="programs"&&<span aria-label="New feature" className="absolute -right-0.5 -top-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[0.47rem] font-black uppercase leading-none text-white shadow-sm">NEW</span>}</Button>)}
+    <div className={cn("relative z-10 grid grid-cols-2 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
+      {([["generate", "Generate"], ["manual", "Build your own"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn("relative", mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}</Button>)}
     </div>
-    {mode !== "programs" && <RecentWorkoutNames />}
-    {mode === "generate" ? <GenerateMode /> : mode === "manual" ? <ManualMode /> : <ProgramsMode focusProgramId={programId} />}
+    <RecentWorkoutNames />
+    {mode === "generate" ? <GenerateMode /> : <ManualMode />}
   </div>;
 }
 
