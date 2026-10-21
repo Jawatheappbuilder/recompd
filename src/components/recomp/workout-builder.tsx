@@ -34,7 +34,7 @@ export function WorkoutBuilder({ initialMode = "generate", floatingSelector = fa
   useEffect(() => { if (programId) setMode("programs"); }, [programId]);
   return <div className="space-y-4">
     <div className={cn("relative z-10 grid grid-cols-3 rounded-xl border border-primary/15 bg-card p-1 shadow-sm", floatingSelector && "-mt-5")}>
-      {([["generate", "Generate"], ["manual", "Build your own"], ["programs", "Programs"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn(mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}{value==="programs"&&<span className="ml-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[0.55rem] font-black uppercase leading-none text-white">New</span>}</Button>)}
+      {([["generate", "Generate"], ["manual", "Build your own"], ["programs", "Programs"]] as const).map(([value, label]) => <Button key={value} variant={mode === value ? "segmentActive" : "segment"} className={cn("relative", mode === value && "bg-card text-primary shadow-sm ring-1 ring-primary/15")} onClick={() => setMode(value)}>{label}{value==="programs"&&<span aria-label="New feature" className="absolute -right-0.5 -top-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[0.47rem] font-black uppercase leading-none text-white shadow-sm">NEW</span>}</Button>)}
     </div>
     {mode !== "programs" && <RecentWorkoutNames />}
     {mode === "generate" ? <GenerateMode /> : mode === "manual" ? <ManualMode /> : <ProgramsMode focusProgramId={programId} />}
