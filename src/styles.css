@@ -117,7 +117,7 @@
   /* iOS Safari auto-zooms focused form controls below 16px. Keep mobile
      controls at 16px so typing does not leave the app viewport enlarged. */
   @supports (-webkit-touch-callout: none) {
-    input, textarea, select { font-size: 16px; }
+    input, textarea, select { font-size: max(16px, 1em) !important; }
   }
 }
 
