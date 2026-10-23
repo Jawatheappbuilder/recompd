@@ -23,7 +23,8 @@ async function call(path: string, method: "POST" | "DELETE", body?: unknown) {
   if (!response.ok) {
     let detail = "";
     try { const payload = await response.json() as Record<string, unknown>; detail = String(payload["error"] ?? payload["message"] ?? "").slice(0, 140); } catch { /* No JSON error body */ }
-    throw new Error(`Health connection failed (${response.status})${detail ? `: ${detail}` : ""}`);\n  }
+    throw new Error(`Health connection failed (${response.status})${detail ? `: ${detail}` : ""}`);
+  }
   return response.json() as Promise<Record<string, unknown>>;
 }
 
