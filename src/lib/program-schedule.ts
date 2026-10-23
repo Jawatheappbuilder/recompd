@@ -5,7 +5,7 @@ export type ProgramOccurrence = {
   templateId: string;
   cycle: number;
   position: number;
-  date?: string;
+  date?: string | undefined;
   status: "upcoming" | "completed" | "skipped";
   completedWorkoutId?: string;
   completedAt?: number;
