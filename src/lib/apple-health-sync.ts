@@ -14,18 +14,38 @@ async function accessToken() {
   return token;
 }
 
+/** Prefer the published Lovable Cloud host; retry the project host only for transport/route failures. */
+const PUBLISHED_LOVABLE_ORIGIN = "https://recompd.lovable.app";
+const healthOrigins = () => Array.from(new Set([PUBLISHED_LOVABLE_ORIGIN, accountApiOrigin(), LOVABLE_ORIGIN]));
+
 async function call(path: string, method: "POST" | "DELETE", body?: unknown) {
-  const response = await fetch(`${accountApiOrigin()}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${await accessToken()}`, ...(body ? { "content-type": "application/json" } : {}) },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  if (!response.ok) {
-    let detail = "";
-    try { const payload = await response.json() as Record<string, unknown>; detail = String(payload["error"] ?? payload["message"] ?? "").slice(0, 140); } catch { /* No JSON error body */ }
-    throw new Error(`Health connection failed (${response.status})${detail ? `: ${detail}` : ""}`);
+  const authorization = `Bearer ${await accessToken()}`;
+  const headers = { Authorization: authorization, ...(body ? { "content-type": "application/json" } : {}) };
+  let lastError: Error | null = null;
+  for (const [index, origin] of healthOrigins().entries()) {
+    try {
+      const response = await fetch(`${origin}${path}`, {
+        method, headers, ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      if (response.status === 404 && index < healthOrigins().length - 1) continue;
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const payload = await response.json() as Record<string, unknown>;
+          detail = String(payload["error"] ?? payload["message"] ?? "").slice(0, 140);
+        } catch { /* No JSON error body */ }
+        throw new Error(`Health connection failed (${response.status})${detail ? `: ${detail}` : ""}`);
+      }
+      return response.json() as Promise<Record<string, unknown>>;
+    } catch (error) {
+      if (error instanceof TypeError && index < healthOrigins().length - 1) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
   }
-  return response.json() as Promise<Record<string, unknown>>;
+  throw lastError ?? new Error("Apple Health API endpoint is unavailable.");
 }
 
 /** Returns the new token. Keep it only in component memory; never persist it. */
