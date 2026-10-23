@@ -18,6 +18,7 @@ import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -48,6 +49,9 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
 import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
 import { Route as ApiPublicAccountDeleteRouteImport } from './routes/api/public/account/delete'
+import { Route as ApiPublicHealthDailyRouteImport } from './routes/api/public/health/daily'
+import { Route as ApiPublicHealthImportRouteImport } from './routes/api/public/health/import'
+import { Route as ApiPublicHealthTokenRouteImport } from './routes/api/public/health/token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -92,6 +96,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgramsRoute = ProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -244,6 +253,21 @@ const ApiPublicAccountDeleteRoute = ApiPublicAccountDeleteRouteImport.update({
   path: '/api/public/account/delete',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthDailyRoute = ApiPublicHealthDailyRouteImport.update({
+  id: '/api/public/health/daily',
+  path: '/api/public/health/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthImportRoute = ApiPublicHealthImportRouteImport.update({
+  id: '/api/public/health/import',
+  path: '/api/public/health/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthTokenRoute = ApiPublicHealthTokenRouteImport.update({
+  id: '/api/public/health/token',
+  path: '/api/public/health/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -255,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -285,6 +310,9 @@ export interface FileRoutesByFullPath {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -296,6 +324,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/social': typeof SocialRoute
   '/support': typeof SupportRoute
@@ -324,6 +353,9 @@ export interface FileRoutesByTo {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -336,6 +368,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -366,6 +399,9 @@ export interface FileRoutesById {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -379,6 +415,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/progress'
     | '/reset-password'
     | '/settings'
@@ -409,6 +446,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -420,6 +460,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/reset-password'
     | '/social'
     | '/support'
@@ -448,6 +489,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   id:
     | '__root__'
     | '/'
@@ -459,6 +503,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/progress'
     | '/reset-password'
     | '/settings'
@@ -489,6 +534,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -501,6 +549,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
+  ProgramsRoute: typeof ProgramsRoute
   ProgressRoute: typeof ProgressRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -514,6 +563,9 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   SavedIndexRoute: typeof SavedIndexRoute
   ApiPublicAccountDeleteRoute: typeof ApiPublicAccountDeleteRoute
+  ApiPublicHealthDailyRoute: typeof ApiPublicHealthDailyRoute
+  ApiPublicHealthImportRoute: typeof ApiPublicHealthImportRoute
+  ApiPublicHealthTokenRoute: typeof ApiPublicHealthTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -579,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programs': {
+      id: '/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof ProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -791,6 +850,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAccountDeleteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health/daily': {
+      id: '/api/public/health/daily'
+      path: '/api/public/health/daily'
+      fullPath: '/api/public/health/daily'
+      preLoaderRoute: typeof ApiPublicHealthDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health/import': {
+      id: '/api/public/health/import'
+      path: '/api/public/health/import'
+      fullPath: '/api/public/health/import'
+      preLoaderRoute: typeof ApiPublicHealthImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health/token': {
+      id: '/api/public/health/token'
+      path: '/api/public/health/token'
+      fullPath: '/api/public/health/token'
+      preLoaderRoute: typeof ApiPublicHealthTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -868,6 +948,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
+  ProgramsRoute: ProgramsRoute,
   ProgressRoute: ProgressRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
@@ -881,6 +962,9 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   SavedIndexRoute: SavedIndexRoute,
   ApiPublicAccountDeleteRoute: ApiPublicAccountDeleteRoute,
+  ApiPublicHealthDailyRoute: ApiPublicHealthDailyRoute,
+  ApiPublicHealthImportRoute: ApiPublicHealthImportRoute,
+  ApiPublicHealthTokenRoute: ApiPublicHealthTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

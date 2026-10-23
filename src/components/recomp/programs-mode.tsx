@@ -119,7 +119,7 @@ function Stat({ label, value }: {label: string; value: string}) {
   return <div className="rounded-xl bg-secondary/70 p-3 text-center"><div className="text-lg font-black text-foreground">{value}</div><div className="text-[0.64rem] font-semibold text-muted-foreground">{label}</div></div>;
 }
 
-export function ProgramsMode({ focusProgramId }: { focusProgramId?: string }) {
+export function ProgramsMode({ focusProgramId }: { focusProgramId?: string | undefined }) {
   const saved = useSavedWorkouts();
   const cloud = useCloudData();
   const drafts = useProgramDrafts();

@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Stable URL of the Lovable-hosted app, where the backend's secure keys are available.
-const LOVABLE_ORIGIN = "https://project--465a9460-5ace-5d8a-90ae-2e52ab14dc35.lovable.app";
+export const LOVABLE_ORIGIN = "https://project--465a9460-5ace-5d8a-90ae-2e52ab14dc35.lovable.app";
 
-function accountApiOrigin(): string {
+export function accountApiOrigin(): string {
   const { hostname, origin } = window.location;
   const lovableHosted = hostname === "localhost" || hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
   return lovableHosted ? origin : LOVABLE_ORIGIN;

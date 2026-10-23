@@ -3,6 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 // Child tables first so foreign keys never block deletion.
 const USER_TABLES = [
+  "health_daily_summaries",
+  "health_sync_tokens",
   "workout_exercises",
   "workouts",
   "bodyweight_entries",

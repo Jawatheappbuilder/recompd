@@ -56,7 +56,7 @@ export function ActiveProgramHome() {
     <div className="p-4">
       {template && next ? <><div className="flex items-center justify-between gap-2"><p className="text-[0.65rem] font-black uppercase tracking-wider text-primary">Up next · Week {next.cycle+1}</p>{next.date&&<span className="flex items-center gap-1 text-[0.65rem] font-semibold text-muted-foreground"><CalendarDays className="size-3.5"/>{next.date}</span>}</div>
         <p className="mt-1.5 truncate text-base font-extrabold">{template.name}</p>
-        <p className="mt-1 text-xs text-muted-foreground"><Dumbbell className="mr-1 inline size-3.5"/>{template.exercises.filter(e=>!e.note).length} exercises · {workoutTimeEstimate(template.exercises).label}</p>
+        <p className="mt-1 text-xs text-muted-foreground"><Dumbbell className="mr-1 inline size-3.5"/>{template!.exercises.filter(e=>!e.note).length} exercises · {workoutTimeEstimate(template!.exercises)?.label}</p>
       </> : <p className="text-sm font-semibold">You've reached the end of this program's scheduled sessions.</p>}
       <div className="mt-4 grid grid-cols-2 gap-2">
         {active&&next&&template?<Button variant="primary" size="lg" className="h-11" onClick={start}><Dumbbell/>Start workout</Button>:<Button variant="surface" size="lg" className="h-11" onClick={openProgram}><PauseCircle/>View status</Button>}
