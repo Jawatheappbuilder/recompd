@@ -1,3 +1,5 @@
+import { useAuth } from "@/components/recomp/auth-context";
+import { loadAppleHealth } from "@/lib/apple-health-import";
 import { Footprints, RefreshCw } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -8,11 +10,20 @@ import { readSteps, requestStepsAccess, type StepsSnapshot } from "@/lib/health-
 const initial: StepsSnapshot = { status: "loading", today: 0, sevenDayAverage: 0, days: [] };
 
 export function StepsCard() {
+  const { user } = useAuth();
   const [data, setData] = useState(initial);
+  const [appleDays, setAppleDays] = useState(() => loadAppleHealth(user?.id ?? ""));
+  useEffect(() => { const loadApple = () => setAppleDays(loadAppleHealth(user?.id ?? "")); loadApple(); window.addEventListener("recomp-apple-health-changed", loadApple); return () => window.removeEventListener("recomp-apple-health-changed", loadApple); }, [user?.id]);
   const load = useCallback(() => { void readSteps().then(setData); }, []);
   useEffect(load, [load]);
 
-  if (data.status === "web") return null;
+  if (data.status === "web" && appleDays.length === 0) return null;
+  if (data.status === "web" && appleDays.length > 0) {
+    const today = new Date();
+    const key = [today.getFullYear(), String(today.getMonth()+1).padStart(2,"0"), String(today.getDate()).padStart(2,"0")].join("-");
+    const value = appleDays.find(day => day.date === key);
+    return <section><h2 className="mb-2 text-sm font-extrabold">Steps</h2><Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Apple Health · imported</p><p className="mt-1 font-display text-3xl font-extrabold tabular-nums">{(value?.steps ?? 0).toLocaleString()}</p><p className="mt-1 text-xs text-muted-foreground">{value ? "Today · manual sync" : "No import for today yet"}</p></div><Footprints className="size-6 text-primary" /></div><div className="mt-3 border-t border-border pt-2 text-right"><Link to="/settings/health" className="text-xs font-bold text-primary">Import new data</Link></div></Card></section>;
+  }
   const connected = data.status === "connected";
   const max = Math.max(1, ...data.days.map((day) => day.value));
   return <section>
