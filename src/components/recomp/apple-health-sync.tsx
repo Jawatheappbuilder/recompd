@@ -1,9 +1,9 @@
-import { Apple, CheckCircle2, Copy, ExternalLink, KeyRound, RefreshCw } from "lucide-react";
+import { Apple, CheckCircle2, Copy, ExternalLink, KeyRound, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SHORTCUT_ENDPOINT, createSyncToken, fetchHealthHistory, fetchTokenStatus, findLocalPrototypeData, importLocalPrototypeData, revokeSyncToken, type TokenStatus } from "@/lib/apple-health-sync";
+import { SHORTCUT_ENDPOINT, diagnoseAppleHealth, type HealthProbe, createSyncToken, fetchHealthHistory, fetchTokenStatus, findLocalPrototypeData, importLocalPrototypeData, revokeSyncToken, type TokenStatus } from "@/lib/apple-health-sync";
 import { australianToday, type HealthSummary } from "@/lib/health-sync";
 
 const SHARED_SHORTCUT_URL = import.meta.env.VITE_APPLE_HEALTH_SHORTCUT_URL?.trim() ?? "";
@@ -25,6 +25,8 @@ export function AppleHealthSync() {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [probes, setProbes] = useState<HealthProbe[] | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
   const [local] = useState(() => (typeof window === "undefined" ? { keys: [], days: [] } : findLocalPrototypeData()));
   const [localDone, setLocalDone] = useState(false);
 
@@ -85,6 +87,16 @@ export function AppleHealthSync() {
       <div className="mt-2 flex items-center gap-2"><code className="min-w-0 flex-1 break-all text-[0.65rem]">{SHORTCUT_ENDPOINT}</code><Button size="sm" variant="surface" onClick={() => copy(SHORTCUT_ENDPOINT)}><Copy /></Button></div>
       <p className="mt-2 leading-relaxed text-muted-foreground">Run the Shortcut while your iPhone is unlocked, allow Health permissions, then tap Check for sync above. iOS may ask before running an automation.</p>
     </details>}
+
+    <details className="mt-3 rounded-xl bg-secondary p-3 text-xs">
+      <summary className="cursor-pointer font-extrabold">Connection troubleshooting</summary>
+      <p className="mt-2 leading-relaxed text-muted-foreground">If creating a key says “Load failed”, test the API addresses below. This does not create a key or send your login details.</p>
+      <Button size="sm" variant="surface" className="mt-2 w-full" disabled={diagnosing} onClick={() => { setDiagnosing(true); void diagnoseAppleHealth().then(setProbes).catch(() => toast.error("Could not run connection checks")).finally(() => setDiagnosing(false)); }}><ShieldCheck />{diagnosing ? "Checking connections…" : "Run connection checks"}</Button>
+      {probes && <div className="mt-3 space-y-2">{probes.map((p) => <div key={p.host} className="rounded-lg border border-border p-2"><div className="flex justify-between gap-2"><strong>{p.label}</strong><span className="font-semibold">{p.status}</span></div><div className="mt-1 break-all text-muted-foreground">{p.host}</div><div className="mt-1 text-muted-foreground">{p.detail}</div></div>)}
+        <Button size="sm" variant="surface" className="w-full" onClick={() => copy(probes.map(p => p.label + " [" + p.host + "]: " + p.status + " — " + p.detail).join("\n"))}><Copy />Copy results</Button>
+      </div>}
+      <p className="mt-2 text-muted-foreground">A blocked result may mean CORS, a redirect, or a network issue. It does not by itself identify the cause.</p>
+    </details>
 
     {local.days.length > 0 && !localDone && <div className="mt-3 rounded-xl bg-secondary p-3 text-xs"><p className="font-bold">{local.days.length} days from the earlier import are saved on this device.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => void importLocalPrototypeData(local).then((n) => { setLocalDone(true); toast.success(`Moved ${n} days to your account`); void load(); }).catch(() => toast.error("Couldn't move them. They're still on this device."))}>Move them to my account</Button></div>}
 

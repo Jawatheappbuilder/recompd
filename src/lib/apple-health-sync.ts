@@ -113,3 +113,30 @@ export async function importLocalPrototypeData(found: LocalFind): Promise<number
   for (const key of found.keys) localStorage.removeItem(key);
   return Number(result["imported"] ?? 0);
 }
+
+/** Non-mutating connectivity probes. Never send auth credentials or tokens to diagnostics endpoints. */
+export type HealthProbe = { label: string; host: string; status: string; detail: string };
+export async function diagnoseAppleHealth(): Promise<HealthProbe[]> {
+  const path = "/api/public/health/token";
+  const hosts = Array.from(new Set([window.location.origin, PUBLISHED_LOVABLE_ORIGIN, LOVABLE_ORIGIN]));
+  const results: HealthProbe[] = [];
+  for (const origin of hosts) {
+    const label = origin === window.location.origin ? "Current app" : origin === PUBLISHED_LOVABLE_ORIGIN ? "Published Lovable" : "Lovable project";
+    try {
+      // OPTIONS is read-only. It can identify a missing route or a cross-origin block
+      // without creating/replacing a sync token.
+      const response = await fetch(origin + path, { method: "OPTIONS", mode: "cors", cache: "no-store", redirect: "manual" });
+      const detail = response.type === "opaqueredirect" ? "Redirect detected" :
+        response.status === 204 ? "Preflight accepted" :
+        response.status === 404 ? "API route not found" :
+        response.status === 500 ? "Backend returned 500" :
+        "HTTP " + response.status;
+      results.push({ label, host: new URL(origin).hostname, status: response.ok ? "reachable" : "issue", detail });
+    } catch {
+      // Browsers do not expose whether a fetch TypeError was caused by CORS,
+      // DNS, TLS, a redirect, or loss of connectivity.
+      results.push({ label, host: new URL(origin).hostname, status: "blocked", detail: "Browser blocked the request or the server was unreachable (possible CORS/redirect)" });
+    }
+  }
+  return results;
+}
