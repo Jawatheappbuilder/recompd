@@ -72,9 +72,9 @@ export function findLocalPrototypeData(): LocalFind {
         const parsed = dailySummarySchema.safeParse({
           date: row["date"] ?? row["day"],
           steps: row["steps"],
-          ...(row["activeKcal"] ?? row["activeEnergy"] ?? row["activeCalories"] ?? row["activeCalories"] ? { activeKcal: row["activeKcal"] ?? row["activeEnergy"] } : {}),
+          ...(row["activeKcal"] ?? row["activeEnergy"] ?? row["activeCalories"] ? { activeKcal: row["activeKcal"] ?? row["activeEnergy"] ?? row["activeCalories"] } : {}),
           ...(row["restingHr"] ?? row["restingHeartRate"] ? { restingHr: row["restingHr"] ?? row["restingHeartRate"] } : {}),
-          ...(row["averageHr"] ?? row["heartRate"] ?? row["averageHeartRate"] ?? row["averageHeartRate"] ? { averageHr: row["averageHr"] ?? row["heartRate"] } : {}),
+          ...(row["averageHr"] ?? row["heartRate"] ?? row["averageHeartRate"] ? { averageHr: row["averageHr"] ?? row["heartRate"] ?? row["averageHeartRate"] } : {}),
         });
         if (parsed.success) { found.days.push(parsed.data); matched = true; }
       }
