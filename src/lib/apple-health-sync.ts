@@ -20,7 +20,10 @@ async function call(path: string, method: "POST" | "DELETE", body?: unknown) {
     headers: { Authorization: `Bearer ${await accessToken()}`, ...(body ? { "content-type": "application/json" } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  if (!response.ok) {
+    let detail = "";
+    try { const payload = await response.json() as Record<string, unknown>; detail = String(payload["error"] ?? payload["message"] ?? "").slice(0, 140); } catch { /* No JSON error body */ }
+    throw new Error(`Health connection failed (${response.status})${detail ? `: ${detail}` : ""}`);\n  }
   return response.json() as Promise<Record<string, unknown>>;
 }
 
