@@ -4,7 +4,7 @@ import { z } from "zod";
 export const SYNC_TOKEN_PREFIX = "rcmp_hs_";
 export const MAX_BODY_BYTES = 2048;
 export const RATE_LIMIT_PER_HOUR = 30;
-export const HEALTH_TIMEZONE = "Australia/Sydney";
+export const HEALTH_TIMEZONE = "Australia/Adelaide";
 
 const intIn = (min: number, max: number) =>
   z.preprocess((value) => {
