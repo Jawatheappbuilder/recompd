@@ -3,7 +3,9 @@ import { LOVABLE_ORIGIN, accountApiOrigin } from "@/lib/account-api";
 import { dailySummarySchema, type DailySummaryInput, type HealthSummary } from "@/lib/health-sync";
 
 /** The URL the Apple Shortcut posts to. Always the Lovable-hosted backend, which holds the secure keys. */
-export const SHORTCUT_ENDPOINT = `${LOVABLE_ORIGIN}/api/public/health/daily`;
+const EDGE_BASE = (import.meta.env.VITE_APPLE_HEALTH_EDGE_URL ?? "").trim().replace(/\/$/, "");
+const USE_EDGE = EDGE_BASE.startsWith("https://") && EDGE_BASE.endsWith("/functions/v1/apple-health-sync");
+export const SHORTCUT_ENDPOINT = USE_EDGE ? `${EDGE_BASE}/daily` : `${LOVABLE_ORIGIN}/api/public/health/daily`;
 
 export const isIPhone = () => typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
@@ -20,6 +22,14 @@ const healthOrigins = () => Array.from(new Set([PUBLISHED_LOVABLE_ORIGIN, accoun
 
 async function call(path: string, method: "POST" | "DELETE", body?: unknown) {
   const authorization = `Bearer ${await accessToken()}`;
+  if (USE_EDGE && (path.endsWith("/token") || path.endsWith("/daily"))) {
+    const response = await fetch(`${EDGE_BASE}${path.endsWith("/token") ? "/token" : "/daily"}`, {
+      method, headers: { Authorization: authorization, ...(body ? { "content-type": "application/json" } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    if (!response.ok) throw new Error(`Apple Health Edge Function (${response.status})`);
+    return response.json() as Promise<Record<string, unknown>>;
+  }
   const headers = { Authorization: authorization, ...(body ? { "content-type": "application/json" } : {}) };
   let lastError: Error | null = null;
   for (const [index, origin] of healthOrigins().entries()) {
