@@ -71,6 +71,13 @@
       "when": 1792576800000,
       "tag": "0009_training_programs",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792790586328,
+      "tag": "0010_apple_health_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -89,6 +89,66 @@ export type Database = {
         }
         Relationships: []
       }
+      health_daily_summaries: {
+        Row: {
+          active_kcal: number | null
+          average_hr: number | null
+          day: string
+          received_at: string
+          resting_hr: number | null
+          source: string
+          steps: number
+          user_id: string
+        }
+        Insert: {
+          active_kcal?: number | null
+          average_hr?: number | null
+          day: string
+          received_at?: string
+          resting_hr?: number | null
+          source?: string
+          steps: number
+          user_id: string
+        }
+        Update: {
+          active_kcal?: number | null
+          average_hr?: number | null
+          day?: string
+          received_at?: string
+          resting_hr?: number | null
+          source?: string
+          steps?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_sync_tokens: {
+        Row: {
+          created_at: string
+          last_used_at: string | null
+          token_hash: string
+          user_id: string
+          window_count: number
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          last_used_at?: string | null
+          token_hash: string
+          user_id: string
+          window_count?: number
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          last_used_at?: string | null
+          token_hash?: string
+          user_id?: string
+          window_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
