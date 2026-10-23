@@ -37,7 +37,7 @@ export function AppleHealthSync() {
   const generate = async () => {
     if (status && !window.confirm("Replace your current sync token? The old one in Shortcuts will stop working.")) return;
     setBusy(true);
-    try { setToken(await createSyncToken()); await load(); } catch { toast.error("Couldn't create a sync token."); }
+    try { setToken(await createSyncToken()); await load(); } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't create a connection key."); }
     setBusy(false);
   };
   const revoke = async () => {
