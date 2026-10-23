@@ -3,7 +3,7 @@ import type { WorkoutExercise } from "@/data/exercises";
 
 export type ProgramMode = "flexible" | "calendar";
 export type ProgramStatus = "draft" | "active" | "paused" | "completed";
-export type ProgramWorkout = { id: string; name: string; exercises: WorkoutExercise[]; weekday?: number };
+export type ProgramWorkout = { id: string; name: string; exercises: WorkoutExercise[]; weekday?: number | undefined };
 export type TrainingProgram = {
   id: string;
   name: string;
