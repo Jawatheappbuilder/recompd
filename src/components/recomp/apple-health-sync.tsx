@@ -1,4 +1,4 @@
-import { Apple, Copy, ExternalLink, KeyRound, RefreshCw } from "lucide-react";
+import { Apple, CheckCircle2, Copy, ExternalLink, KeyRound, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export function AppleHealthSync() {
   const [history, setHistory] = useState<HealthSummary[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const [local] = useState(() => (typeof window === "undefined" ? { keys: [], days: [] } : findLocalPrototypeData()));
   const [localDone, setLocalDone] = useState(false);
 
@@ -45,14 +46,14 @@ export function AppleHealthSync() {
     try { await revokeSyncToken(); setToken(null); await load(); } catch { toast.error("Couldn't revoke the token."); }
     setBusy(false);
   };
-  const copy = (value: string) => void navigator.clipboard.writeText(value).then(() => toast.success("Copied"));
+  const copy = (value: string) => void navigator.clipboard.writeText(value).then(() => toast.success("Copied")).catch(() => toast.error("Copy failed. Select and copy the text manually."));
 
   const today = history.find((d) => d.day === australianToday());
   const last = status?.last_used_at ? new Date(status.last_used_at) : null;
   const stale = last ? Date.now() - last.getTime() > 36 * 3_600_000 : false;
 
   return <Card className="p-4">
-    <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Apple /></span><div className="min-w-0"><h2 className="text-sm font-extrabold">iPhone · Apple Health</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Web apps can't read Apple Health. A daily Shortcut automation on your iPhone sends a summary of steps (and optionally calories and resting heart rate). It isn't live — it updates once a day when the automation runs.</p></div></div>
+    <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Apple /></span><div className="min-w-0"><h2 className="text-sm font-extrabold">iPhone · Apple Health</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">See your daily steps, active calories and resting heart rate from Apple Health. Sync runs through an iPhone Shortcut, not continuously.</p></div></div>
 
     <div className="mt-4 grid grid-cols-3 gap-2 text-center">
       <div className="rounded-xl bg-secondary p-2"><div className="text-[0.6rem] font-bold uppercase text-muted-foreground">Today</div><div className="font-display text-lg font-extrabold tabular-nums">{today ? today.steps.toLocaleString() : "—"}</div><div className="text-[0.6rem] text-muted-foreground">steps</div></div>
@@ -64,25 +65,26 @@ export function AppleHealthSync() {
 
     {token && <div className="mt-3 rounded-xl border border-primary/40 bg-primary/[0.06] p-3"><div className="text-xs font-extrabold">Your sync token — shown only once</div><code className="mt-1 block break-all text-[0.7rem]">{token}</code><Button size="sm" variant="primary" className="mt-2 w-full" onClick={() => copy(token)}><Copy />Copy token</Button><p className="mt-1 text-[0.65rem] text-muted-foreground">It can only send daily summaries — it can't sign in to your account.</p></div>}
 
-    <div className="mt-3 rounded-xl border border-border p-3">
-      <h3 className="text-sm font-extrabold">Connect in 3 steps</h3>
-      <p className="mt-1 text-xs text-muted-foreground">No paid Apple developer account needed. Apple Health only shares the daily summaries you choose.</p>
+    {last ? <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 p-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" />Connected · Your latest daily summary was received</div> : <div className="mt-3 rounded-xl border border-border p-3">
+      <h3 className="text-sm font-extrabold">Connect Apple Health</h3>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Apple doesn't let Safari apps read Health directly. An iPhone Shortcut can securely send a daily summary for free.</p>
       <div className="mt-3 space-y-3 text-xs">
-        <div><strong>1. Create your private sync token</strong><p className="mt-1 text-muted-foreground">Keep this private. Once created, copy it into the Shortcut's Authorization header.</p>
-          <div className="mt-2 flex gap-2"><Button size="sm" variant="primary" className="flex-1" disabled={busy} onClick={() => void generate()}><KeyRound />{status ? "Replace token" : "Create sync token"}</Button>{status && <Button size="sm" variant="surface" disabled={busy} onClick={() => void revoke()}>Revoke</Button>}</div>
+        <div><strong>1. Create a private connection key</strong><p className="mt-1 text-muted-foreground">Your key is only shown once. Keep it private.</p>
+          <div className="mt-2 flex gap-2"><Button size="sm" variant="primary" className="flex-1" disabled={busy} onClick={() => void generate()}><KeyRound />{status ? "Replace connection key" : "Create connection key"}</Button>{status && <Button size="sm" variant="surface" disabled={busy} onClick={() => void revoke()}>Disconnect</Button>}</div>
         </div>
-        <div><strong>2. Set up your Apple Health Shortcut</strong>
-          {validSharedShortcutUrl ? <><p className="mt-1 text-muted-foreground">Install our prepared Shortcut, then add the URL and your token when prompted or in its actions.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => window.open(SHARED_SHORTCUT_URL, "_blank", "noopener,noreferrer")}><ExternalLink />Open Apple Shortcut</Button></> : <p className="mt-1 text-muted-foreground">A ready-made install link isn't available yet. Use the setup instructions below to build the Shortcut on your iPhone. We won't send you to a broken or unverified link.</p>}
+        <div><strong>2. Add the iPhone Shortcut</strong>
+          {validSharedShortcutUrl ? <><p className="mt-1 text-muted-foreground">Open the ready-made Shortcut and enter your connection key. You'll be asked to allow Health access.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => window.open(SHARED_SHORTCUT_URL, "_blank", "noopener,noreferrer")}><ExternalLink />Install Apple Health Shortcut</Button></> : <><p className="mt-1 text-muted-foreground">The ready-made Shortcut is not published yet. You can set it up manually if you'd like to use syncing now.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => setShowManual((v) => !v)}>{showManual ? "Hide manual setup" : "Show manual setup"}</Button></>}
         </div>
-        <div><strong>3. Test, then automate</strong><p className="mt-1 text-muted-foreground">Run the Shortcut once and allow Health access. Refresh this card to confirm data arrived, then schedule a daily Shortcuts automation. Sync is not live.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => void load()}><RefreshCw />Check for sync</Button></div>
+        <div><strong>3. Run once, then schedule daily</strong><p className="mt-1 text-muted-foreground">Approve Health access in Shortcuts, run it once and check for your first sync below. Daily automations must be enabled in the Shortcuts app.</p></div>
       </div>
-    </div>
-
-    <details className="mt-3 rounded-xl bg-secondary p-3 text-xs"><summary className="cursor-pointer font-extrabold">Manual Shortcut instructions</summary>
+    </div>}
+    {status && last && <div className="mt-3 flex gap-2"><Button size="sm" variant="surface" className="flex-1" disabled={busy} onClick={() => void generate()}><KeyRound />Replace key</Button><Button size="sm" variant="surface" disabled={busy} onClick={() => void revoke()}>Disconnect</Button></div>}
+    <Button size="sm" variant="surface" className="mt-3 w-full" onClick={() => void load()}><RefreshCw />Check for sync</Button>
+    {(showManual || (last !== null && !validSharedShortcutUrl)) && <details open={showManual} className="mt-3 rounded-xl bg-secondary p-3 text-xs"><summary className="cursor-pointer font-extrabold">Advanced · Manual Shortcut setup</summary>
       <ol className="mt-2 list-decimal space-y-1.5 pl-4 leading-relaxed text-muted-foreground">{steps.map((s) => <li key={s}>{s}</li>)}</ol>
       <div className="mt-2 flex items-center gap-2"><code className="min-w-0 flex-1 break-all text-[0.65rem]">{SHORTCUT_ENDPOINT}</code><Button size="sm" variant="surface" onClick={() => copy(SHORTCUT_ENDPOINT)}><Copy /></Button></div>
-      <p className="mt-2 leading-relaxed text-muted-foreground"><b>Sync now test:</b> open the Shortcut and tap ▶, then tap refresh here. iOS may still ask before running some automations, and Health data can't be read while the iPhone is locked.</p>
-    </details>
+      <p className="mt-2 leading-relaxed text-muted-foreground">Run the Shortcut while your iPhone is unlocked, allow Health permissions, then tap Check for sync above. iOS may ask before running an automation.</p>
+    </details>}
 
     {local.days.length > 0 && !localDone && <div className="mt-3 rounded-xl bg-secondary p-3 text-xs"><p className="font-bold">{local.days.length} days from the earlier import are saved on this device.</p><Button size="sm" variant="surface" className="mt-2 w-full" onClick={() => void importLocalPrototypeData(local).then((n) => { setLocalDone(true); toast.success(`Moved ${n} days to your account`); void load(); }).catch(() => toast.error("Couldn't move them. They're still on this device."))}>Move them to my account</Button></div>}
 
