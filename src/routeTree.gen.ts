@@ -49,6 +49,9 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ProgressExerciseIdRouteImport } from './routes/progress.exercise.$id'
 import { Route as ProgressWorkoutIdRouteImport } from './routes/progress.workout.$id'
 import { Route as ApiPublicAccountDeleteRouteImport } from './routes/api/public/account/delete'
+import { Route as ApiPublicHealthDailyRouteImport } from './routes/api/public/health/daily'
+import { Route as ApiPublicHealthImportRouteImport } from './routes/api/public/health/import'
+import { Route as ApiPublicHealthTokenRouteImport } from './routes/api/public/health/token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -250,6 +253,21 @@ const ApiPublicAccountDeleteRoute = ApiPublicAccountDeleteRouteImport.update({
   path: '/api/public/account/delete',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthDailyRoute = ApiPublicHealthDailyRouteImport.update({
+  id: '/api/public/health/daily',
+  path: '/api/public/health/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthImportRoute = ApiPublicHealthImportRouteImport.update({
+  id: '/api/public/health/import',
+  path: '/api/public/health/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthTokenRoute = ApiPublicHealthTokenRouteImport.update({
+  id: '/api/public/health/token',
+  path: '/api/public/health/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -292,6 +310,9 @@ export interface FileRoutesByFullPath {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -332,6 +353,9 @@ export interface FileRoutesByTo {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -375,6 +399,9 @@ export interface FileRoutesById {
   '/progress/exercise/$id': typeof ProgressExerciseIdRoute
   '/progress/workout/$id': typeof ProgressWorkoutIdRoute
   '/api/public/account/delete': typeof ApiPublicAccountDeleteRoute
+  '/api/public/health/daily': typeof ApiPublicHealthDailyRoute
+  '/api/public/health/import': typeof ApiPublicHealthImportRoute
+  '/api/public/health/token': typeof ApiPublicHealthTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -419,6 +446,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -459,6 +489,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   id:
     | '__root__'
     | '/'
@@ -501,6 +534,9 @@ export interface FileRouteTypes {
     | '/progress/exercise/$id'
     | '/progress/workout/$id'
     | '/api/public/account/delete'
+    | '/api/public/health/daily'
+    | '/api/public/health/import'
+    | '/api/public/health/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -527,6 +563,9 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   SavedIndexRoute: typeof SavedIndexRoute
   ApiPublicAccountDeleteRoute: typeof ApiPublicAccountDeleteRoute
+  ApiPublicHealthDailyRoute: typeof ApiPublicHealthDailyRoute
+  ApiPublicHealthImportRoute: typeof ApiPublicHealthImportRoute
+  ApiPublicHealthTokenRoute: typeof ApiPublicHealthTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -811,6 +850,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAccountDeleteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health/daily': {
+      id: '/api/public/health/daily'
+      path: '/api/public/health/daily'
+      fullPath: '/api/public/health/daily'
+      preLoaderRoute: typeof ApiPublicHealthDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health/import': {
+      id: '/api/public/health/import'
+      path: '/api/public/health/import'
+      fullPath: '/api/public/health/import'
+      preLoaderRoute: typeof ApiPublicHealthImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health/token': {
+      id: '/api/public/health/token'
+      path: '/api/public/health/token'
+      fullPath: '/api/public/health/token'
+      preLoaderRoute: typeof ApiPublicHealthTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -902,6 +962,9 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   SavedIndexRoute: SavedIndexRoute,
   ApiPublicAccountDeleteRoute: ApiPublicAccountDeleteRoute,
+  ApiPublicHealthDailyRoute: ApiPublicHealthDailyRoute,
+  ApiPublicHealthImportRoute: ApiPublicHealthImportRoute,
+  ApiPublicHealthTokenRoute: ApiPublicHealthTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
