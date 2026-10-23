@@ -1,9 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { LOVABLE_ORIGIN, accountApiOrigin } from "@/lib/account-api";
+
+/** Opt into same-origin Vercel health APIs only after server credentials are configured. */
+const HEALTH_API_MODE = import.meta.env["VITE_HEALTH_API_MODE"] === "vercel";
+const healthApiOrigin = () => HEALTH_API_MODE ? window.location.origin : accountApiOrigin();
 import { dailySummarySchema, type DailySummaryInput, type HealthSummary } from "@/lib/health-sync";
 
 /** The URL the Apple Shortcut posts to. Always the Lovable-hosted backend, which holds the secure keys. */
-export const SHORTCUT_ENDPOINT = `${LOVABLE_ORIGIN}/api/public/health/daily`;
+export const SHORTCUT_ENDPOINT = `${HEALTH_API_MODE && typeof window !== "undefined" ? window.location.origin : LOVABLE_ORIGIN}/api/public/health/daily`;
 
 export const isIPhone = () => typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
@@ -15,7 +19,7 @@ async function accessToken() {
 }
 
 async function call(path: string, method: "POST" | "DELETE", body?: unknown) {
-  const response = await fetch(`${accountApiOrigin()}${path}`, {
+  const response = await fetch(`${healthApiOrigin()}${path}`, {
     method,
     headers: { Authorization: `Bearer ${await accessToken()}`, ...(body ? { "content-type": "application/json" } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
