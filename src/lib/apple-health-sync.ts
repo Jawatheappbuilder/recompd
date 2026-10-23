@@ -3,8 +3,8 @@ import { LOVABLE_ORIGIN, accountApiOrigin } from "@/lib/account-api";
 import { dailySummarySchema, type DailySummaryInput, type HealthSummary } from "@/lib/health-sync";
 
 /** The URL the Apple Shortcut posts to. Always the Lovable-hosted backend, which holds the secure keys. */
-const EDGE_BASE = import.meta.env.VITE_APPLE_HEALTH_EDGE_URL?.trim().replace(/\\/$/, "") ?? "";
-const USE_EDGE = /^https:\\/\\/[^/]+\\/functions\\/v1\\/apple-health-sync$/.test(EDGE_BASE);
+const EDGE_BASE = (import.meta.env.VITE_APPLE_HEALTH_EDGE_URL ?? "").trim().replace(/\/$/, "");
+const USE_EDGE = EDGE_BASE.startsWith("https://") && EDGE_BASE.endsWith("/functions/v1/apple-health-sync");
 export const SHORTCUT_ENDPOINT = USE_EDGE ? `${EDGE_BASE}/daily` : `${LOVABLE_ORIGIN}/api/public/health/daily`;
 
 export const isIPhone = () => typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
