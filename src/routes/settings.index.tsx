@@ -19,7 +19,7 @@ function SettingsPage() {
     <SettingsSection title="Your profile">
       <SettingsLink to="/settings/profile" icon={CircleUserRound} label={preferences.name || "Profile"} value={preferences.heightCm ? `${preferences.heightCm} cm` : "Edit profile"} />
       <SettingsLink to="/settings/training" icon={SlidersHorizontal} label="Training preferences" value={`${preferences.weightUnit} · ${preferences.defaultRestSeconds}s`} />
-      <SettingsLink to="/settings/health" icon={Footprints} label="Health & activity" value="Steps · Health Connect" />
+      <SettingsLink to="/settings/health" icon={Footprints} label="Health & activity" value="Apple Health · Health Connect" />
     </SettingsSection>
     <SettingsSection title="App settings">
       <SettingsLink to="/settings/appearance" icon={Palette} label="Theme" value={`${theme} · ${preferences.accent === "blue" ? "Blue" : preferences.accent === "black" ? "Black" : "Red"}`} />

@@ -1,3 +1,4 @@
+import { AppleHealthImport } from "@/components/recomp/apple-health-import";
 import { createFileRoute } from "@tanstack/react-router";
 import { Footprints, HeartPulse, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,7 +16,8 @@ function HealthSettings() {
   const [data, setData] = useState(initial);
   useEffect(() => { void readSteps().then(setData); }, []);
   const connected = data.status === "connected";
-  return <Screen><SettingsHeader title="Health & activity" subtitle="Connect Android Health Connect" /><div className="space-y-4">
+  return <Screen><SettingsHeader title="Health & activity" subtitle="Apple Health & Android Health Connect" /><div className="space-y-4">
+    <AppleHealthImport />
     <Card className="p-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><HeartPulse /></span><div><h2 className="text-sm font-extrabold">Health Connect</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">RECOMP'D requests read-only access to steps, workouts and calories. Your Health Connect data stays on your device and is read when the app needs to show your activity.</p></div></div>
       <div className="mt-4 rounded-xl bg-secondary p-3"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Footprints className="size-4 text-primary" /><span className="text-sm font-bold">Steps</span></div><span className={connected ? "text-xs font-bold text-emerald-600" : "text-xs font-bold text-muted-foreground"}>{connected ? "Connected" : data.status === "web" ? "Android app only" : "Not connected"}</span></div>{connected && <div className="mt-2 text-xs text-muted-foreground">Today: {data.today.toLocaleString()} · 7-day avg: {data.sevenDayAverage.toLocaleString()}</div>}</div>
       {data.status !== "web" && <Button variant="primary" className="mt-4 w-full" onClick={() => void requestStepsAccess().then(async (steps) => { setData(steps); await requestWorkoutCaloriesAccess(); })}>{connected ? "Refresh permission" : "Connect Health Connect"}</Button>}
