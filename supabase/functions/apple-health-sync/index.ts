@@ -4,7 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const allow = new Set(["https://recompd.vercel.app", "https://recompd.lovable.app"]);
-const prefix = "rhd_";
+const prefix = "rcmp_hs_";
 const encoder = new TextEncoder();
 const json = (value: unknown, status = 200, origin = "") =>
   new Response(JSON.stringify(value), { status, headers: {
@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
     const now = new Date();
     const refreshed = now.getTime() - Date.parse(saved.window_start) > 3600000;
     const count = refreshed ? 1 : saved.window_count + 1;
-    if (count > 12) return json({ error: "Rate limit reached" }, 429, origin);
+    if (count > 30) return json({ error: "Rate limit reached" }, 429, origin);
     const { error: writeError } = await admin.from("health_daily_summaries").upsert({
       user_id: saved.user_id, day: date, steps: body.steps,
       active_kcal: body.activeKcal ?? null, resting_hr: body.restingHr ?? null,
