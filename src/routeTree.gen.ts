@@ -18,6 +18,7 @@ import { Route as GeneratedWorkoutRouteImport } from './routes/generated-workout
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -92,6 +93,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgramsRoute = ProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/social': typeof SocialRoute
   '/support': typeof SupportRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/privacy': typeof PrivacyRoute
+  '/programs': typeof ProgramsRoute
   '/progress': typeof ProgressRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/progress'
     | '/reset-password'
     | '/settings'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/reset-password'
     | '/social'
     | '/support'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/programs'
     | '/progress'
     | '/reset-password'
     | '/settings'
@@ -501,6 +513,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
+  ProgramsRoute: typeof ProgramsRoute
   ProgressRoute: typeof ProgressRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -579,6 +592,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programs': {
+      id: '/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof ProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -868,6 +888,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
+  ProgramsRoute: ProgramsRoute,
   ProgressRoute: ProgressRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
