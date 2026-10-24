@@ -152,7 +152,12 @@ export function TrainingAnalysisSection({
               onChange={(event) => setDetailLevel(Number(event.currentTarget.value) as 0 | 1 | 2)}
               aria-label="Muscle coverage detail level"
               aria-valuetext={detailLabels[detailLevel]}
-              className="h-2 w-full cursor-pointer accent-primary"
+              className="h-7 w-full cursor-pointer appearance-none bg-transparent outline-none
+                [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-border
+                [&::-webkit-slider-thumb]:-mt-[9px] [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary/30 [&::-webkit-slider-thumb]:bg-card [&::-webkit-slider-thumb]:shadow-md
+                [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-border
+                [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary/30 [&::-moz-range-thumb]:bg-card [&::-moz-range-thumb]:shadow-md
+                focus-visible:[&::-webkit-slider-thumb]:ring-4 focus-visible:[&::-webkit-slider-thumb]:ring-primary/25 focus-visible:[&::-moz-range-thumb]:ring-4 focus-visible:[&::-moz-range-thumb]:ring-primary/25"
             />
             <div aria-hidden className="mt-1 flex justify-between text-[0.58rem] text-muted-foreground">
               <span>Simple</span><span>Detailed</span><span>Advanced</span>
