@@ -106,6 +106,8 @@ export function TrainingAnalysisSection({
 }) {
   const [selectedMuscle, setSelectedMuscle] = useState<Muscle | null>(null);
   const [showMethod, setShowMethod] = useState(false);
+  const [detailLevel, setDetailLevel] = useState<0 | 1 | 2>(0);
+  const detailLabels = ["Simple", "Detailed", "Advanced"] as const;
   const opener = useRef<HTMLButtonElement | null>(null);
   // Derive the selected row again on a period/goal/history change; never retain stale totals.
   const selected = analysis.coverage.find((row) => row.muscle === selectedMuscle);
@@ -131,12 +133,37 @@ export function TrainingAnalysisSection({
               <Info className="size-4" />
             </button>
           </div>
+          <div className="mt-3 rounded-xl bg-secondary/45 px-3 py-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label htmlFor="muscle-coverage-detail" className="text-[0.65rem] font-bold text-muted-foreground">
+                Detail level
+              </label>
+              <span className="text-[0.65rem] font-extrabold" aria-live="polite">
+                {detailLabels[detailLevel]}
+              </span>
+            </div>
+            <input
+              id="muscle-coverage-detail"
+              type="range"
+              min={0}
+              max={2}
+              step={1}
+              value={detailLevel}
+              onChange={(event) => setDetailLevel(Number(event.currentTarget.value) as 0 | 1 | 2)}
+              aria-label="Muscle coverage detail level"
+              aria-valuetext={detailLabels[detailLevel]}
+              className="h-2 w-full cursor-pointer accent-primary"
+            />
+            <div aria-hidden className="mt-1 flex justify-between text-[0.58rem] text-muted-foreground">
+              <span>Simple</span><span>Detailed</span><span>Advanced</span>
+            </div>
+          </div>
           <div className="mt-2 divide-y divide-border/40">
             {analysis.coverage.map((row) => (
               <button
                 key={row.muscle}
                 type="button"
-                aria-label={`${row.muscle}: ${coverageLabel(row.status)}. View details`}
+                aria-label={`${row.muscle}: ${coverageLabel(row.status)}${detailLevel > 0 ? `, ${formatEffectiveSets(row.weeklySets)} effective sets per week` : ""}. View details`}
                 aria-haspopup="dialog"
                 onClick={(event) => {
                   opener.current = event.currentTarget;
@@ -164,8 +191,31 @@ export function TrainingAnalysisSection({
                     </span>
                   )}
                 </span>
-                <span className="min-w-0">
-                  <CoverageBar row={row} />
+                <span className="min-w-0 space-y-1.5">
+                  {detailLevel > 0 && (
+                    <span className="flex items-baseline justify-between gap-2 text-[0.6rem]">
+                      <span className="font-bold tabular-nums">
+                        {formatEffectiveSets(row.weeklySets)} sets/week
+                      </span>
+                      <span className="text-muted-foreground">
+                        target {row.target.min}–{row.target.max}
+                      </span>
+                    </span>
+                  )}
+                  <CoverageBar row={row} detailed={detailLevel > 0} />
+                  {detailLevel === 2 && (
+                    <span className="block space-y-0.5 text-[0.58rem] leading-snug text-muted-foreground">
+                      <span className="block">
+                        Direct {formatEffectiveSets(row.directSets / analysis.weeks)} · Indirect{" "}
+                        {formatEffectiveSets(row.indirectSets / analysis.weeks)} sets/week
+                      </span>
+                      <span className="block truncate">
+                        {row.contributions.length
+                          ? `Top: ${row.contributions[0].name} · ${row.contributions[0].sessions} sessions`
+                          : "No recorded exercise contributions"}
+                      </span>
+                    </span>
+                  )}
                 </span>
                 <ChevronRight aria-hidden className="size-3 text-muted-foreground/60" />
               </button>
@@ -248,7 +298,7 @@ export function TrainingAnalysisSection({
               <strong className="text-foreground">Read the bars.</strong> Each overview bar shows
               your weekly training amount against that muscle’s own suggested range, with room above
               the upper end. Reaching the minimum does not fill the bar. Tap a muscle for exact
-              numbers and its target range. In that detailed chart, the shaded band marks the range,
+              numbers and its target range. Move the detail slider to show weekly totals and targets, then direct/indirect credit and top exercises without opening a muscle. The shaded band marks the range,
               solid colour is direct work and lighter colour is indirect work.
             </p>
             <p>
