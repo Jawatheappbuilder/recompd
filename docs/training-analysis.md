@@ -66,6 +66,18 @@ is empty, point to up to two muscles below target, or acknowledge coverage acros
 all muscles. Higher-volume work does not trigger a recovery warning. The selector
 also exposes the chosen focus muscles for regression checks.
 
+## Progressive coverage detail
+
+The Muscle Coverage card has a three-stop, accessible native range slider. It starts
+at Simple on each mount and does not change the selected reporting period or stored
+workouts. Simple retains the original compact bars. Detailed shows average effective
+sets per week, muscle-specific target ranges, shaded target bands and direct/indirect
+colour segments. Advanced additionally exposes weekly direct/indirect averages and
+the top contributing exercise with its recorded session count. All numbers come from
+the same completed-workout analysis that powers the existing muscle drawer; empty
+muscles have a truthful empty state. The muscle drawer remains available at every
+level, and keyboard users can operate the range slider.
+
 ## Balance and contributions
 
 Upper/lower compares summed effective sets for the upper five muscle groups and
