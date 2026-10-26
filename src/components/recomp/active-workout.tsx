@@ -822,6 +822,7 @@ function recalledReplacements(fromId: string) { const choices = replacementMemor
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const [celebrating, setCelebrating] = useState(true);
   const [showStats, setShowStats] = useState(false);
+  const [expandedExercises, setExpandedExercises] = useState<string[]>([]);
   const { user } = useAuth();
   const [sharedToFeed, setSharedToFeed] = useState(false);
   const [sharingToFeed, setSharingToFeed] = useState(false);
@@ -834,6 +835,18 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     exercise,
     sets: exercise.sessionSets.filter((set) => set.completed),
   })).filter(({ sets }) => sets.length > 0);
+  const muscleSummary = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const { exercise, sets } of performed) {
+      if (isCardioExercise(exercise)) continue;
+      const muscle = exercise.muscle || "Other";
+      counts.set(muscle, (counts.get(muscle) ?? 0) + sets.length);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [performed]);
+  const maxMuscleSets = Math.max(1, ...muscleSummary.map(([, count]) => count));
+  const toggleExpandedExercise = (key: string) => setExpandedExercises((current) =>
+    current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
   const data = useTrainingData();
   const shareWorkout = useMemo(() => ({ ...(data?.workouts.find((w) => w.id === result.workout.id) ?? toCompletedWorkout(result.workout, result.duration)), name: displayName }), [data, result, displayName]);
   const sharePrs = useMemo(() => (data ? personalRecords(data.workouts).byWorkout.get(result.workout.id) : undefined) ?? [], [data, result.workout.id]);
@@ -891,29 +904,32 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
 
   return <div className="animate-in fade-in pb-8 duration-500">
-    <section className="-mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
-      <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-8" /></div>
-      <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/80">Workout complete</p>
-      <div className="mt-1 flex items-start gap-2">{editingName ? <input ref={summaryNameInputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishSummaryRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousSummaryNameRef.current); setDisplayName(previousSummaryNameRef.current); setEditingName(false); } }} aria-label="Rename workout" placeholder="Workout name" className="h-auto min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-3xl font-black leading-tight text-primary-foreground outline-none placeholder:text-primary-foreground/55" /> : <><h1 className="min-w-0 flex-1 text-3xl font-black leading-tight [overflow-wrap:anywhere]">{displayName}</h1><button type="button" onClick={beginSummaryRename} aria-label="Rename workout" className="mt-1 grid size-8 shrink-0 place-items-center rounded-full text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"><Pencil className="size-4" /></button></>}</div>
-
+    <section className="-mx-4 rounded-b-[2rem] bg-primary px-5 pb-7 pt-7 text-primary-foreground shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-7" /></div>
+        <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-widest">Session saved</span>
+      </div>
+      <p className="mt-5 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-primary-foreground/75">Workout crushed.</p>
+      <div className="mt-1 flex items-start gap-2">{editingName ? <input ref={summaryNameInputRef} value={draftName} onChange={(event) => setDraftName(event.target.value)} onBlur={finishSummaryRename} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setDraftName(previousSummaryNameRef.current); setDisplayName(previousSummaryNameRef.current); setEditingName(false); } }} aria-label="Rename workout" placeholder="Workout name" className="min-w-0 flex-1 border-b border-primary-foreground/45 bg-transparent p-0 text-[1.9rem] font-black leading-tight text-primary-foreground outline-none" /> : <><h1 className="min-w-0 flex-1 text-[1.9rem] font-black leading-tight [overflow-wrap:anywhere]">{displayName}</h1><button type="button" onClick={beginSummaryRename} aria-label="Rename workout" className="mt-1 grid size-9 shrink-0 place-items-center rounded-full text-primary-foreground/80 hover:bg-primary-foreground/10"><Pencil className="size-4" /></button></>}</div>
+      <p className="mt-3 text-sm font-medium text-primary-foreground/80">{sharePrs.length > 0 ? `${sharePrs.length} new personal record${sharePrs.length === 1 ? "" : "s"} earned today` : `Another session in the books · ${workoutsThisWeek} this week`}</p>
     </section>
 
-    <div className="mt-4 grid grid-cols-2 gap-2">
-      <SummaryMetric label="Duration" value={formatDuration(result.duration)} />
-      <SummaryMetric label={result.workout.exercises.length ? "Exercises" : "Activities"} value={result.workout.exercises.length ? `${result.completedExercises} of ${result.workout.exercises.length}` : `${result.workout.notes?.reduce((n, note) => n + note.checked.length, 0) ?? 0} of ${result.workout.notes?.reduce((n, note) => n + note.checklist.length, 0) ?? 0}`} />
-      <SummaryMetric label="Sets" value={String(result.totalSets)} />
-      <SummaryMetric label="Volume" value={result.volume ? `${Math.round(result.volume).toLocaleString()} kg` : "—"} />
+    <div className="mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-border bg-card px-2 py-4 text-center shadow-sm">
+      {[{ label: "Time", value: formatDuration(result.duration) }, { label: result.workout.exercises.length ? "Exercises" : "Activities", value: result.workout.exercises.length ? `${result.completedExercises}/${result.workout.exercises.length}` : `${result.workout.notes?.reduce((n, note) => n + note.checked.length, 0) ?? 0}` }, { label: "Sets", value: String(result.totalSets) }, { label: "Volume", value: result.volume ? `${(result.volume / 1000).toFixed(1)}t` : "—" }].map((metric) => <div key={metric.label} className="min-w-0 px-0.5"><p className="truncate text-[clamp(0.9rem,3.5vw,1.25rem)] font-black tabular-nums">{metric.value}</p><p className="mt-1 text-[0.62rem] font-semibold text-muted-foreground">{metric.label}</p></div>)}
     </div>
-
-    <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-3">
-      <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">What you achieved</p>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <div><div className="text-lg font-black tabular-nums">{workoutsThisWeek}</div><div className="text-[0.65rem] font-bold text-muted-foreground">workout{workoutsThisWeek === 1 ? "" : "s"} this week</div></div>
-        <div><div className="text-lg font-black tabular-nums">{sharePrs.length}</div><div className="text-[0.65rem] font-bold text-muted-foreground">new PR{sharePrs.length === 1 ? "" : "s"}</div></div>
-      </div>
-      {volumeDelta !== null && <div className="mt-3 border-t border-border pt-3 text-sm"><span className="font-extrabold">{volumeDelta > 0 ? "+" : ""}{volumeDelta}% volume</span><span className="text-muted-foreground"> vs last {result.workout.name}</span></div>}
+    <div className="mt-3 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2"><p className="text-[0.68rem] font-extrabold uppercase tracking-[0.15em] text-muted-foreground">This week's momentum</p><span className="text-sm font-black">{workoutsThisWeek} workout{workoutsThisWeek === 1 ? "" : "s"}</span></div>
+      {volumeDelta !== null && <p className="mt-2 text-xs text-muted-foreground"><span className="font-extrabold text-foreground">{volumeDelta > 0 ? "+" : ""}{volumeDelta}% volume</span> compared with your previous {displayName} session</p>}
     </div>
-    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3"><p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-primary">New personal record{sharePrs.length > 1 ? "s" : ""}</p><div className="mt-1 space-y-1">{sharePrs.map((pr) => <p key={pr.exerciseId} className="text-sm font-bold">{pr.name} <span className="font-semibold text-muted-foreground">· {pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</span></p>)}</div></div>}
+    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-amber-400/35 bg-amber-400/[0.10] p-4">
+      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300"><span aria-hidden="true" className="text-xl">🏆</span><p className="text-[0.72rem] font-black uppercase tracking-[0.12em]">New personal record{sharePrs.length > 1 ? "s" : ""}</p></div>
+      <div className="mt-3 space-y-2">{sharePrs.map((pr) => <div key={pr.exerciseId} className="flex flex-wrap items-baseline justify-between gap-1"><span className="text-sm font-extrabold">{pr.name}</span><span className="text-sm font-black tabular-nums">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</span></div>)}</div>
+    </div>}
+    {muscleSummary.length > 0 && <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between"><h2 className="text-sm font-black">Muscles trained</h2><span className="text-[0.65rem] text-muted-foreground">Completed sets</span></div>
+      <div className="mt-4 space-y-3">{muscleSummary.map(([muscle, count]) => <div key={muscle}><div className="mb-1 flex justify-between gap-2 text-xs"><span className="font-bold">{muscle}</span><span className="tabular-nums text-muted-foreground">{count} set{count === 1 ? "" : "s"}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary/10"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((count / maxMuscleSets) * 100)}%` }} /></div></div>)}</div>
+      <p className="mt-3 text-[0.66rem] leading-relaxed text-muted-foreground">Breakdown by each exercise's primary muscle. This is not a recovery or effort score.</p>
+    </section>}
 
     {user && <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/[0.06] px-4 py-3.5">
       <div className="min-w-0"><div className="text-sm font-extrabold">Share to your feed</div><div className="mt-0.5 text-[0.68rem] leading-snug text-muted-foreground">Let your RECOMP'D friends see this workout.</div></div>
@@ -921,7 +937,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     </div>}
 
     {performed.length > 0 && <section className="mt-6">
-      <h2 className="text-base font-black">Exercises performed</h2>
+      <div className="flex items-center justify-between gap-2"><h2 className="text-base font-black">Exercises performed</h2><span className="text-xs text-muted-foreground">{performed.length} exercises · tap to expand</span></div>
       <div className="mt-2 space-y-2">
         {performed.map(({ exercise, sets }) => {
           const hasPr = prExerciseIds.has(exercise.id);
@@ -934,17 +950,17 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
             });
           }
           return <Card key={exercise.key} className="overflow-hidden p-0">
-            <div className="flex items-start justify-between gap-3 bg-primary/[0.10] px-4 py-3">
+            <button type="button" aria-expanded={expandedExercises.includes(exercise.key)} onClick={() => toggleExpandedExercise(exercise.key)} className="flex w-full items-start justify-between gap-3 bg-primary/[0.07] px-4 py-3 text-left">
               <div className="min-w-0"><h3 className="truncate text-sm font-extrabold">{exercise.name}</h3><p className="mt-0.5 truncate text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</p></div>
-              <span className="shrink-0 text-[0.65rem] font-bold text-primary">{sets.length} set{sets.length === 1 ? "" : "s"}</span>
-            </div>
-            <div className="px-4 py-2">
+              <span className="flex shrink-0 items-center gap-1 text-[0.65rem] font-bold text-primary">{hasPr ? "🏆 PR · " : ""}{sets.length} set{sets.length === 1 ? "" : "s"}{expandedExercises.includes(exercise.key) ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}</span>
+            </button>
+            {expandedExercises.includes(exercise.key) && <div className="px-4 py-2">
               {sets.map((set, index) => <div key={set.id} className="grid min-h-9 grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-2 text-xs">
                 <span className="text-center font-bold tabular-nums text-muted-foreground">{index + 1}</span>
                 <span className="font-semibold tabular-nums">{isCardioExercise(exercise) ? `${Math.round((Number(set.durationSeconds) || 0) / 60)} min${set.distanceKm ? ` · ${set.distanceKm} km` : ""}` : exercise.equipment === "Bodyweight" || !Number(set.weight) ? `${set.reps} ${isTimedHold(exercise) ? "sec" : "reps"}` : `${set.weight} kg × ${set.reps}${isTimedHold(exercise) ? " sec" : ""}`}</span>
                 <span className="flex items-center gap-1">{index === bestIndex && sets.length > 1 && <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-primary">Best set</span>}{hasPr && index === bestIndex && <span className="rounded-full bg-primary px-2 py-1 text-[0.58rem] font-extrabold uppercase tracking-wide text-amber-950" style={{ backgroundColor: "#F4C542" }}>PR</span>}</span>
               </div>)}
-            </div>
+            </div>}
           </Card>;
         })}
       </div>
