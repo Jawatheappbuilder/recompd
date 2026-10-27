@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ActiveWorkout } from "@/components/recomp/active-workout";
+import { ActiveWorkout, PbCelebrationPreview } from "@/components/recomp/active-workout";
 import { useAuth } from "@/components/recomp/auth-context";
 import { EmptyWorkout } from "@/components/recomp/empty-workout";
 import { Screen } from "@/components/recomp/core";
@@ -32,6 +32,10 @@ function WorkoutPage() {
     return () => window.clearTimeout(timer);
   }, [hydrated, workout?.id, user?.id]);
 
+  // Test-only route on Vercel branch previews; never expose on production domain.
+  const demoRequested = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pb-preview") === "1";
+  const isProductionHost = typeof window !== "undefined" && ["recompd.vercel.app", "recompd-recompd.vercel.app", "recompd-git-main-recompd.vercel.app", "recompd.lovable.app"].includes(window.location.hostname);
+  if (demoRequested && !isProductionHost) return <PbCelebrationPreview />;
   if (!hydrated) return <Screen>{null}</Screen>;
   if (!workout) return <Screen><EmptyWorkout/></Screen>;
   return <Screen className="pt-0">
