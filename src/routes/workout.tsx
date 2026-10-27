@@ -22,6 +22,7 @@ function WorkoutPage() {
   const { user } = useAuth();
   const [showWifeyHype, setShowWifeyHype] = useState(false);
   const [showStarting, setShowStarting] = useState(false);
+  const [startExiting, setStartExiting] = useState(false);
 
   useEffect(() => {
     if (!hydrated || !workout || user?.id !== WIFEY_USER_ID) return;
@@ -40,9 +41,11 @@ function WorkoutPage() {
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "shown");
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setStartExiting(false);
     setShowStarting(true);
-    const timer = window.setTimeout(() => setShowStarting(false), 1550);
-    return () => window.clearTimeout(timer);
+    const exitTimer = window.setTimeout(() => setStartExiting(true), 1450);
+    const endTimer = window.setTimeout(() => setShowStarting(false), 1880);
+    return () => { window.clearTimeout(exitTimer); window.clearTimeout(endTimer); };
   }, [hydrated, workout?.id, workout?.startedAt]);
 
   // Test-only route on Vercel branch previews; never expose on production domain.
@@ -54,12 +57,12 @@ function WorkoutPage() {
   return <Screen className="pt-0">
     <ActiveWorkout key={workout.id} workout={workout} onChange={(next) => setWorkout(next)} onCancel={() => { sessionStorage.removeItem("recomp-active-workout"); setWorkout(null); }} />
     {showWifeyHype && <WifeyWorkoutHype />}
-    {showStarting && <WorkoutStartIntro name={workout.name} count={workout.exercises.length} onDismiss={() => setShowStarting(false)} />}
+    {showStarting && <WorkoutStartIntro name={workout.name} count={workout.exercises.length} exiting={startExiting} onDismiss={() => setShowStarting(false)} />}
   </Screen>;
 }
 
-export function WorkoutStartIntro({ name, count, onDismiss }: { name: string; count: number; onDismiss: () => void }) {
-  return <div className="fixed inset-0 z-[110] mx-auto flex max-w-[430px] flex-col overflow-hidden bg-background text-foreground" role="status" aria-label="Starting workout">
+export function WorkoutStartIntro({ name, count, exiting = false, onDismiss }: { name: string; count: number; exiting?: boolean; onDismiss: () => void }) {
+  return <div className={`fixed inset-0 z-[110] mx-auto flex max-w-[430px] flex-col overflow-hidden bg-background text-foreground transition-opacity duration-[430ms] ease-in-out ${exiting ? "pointer-events-none opacity-0" : "opacity-100"}`} role="status" aria-label="Starting workout">
     <style>{`@keyframes recompStartTitle{0%{opacity:0;transform:translateY(28px) scale(.96)}70%{opacity:1;transform:translateY(-2px) scale(1.01)}100%{opacity:1;transform:translateY(0) scale(1)}}@keyframes recompStartLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes recompStartRow{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.recomp-start-animated{animation:none!important}}`}</style>
     <div className="rounded-b-[2rem] bg-primary px-6 pb-12 pt-[calc(3rem+env(safe-area-inset-top))] text-primary-foreground">
       <div className="flex items-center justify-between"><span className="font-display text-2xl font-black">RECOMP'D</span><span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-widest">Session started</span></div>
