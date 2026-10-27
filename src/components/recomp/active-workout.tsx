@@ -1010,42 +1010,42 @@ export function PbCelebrationPreview() {
 
 function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: string; name: string; set: { weight: number; reps: number } }>; onComplete: () => void }) {
   const [revealed, setRevealed] = useState(0);
-  const reducedMotion = useRef(false);
   useEffect(() => {
-    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion.current) {
-      setRevealed(prs.length);
-      return;
-    }
-    const timers = prs.map((_, index) => window.setTimeout(() => setRevealed(index + 1), 450 + index * 420));
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) { setRevealed(prs.length); return; }
+    const timers = prs.map((_, index) => window.setTimeout(() => setRevealed(index + 1), 260 + index * 340));
     return () => timers.forEach(window.clearTimeout);
   }, [prs.length]);
 
   useEffect(() => {
-    // Keep the reward on screen long enough to enjoy; no individual card navigation.
-    const timeout = window.setTimeout(onComplete, reducedMotion.current ? 2400 : Math.max(3600, 1600 + prs.length * 550));
+    const timeout = window.setTimeout(onComplete, Math.max(3900, 2300 + prs.length * 400));
     return () => window.clearTimeout(timeout);
   }, [onComplete, prs.length]);
 
-  return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col overflow-hidden bg-[#C99730] px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-10 text-[#362006]" role="status" aria-label={`${prs.length} new personal bests`}>
-    <style>{`@keyframes recompPbBurst {0%{opacity:0;transform:scale(.66) translateY(22px);filter:blur(5px)}65%{opacity:1;transform:scale(1.045) translateY(-4px);filter:blur(0)}100%{opacity:1;transform:scale(1) translateY(0)}} @keyframes recompPbGlow {0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.48;transform:scale(1.12)}} @media (prefers-reduced-motion:reduce){.recomp-pb-burst{animation:none!important}}`}</style>
-    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_10%,#FFE8A0_0%,#E6B956_38%,#B9801E_100%)]" />
-    <div className="pointer-events-none absolute -left-20 -top-24 size-72 rounded-full bg-[#FFF1BA]/30 blur-3xl" />
-    <div className="relative z-10 mx-auto w-full max-w-lg">
-      <div className="mx-auto grid size-16 place-items-center rounded-full border border-[#FFF1BA]/75 bg-[#FFF1BA]/45 shadow-[0_0_65px_rgba(255,241,186,.65)]"><span className="text-4xl" aria-hidden="true">★</span></div>
-      <p className="mt-5 text-center text-[0.7rem] font-black uppercase tracking-[0.23em] text-[#744613]">Your hard work paid off</p>
-      <h1 className="mt-2 text-center text-[clamp(2rem,9vw,3.3rem)] font-black leading-[1.05] tracking-tight">NEW PERSONAL<br/>BEST{prs.length > 1 ? "S" : ""}!</h1>
-      <p className="mt-3 text-center text-sm font-bold text-[#704514]">{prs.length === 1 ? "One new record unlocked" : `${prs.length} records unlocked in one workout`}</p>
-      <div className="mt-7 max-h-[min(48dvh,460px)] space-y-3 overflow-y-auto pb-3">
-        {prs.map((pr, index) => <div key={pr.exerciseId} aria-hidden={index >= revealed} className={`recomp-pb-burst relative rounded-[1.4rem] border border-[#FFF5CB]/75 bg-gradient-to-br from-[#FFF6CE] via-[#FCE5A1] to-[#EDC66B] p-4 shadow-[0_8px_20px_rgba(93,49,1,.17)] ${index < revealed ? "opacity-100" : "opacity-0"}`} style={index < revealed && !reducedMotion.current ? { animation: "recompPbBurst 650ms cubic-bezier(.2,1.4,.4,1) both" } : undefined}>
-          <div className="flex items-center justify-between gap-2"><span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#946019]">Personal best #{index + 1}</span><span className="text-xl text-[#A66B19]" aria-hidden="true">✦</span></div>
-          <p className="mt-1 text-base font-extrabold leading-tight">{pr.name}</p>
-          <p className="mt-1 text-[1.8rem] font-black tabular-nums tracking-tight">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</p>
-        </div>)}
+  return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col overflow-hidden bg-background px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground" role="status" aria-label={`${prs.length} new personal bests`}>
+    <style>{`@keyframes recompPbEnter{0%{opacity:0;transform:translateY(18px) scale(.88)}65%{opacity:1;transform:translateY(-2px) scale(1.025)}100%{opacity:1;transform:translateY(0) scale(1)}}@media(prefers-reduced-motion:reduce){.recomp-pb-enter{animation:none!important}}`}</style>
+    <div className="relative -mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
+      <div className="flex items-center justify-between gap-3">
+        <div className="font-display text-xl font-black tracking-tight">RECOMP<span className="text-[#E5B95A]">'</span>D</div>
+        <div className="rounded-full border border-[#E5B95A]/50 bg-[#E5B95A]/15 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-widest text-[#F3D58D]">New record</div>
+      </div>
+      <div className="mt-7 flex items-center gap-3">
+        <div className="grid size-12 shrink-0 place-items-center rounded-full border border-[#E5B95A]/45 bg-[#E5B95A]/15 text-[#F0C96F]"><span className="text-2xl" aria-hidden="true">★</span></div>
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.17em] text-[#E9BE65]">Workout achievements</p>
+          <h1 className="mt-0.5 text-[1.8rem] font-black leading-tight">{prs.length} new personal best{prs.length === 1 ? "" : "s"}</h1>
+        </div>
       </div>
     </div>
-    <div className="relative z-10 mt-auto pt-5 text-center">
-      <button type="button" onClick={onComplete} className="min-h-12 w-full max-w-lg rounded-2xl bg-[#3D280E] px-6 py-3 text-sm font-black text-[#FFF2CB] shadow-lg transition-transform active:scale-[.98]">View workout summary</button>
+    <div className="flex min-h-0 flex-1 flex-col pt-5">
+      <div className="mb-3 flex items-center justify-between px-1"><h2 className="text-sm font-black">Your records</h2><span className="text-[0.7rem] font-bold text-muted-foreground">{prs.length} achieved</span></div>
+      <div className="min-h-0 max-h-[min(51dvh,450px)] space-y-2 overflow-y-auto pb-3">
+        {prs.map((pr, index) => <div key={pr.exerciseId} aria-hidden={index >= revealed} className={`recomp-pb-enter flex min-h-[80px] items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm ${index < revealed ? "opacity-100" : "opacity-0"}`} style={index < revealed ? { animation: "recompPbEnter 520ms cubic-bezier(.2,1.3,.35,1) both" } : undefined}>
+          <div className="min-w-0"><div className="mb-1 flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-[#C99A38]"/><span className="text-[0.62rem] font-black uppercase tracking-wider text-[#B88727]">Personal best</span></div><p className="truncate text-sm font-extrabold">{pr.name}</p></div>
+          <div className="shrink-0 text-right"><p className="text-lg font-black tabular-nums">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</p><span className="text-[0.62rem] font-bold text-[#B88727]">NEW PR</span></div>
+        </div>)}
+      </div>
+      <div className="mt-auto pt-5"><button type="button" onClick={onComplete} className="min-h-12 w-full rounded-2xl bg-primary px-6 py-3 text-sm font-extrabold text-primary-foreground shadow-sm active:scale-[.99]">View workout summary</button></div>
     </div>
   </div>;
 }
