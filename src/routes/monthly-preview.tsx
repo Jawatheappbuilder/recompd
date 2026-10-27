@@ -19,9 +19,9 @@ function MonthlyPreview() {
   const stats=useMemo(()=>{
     if(!training)return null;
     const now=new Date();
-    const start=new Date(now.getFullYear(),now.getMonth()-1,1).getTime();
-    const end=new Date(now.getFullYear(),now.getMonth(),1).getTime();
-    const prior=new Date(now.getFullYear(),now.getMonth()-2,1).getTime();
+    const start=new Date(now.getFullYear(),9,1).getTime();
+    const end=new Date(now.getFullYear(),10,1).getTime();
+    const prior=new Date(now.getFullYear(),8,1).getTime();
     const current=training.workouts.filter(w=>w.startedAt>=start&&w.startedAt<end);
     const previous=training.workouts.filter(w=>w.startedAt>=prior&&w.startedAt<start);
     const countSets=(items:typeof current)=>items.reduce((n,w)=>n+w.exercises.reduce((t,e)=>t+e.sets.filter(x=>!isCardioSet(x)&&x.kind!=="warmup"&&x.completed!==false).length,0),0);
@@ -55,7 +55,7 @@ function MonthlyPreview() {
       {step===3&&<div className="mt-10 grid grid-cols-2 gap-3"><Metric value={String(sets)} label="WORKING SETS"/><Metric value={change===null?"—":(change>0?"+":"")+change+"%"} label="VS LAST MONTH"/><div className="col-span-2 rounded-3xl border border-border bg-card p-6"><TrendingUp className="text-primary"/><h2 className="mt-4 font-display text-3xl font-black">PROGRESS IS PERSONAL.</h2><p className="mt-3 text-sm text-muted-foreground">Compare completed sessions, working sets and estimated strength with your own previous month.</p></div></div>}
       {step===4&&<div className="mt-10 rounded-[2rem] bg-primary p-8 text-primary-foreground"><Sparkles size={30}/><div className="mt-16 text-xs font-bold tracking-widest">YOUR MONTHLY BADGE</div><div className="font-display mt-3 text-5xl font-black leading-none">YOUR MONTH<br/>IN MOTION</div><div className="mt-8 flex gap-5 text-sm font-bold"><span>{sessions} SESSIONS</span><span>{prs} PBs</span></div></div>}
     </div>
-    <div className="mt-9 rounded-2xl border border-border p-3 text-center text-xs text-muted-foreground">{sessions===0?"No completed workouts last month. No sample statistics are shown.":"Calculated from your saved workout history for the last complete month."}</div>
+    <div className="mt-9 rounded-2xl border border-border p-3 text-center text-xs text-muted-foreground">{sessions===0?"No completed workouts October. No sample statistics are shown.":"Calculated from your saved workout history for the October 2026."}</div>
     <button onClick={()=>setStep(s=>(s+1)%5)} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-black text-primary-foreground">{step===4?"REPLAY YOUR MONTH":"CONTINUE"} <ArrowRight size={18}/></button>
   </div>;
 }
