@@ -984,25 +984,6 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
 
 // QA-only demo: renders the real celebration component with sample records, without saving a workout.
 export function PbCelebrationPreview() {
-  // Preview the actual RECOMP'D Spectrum light theme without changing saved preferences.
-  useEffect(() => {
-    const root = document.documentElement;
-    const oldAccent = root.dataset.accent;
-    const wasDark = root.classList.contains("dark");
-    const wasLight = root.classList.contains("light");
-    const oldScheme = root.style.colorScheme;
-    root.dataset.accent = "spectrum";
-    root.classList.remove("dark");
-    root.classList.add("light");
-    root.style.colorScheme = "light";
-    return () => {
-      if (oldAccent === undefined) delete root.dataset.accent;
-      else root.dataset.accent = oldAccent;
-      root.classList.toggle("dark", wasDark);
-      root.classList.toggle("light", wasLight);
-      root.style.colorScheme = oldScheme;
-    };
-  }, []);
   const [scenario, setScenario] = useState<1 | 3 | 6>(3);
   const [run, setRun] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -1042,16 +1023,21 @@ function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: strin
   }, [onComplete, prs.length]);
 
   return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col overflow-hidden bg-background px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground" role="status" aria-label={`${prs.length} new personal bests`}>
-    <style>{`@keyframes recompPbEnter{0%{opacity:0;transform:translateY(18px) scale(.88)}65%{opacity:1;transform:translateY(-2px) scale(1.025)}100%{opacity:1;transform:translateY(0) scale(1)}}@media(prefers-reduced-motion:reduce){.recomp-pb-enter{animation:none!important}}`}</style>
-    <div className="relative -mx-4 bg-primary px-5 pb-6 pt-7 text-primary-foreground">
+    <style>{`@keyframes recompPbEnter{0%{opacity:0;transform:translateY(16px) scale(.92)}65%{opacity:1;transform:translateY(-2px) scale(1.015)}100%{opacity:1;transform:translateY(0) scale(1)}}@media(prefers-reduced-motion:reduce){.recomp-pb-enter{animation:none!important}}`}</style>
+    <div className="relative -mx-4 rounded-b-[2rem] bg-primary px-5 pb-6 pt-7 text-primary-foreground">
       <div className="flex items-center justify-between gap-3">
-        <div className="font-display text-xl font-black tracking-tight">RECOMP<span className="text-[#E5B95A]">'</span>D</div>
-        <div className="rounded-full border border-[#E5B95A]/50 bg-[#E5B95A]/15 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-widest text-[var(--spectrum-yellow,#f3d58d)]">New record</div>
+        <div className="font-display text-xl font-black tracking-tight">RECOMP'D</div>
+        <span className="rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-widest">New record</span>
       </div>
       <div className="mt-7 flex items-center gap-3">
-        <div className="grid size-12 shrink-0 place-items-center rounded-full border border-[#E5B95A]/45 bg-[#E5B95A]/15 text-[var(--spectrum-yellow,#f0c96f)]"><span className="text-2xl" aria-hidden="true">★</span></div>
+        <div className="grid size-12 shrink-0 place-items-center rounded-xl border border-primary-foreground/25 bg-primary-foreground/10" aria-hidden="true">
+          <svg viewBox="0 0 40 44" className="size-8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 2 34 8v16c0 9-8 15-14 18C14 39 6 33 6 24V8L20 2Z" stroke="currentColor" strokeWidth="2.3" strokeLinejoin="round"/>
+            <path d="m20 11 2.7 5.6 6.2.9-4.5 4.4 1.1 6.2L20 25.2l-5.5 2.9 1.1-6.2-4.5-4.4 6.2-.9L20 11Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <div className="min-w-0">
-          <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.17em] text-[var(--spectrum-yellow,#e9be65)]">Workout achievements</p>
+          <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.17em] text-primary-foreground/75">Personal records</p>
           <h1 className="mt-0.5 text-[1.8rem] font-black leading-tight">{prs.length} new personal best{prs.length === 1 ? "" : "s"}</h1>
         </div>
       </div>
@@ -1059,9 +1045,9 @@ function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: strin
     <div className="flex min-h-0 flex-1 flex-col pt-5">
       <div className="mb-3 flex items-center justify-between px-1"><h2 className="text-sm font-black">Your records</h2><span className="text-[0.7rem] font-bold text-muted-foreground">{prs.length} achieved</span></div>
       <div className="min-h-0 max-h-[min(51dvh,450px)] space-y-2 overflow-y-auto pb-3">
-        {prs.map((pr, index) => <div key={pr.exerciseId} aria-hidden={index >= revealed} className={`recomp-pb-enter flex min-h-[80px] items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm ${index < revealed ? "opacity-100" : "opacity-0"}`} style={index < revealed ? { animation: "recompPbEnter 520ms cubic-bezier(.2,1.3,.35,1) both" } : undefined}>
-          <div className="min-w-0"><div className="mb-1 flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-[var(--spectrum-green,#138b60)]"/><span className="text-[0.62rem] font-black uppercase tracking-wider text-[var(--spectrum-blue,#1873b2)]">Personal best</span></div><p className="truncate text-sm font-extrabold">{pr.name}</p></div>
-          <div className="shrink-0 text-right"><p className="text-lg font-black tabular-nums">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</p><span className="text-[0.62rem] font-bold text-[var(--spectrum-blue,#1873b2)]">NEW PR</span></div>
+        {prs.map((pr, index) => <div key={pr.exerciseId} aria-hidden={index >= revealed} className={`recomp-pb-enter flex min-h-[76px] items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm ${index < revealed ? "opacity-100" : "opacity-0"}`} style={index < revealed ? { animation: "recompPbEnter 520ms cubic-bezier(.2,1.3,.35,1) both" } : undefined}>
+          <div className="min-w-0"><div className="mb-1 text-[0.62rem] font-black uppercase tracking-wider text-muted-foreground">Personal best</div><p className="truncate text-sm font-extrabold">{pr.name}</p></div>
+          <div className="shrink-0 text-right"><p className="text-lg font-black tabular-nums">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</p><span className="inline-block rounded-md bg-accent px-2 py-0.5 text-[0.6rem] font-black text-accent-foreground">NEW PR</span></div>
         </div>)}
       </div>
       <div className="mt-auto pt-5"><button type="button" onClick={onComplete} className="min-h-12 w-full rounded-2xl bg-primary px-6 py-3 text-sm font-extrabold text-primary-foreground shadow-sm active:scale-[.99]">View workout summary</button></div>
