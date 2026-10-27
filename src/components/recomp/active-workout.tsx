@@ -105,7 +105,7 @@ function BenchmarkNote({ set, timed = false }: { set: { weight: number; reps: nu
   return set && Number.isFinite(set.reps) && set.reps > 0 ? <p className="pb-1 pl-8 text-[0.65rem] font-medium tabular-nums text-muted-foreground">Last session: <span className="font-semibold text-foreground/75">{benchmarkLabel(set, timed)}</span></p> : null;
 }
 
-export function ActiveWorkout({ workout, onChange, onCancel }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onCancel: () => void }) {
+export function ActiveWorkout({ workout, onChange, onCancel, entrance = false }: { workout: ActiveWorkoutState; onChange: (workout: ActiveWorkoutState) => void; onCancel: () => void; entrance?: boolean }) {
   const trainingData = useTrainingData();
   const previousPerformance = useMemo(() => {
     const history: Record<string, string> = {};
@@ -470,12 +470,13 @@ export function ActiveWorkout({ workout, onChange, onCancel }: { workout: Active
 
   return (
     <>
+      <style>{`@keyframes recompExerciseArrival{0%{opacity:0;transform:translateY(18px) scale(.985)}65%{opacity:1;transform:translateY(-2px) scale(1.005)}100%{opacity:1;transform:translateY(0) scale(1)}}.recomp-start-cascade>div{animation:recompExerciseArrival .52s cubic-bezier(.2,1,.3,1) both}.recomp-start-cascade>div:nth-child(1){animation-delay:70ms}.recomp-start-cascade>div:nth-child(2){animation-delay:190ms}.recomp-start-cascade>div:nth-child(3){animation-delay:310ms}.recomp-start-cascade>div:nth-child(4){animation-delay:430ms}.recomp-start-cascade>div:nth-child(5){animation-delay:550ms}.recomp-start-cascade>div:nth-child(n+6){animation-delay:650ms}@media(prefers-reduced-motion:reduce){.recomp-start-cascade>div{animation:none!important}}`}</style>
       <WorkoutHeader name={workout.name} elapsed={elapsed} progress={progress} completedSets={completedSets} totalSets={totalSets} mixedTracking={workout.exercises.some(isCardioExercise)} onRename={(name) => onChange({ ...workout, name })} onFinish={() => completedSets < totalSets ? setFinishOpen(true) : finishWorkout()} />
       {circuitRun && circuitMinimized && (() => { const circuit = workout.circuits?.find((item) => item.id === circuitRun.id); const remaining = Math.max(0, Math.ceil((circuitRun.endsAt - now) / 1000)); return circuit ? <button type="button" onClick={() => setCircuitMinimized(false)} className="sticky top-0 z-40 mt-2 w-full rounded-xl border border-primary/20 bg-card px-3 py-2 text-left shadow-sm"><span className="flex items-center gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10"><Clock3 className="size-4 text-primary"/></span><span className="min-w-0 flex-1"><span className="flex items-baseline justify-between gap-3"><span className="text-[0.68rem] font-black uppercase tracking-wider text-primary">{circuitRun.phase === "rest" ? "Rest" : "Circuit"}</span><span className="text-lg font-black tabular-nums">{formatClock(remaining)}</span></span><span className="mt-0.5 flex justify-between text-[0.68rem] font-semibold text-muted-foreground"><span>Round {circuitRun.round} of {circuit.rounds}</span><span>Tap to resume</span></span></span></span></button> : null; })()}
       {rest && !rest.expanded && restRemaining > 0 && <MinimizedRestTimer seconds={restRemaining} onExpand={() => setRest({ ...rest, expanded: true })} onAdjust={(amount) => setRest({ ...rest, endsAt: rest.endsAt + amount * 1000, duration: Math.max(1, rest.duration + amount) })} onSkip={() => setRest(null)} />}
       <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragStart={({ active }) => setDraggingKey(String(active.id))} onDragCancel={() => setDraggingKey(null)} onDragEnd={(event) => { reorderExercises(event); setDraggingKey(null); }}>
         <SortableContext items={workout.exercises.map((exercise) => exercise.key)} strategy={verticalListSortingStrategy}>
-          <div className="mt-3 space-y-2">
+          <div className={cn("mt-3 space-y-2", entrance && "recomp-start-cascade")}>
             {renderNotes(null)}
             {workout.exercises.flatMap((exercise, exerciseIndex) => [renderExercise(exercise, exerciseIndex), ...renderNotes(exercise.key)])}
           </div>
