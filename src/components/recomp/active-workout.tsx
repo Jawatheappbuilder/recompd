@@ -911,7 +911,8 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
   if (showPbCelebration && sharePrs.length > 0) return <GoldPbCelebration prs={sharePrs} onComplete={() => setShowPbCelebration(false)} />;
 
-  return <div className="animate-in fade-in pb-8 duration-500">
+  return <div className="recomp-summary-reveal animate-in fade-in pb-8 duration-500">
+    <style>{`@keyframes recompSummaryRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes recompBarFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}@media(prefers-reduced-motion:reduce){.recomp-summary-reveal *{animation:none!important}}.recomp-summary-reveal>section:first-of-type{animation:recompSummaryRise .38s ease-out both}.recomp-summary-reveal>.recomp-summary-metrics{animation:recompSummaryRise .44s .2s ease-out both}.recomp-summary-reveal>.recomp-summary-momentum{animation:recompSummaryRise .44s .6s ease-out both}.recomp-summary-reveal>.recomp-summary-prs{animation:recompSummaryRise .44s .85s ease-out both}.recomp-summary-reveal>.recomp-summary-muscles{animation:recompSummaryRise .44s 1.05s ease-out both}.recomp-summary-reveal>.recomp-summary-exercises{animation:recompSummaryRise .44s 1.45s ease-out both}.recomp-summary-reveal>.recomp-summary-exercises .recomp-summary-exercise{animation:recompSummaryRise .4s ease-out both}.recomp-summary-reveal .recomp-summary-bar{transform-origin:left;animation:recompBarFill .75s 1.45s cubic-bezier(.2,.7,.25,1) both}`}</style>
     <section className="-mx-4 rounded-b-[2rem] bg-primary px-5 pb-7 pt-7 text-primary-foreground shadow-sm">
       <div className="flex items-center justify-between">
         <div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-7" /></div>
@@ -922,20 +923,20 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       <p className="mt-3 text-sm font-medium text-primary-foreground/80">{sharePrs.length > 0 ? `${sharePrs.length} new personal record${sharePrs.length === 1 ? "" : "s"} earned today` : `Another session in the books · ${workoutsThisWeek} this week`}</p>
     </section>
 
-    <div className="mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-border bg-card px-2 py-4 text-center shadow-sm">
+    <div className="recomp-summary-metrics mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-border bg-card px-2 py-4 text-center shadow-sm">
       {[{ label: "Time", value: formatDuration(result.duration) }, { label: result.workout.exercises.length ? "Exercises" : "Activities", value: result.workout.exercises.length ? `${result.completedExercises}/${result.workout.exercises.length}` : `${result.workout.notes?.reduce((n, note) => n + note.checked.length, 0) ?? 0}` }, { label: "Sets", value: String(result.totalSets) }, { label: "Volume", value: result.volume ? `${(result.volume / 1000).toFixed(1)}t` : "—" }].map((metric) => <div key={metric.label} className="min-w-0 px-0.5"><p className="truncate text-[clamp(0.9rem,3.5vw,1.25rem)] font-black tabular-nums">{metric.value}</p><p className="mt-1 text-[0.62rem] font-semibold text-muted-foreground">{metric.label}</p></div>)}
     </div>
-    <div className="mt-3 rounded-2xl border border-border bg-card p-4">
+    <div className="recomp-summary-momentum mt-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2"><p className="text-[0.68rem] font-extrabold uppercase tracking-[0.15em] text-muted-foreground">This week's momentum</p><span className="text-sm font-black">{workoutsThisWeek} workout{workoutsThisWeek === 1 ? "" : "s"}</span></div>
       {volumeDelta !== null && <p className="mt-2 text-xs text-muted-foreground"><span className="font-extrabold text-foreground">{volumeDelta > 0 ? "+" : ""}{volumeDelta}% volume</span> compared with your previous {displayName} session</p>}
     </div>
-    {sharePrs.length > 0 && <div className="mt-3 rounded-2xl border border-amber-400/35 bg-amber-400/[0.10] p-4">
+    {sharePrs.length > 0 && <div className="recomp-summary-prs mt-3 rounded-2xl border border-amber-400/35 bg-amber-400/[0.10] p-4">
       <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300"><span aria-hidden="true" className="text-xl">🏆</span><p className="text-[0.72rem] font-black uppercase tracking-[0.12em]">New personal record{sharePrs.length > 1 ? "s" : ""}</p></div>
       <div className="mt-3 space-y-2">{sharePrs.map((pr) => <div key={pr.exerciseId} className="flex flex-wrap items-baseline justify-between gap-1"><span className="text-sm font-extrabold">{pr.name}</span><span className="text-sm font-black tabular-nums">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</span></div>)}</div>
     </div>}
-    {muscleSummary.length > 0 && <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+    {muscleSummary.length > 0 && <section className="recomp-summary-muscles mt-4 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between"><h2 className="text-sm font-black">Muscles trained</h2><span className="text-[0.65rem] text-muted-foreground">Completed sets</span></div>
-      <div className="mt-4 space-y-3">{muscleSummary.map(([muscle, count]) => <div key={muscle}><div className="mb-1 flex justify-between gap-2 text-xs"><span className="font-bold">{muscle}</span><span className="tabular-nums text-muted-foreground">{count} set{count === 1 ? "" : "s"}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary/10"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((count / maxMuscleSets) * 100)}%` }} /></div></div>)}</div>
+      <div className="mt-4 space-y-3">{muscleSummary.map(([muscle, count]) => <div key={muscle}><div className="mb-1 flex justify-between gap-2 text-xs"><span className="font-bold">{muscle}</span><span className="tabular-nums text-muted-foreground">{count} set{count === 1 ? "" : "s"}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary/10"><div className="recomp-summary-bar h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((count / maxMuscleSets) * 100)}%` }} /></div></div>)}</div>
       <p className="mt-3 text-[0.66rem] leading-relaxed text-muted-foreground">Breakdown by each exercise's primary muscle. This is not a recovery or effort score.</p>
     </section>}
 
@@ -944,7 +945,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       <button type="button" role="switch" aria-checked={sharedToFeed} disabled={sharingToFeed} onClick={() => void toggleFeedShare()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${sharedToFeed ? "bg-primary" : "bg-muted-foreground/25"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${sharedToFeed ? "left-6" : "left-1"}`} /></button>
     </div>}
 
-    {performed.length > 0 && <section className="mt-6">
+    {performed.length > 0 && <section className="recomp-summary-exercises mt-6">
       <div className="flex items-center justify-between gap-2"><h2 className="text-base font-black">Exercises performed</h2><span className="text-xs text-muted-foreground">{performed.length} exercises · tap to expand</span></div>
       <div className="mt-2 space-y-2">
         {performed.map(({ exercise, sets }) => {
@@ -957,7 +958,7 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
               if (score > bestScore) { bestScore = score; bestIndex = index; }
             });
           }
-          return <Card key={exercise.key} className="overflow-hidden p-0">
+          return <Card key={exercise.key} className="recomp-summary-exercise overflow-hidden p-0">
             <button type="button" aria-expanded={expandedExercises.includes(exercise.key)} onClick={() => toggleExpandedExercise(exercise.key)} className="flex w-full items-start justify-between gap-3 bg-primary/[0.07] px-4 py-3 text-left">
               <div className="min-w-0"><h3 className="truncate text-sm font-extrabold">{exercise.name}</h3><p className="mt-0.5 truncate text-[0.68rem] font-medium text-muted-foreground">{isCardioExercise(exercise) ? "Cardio" : exercise.muscle} · {exercise.equipment}</p></div>
               <span className="flex shrink-0 items-center gap-1 text-[0.65rem] font-bold text-primary">{hasPr ? "🏆 PR · " : ""}{sets.length} set{sets.length === 1 ? "" : "s"}{expandedExercises.includes(exercise.key) ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}</span>
@@ -986,7 +987,23 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
 export function PbCelebrationPreview() {
   const [scenario, setScenario] = useState<1 | 3 | 6>(3);
   const [run, setRun] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const [stage, setStage] = useState<"intro" | "pb" | "summary">("intro");
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    // The demo is always Spectrum LIGHT. The real workout follows saved colourway.
+    const root = document.documentElement;
+    const original = { accent: root.dataset.accent, dark: root.classList.contains("dark"), light: root.classList.contains("light"), scheme: root.style.colorScheme };
+    root.dataset.accent = "spectrum"; root.classList.remove("dark"); root.classList.add("light"); root.style.colorScheme = "light";
+    return () => {
+      if (original.accent === undefined) delete root.dataset.accent; else root.dataset.accent = original.accent;
+      root.classList.toggle("dark", original.dark); root.classList.toggle("light", original.light); root.style.colorScheme = original.scheme;
+    };
+  }, []);
+  useEffect(() => {
+    if (stage !== "intro") return;
+    const timer = window.setTimeout(() => setStage("pb"), 1050);
+    return () => window.clearTimeout(timer);
+  }, [stage, run]);
   const examples = [
     { exerciseId: "demo-leg-curl", name: "Seated Leg Curl", set: { weight: 36, reps: 10 } },
     { exerciseId: "demo-row", name: "Barbell Row", set: { weight: 80, reps: 8 } },
@@ -995,16 +1012,28 @@ export function PbCelebrationPreview() {
     { exerciseId: "demo-press", name: "Bench Press", set: { weight: 95, reps: 6 } },
     { exerciseId: "demo-curl", name: "Dumbbell Curl", set: { weight: 22, reps: 10 } },
   ];
-  const restart = (count: 1 | 3 | 6) => { setScenario(count); setFinished(false); setRun((n) => n + 1); };
+  const restart = (count: 1 | 3 | 6) => { setScenario(count); setStage("intro"); setExpanded(false); setRun((n) => n + 1); };
   return <div className="relative min-h-[100dvh] bg-background">
     <div className="sticky top-0 z-[120] flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/95 px-3 py-2 text-foreground shadow-sm backdrop-blur">
-      <div><div className="text-xs font-black">PB animation preview</div><div className="text-[0.62rem] text-muted-foreground">Sample data · No workout saved</div></div>
+      <div><div className="text-xs font-black">Completion experience · Spectrum light</div><div className="text-[0.62rem] text-muted-foreground">Sample workout · Nothing saved</div></div>
       <div className="flex items-center gap-1">
-        {([1, 3, 6] as const).map((count) => <button key={count} onClick={() => restart(count)} className={`min-h-9 rounded-lg px-2 text-xs font-bold ${scenario === count ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{count} PB{count === 1 ? "" : "s"}</button>)}
-        <button onClick={() => restart(scenario)} className="min-h-9 rounded-lg border border-border px-3 text-xs font-bold">Replay</button>
+        {([1, 3, 6] as const).map((count) => <button type="button" key={count} onClick={() => restart(count)} className={`min-h-9 rounded-lg px-2 text-xs font-bold ${scenario === count ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{count} PB{count === 1 ? "" : "s"}</button>)}
+        <button type="button" onClick={() => restart(scenario)} className="min-h-9 rounded-lg border border-border px-3 text-xs font-bold">Replay</button>
       </div>
     </div>
-    {finished ? <div className="flex min-h-[75dvh] flex-col items-center justify-center gap-4 px-5 text-center"><CircleCheck className="size-12 text-primary"/><h1 className="text-2xl font-black">Celebration complete</h1><p className="text-sm text-muted-foreground">The real flow now opens your workout summary. This demo doesn't create a workout.</p><Button onClick={() => restart(scenario)}>Replay celebration</Button></div> : <GoldPbCelebration key={run} prs={examples.slice(0, scenario)} onComplete={() => setFinished(true)} />}
+    {stage === "intro" && <div className="flex min-h-[75dvh] flex-col items-center justify-center gap-4 px-5 text-center"><div className="grid size-20 place-items-center rounded-full bg-primary text-primary-foreground"><CircleCheck className="size-11"/></div><p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Workout complete</p><h1 className="text-3xl font-black">Back, Legs & Bis</h1><p className="text-sm text-muted-foreground">36m 55s · 22 sets</p></div>}
+    {stage === "pb" && <GoldPbCelebration key={run} prs={examples.slice(0, scenario)} onComplete={() => setStage("summary")} />}
+    {stage === "summary" && <div key={run} className="recomp-summary-reveal px-4 pb-8">
+      <style>{`@keyframes recompSummaryRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes recompBarFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}@media(prefers-reduced-motion:reduce){.recomp-summary-reveal *{animation:none!important}}.recomp-summary-reveal>section:first-of-type{animation:recompSummaryRise .38s ease-out both}.recomp-summary-reveal>.recomp-summary-metrics{animation:recompSummaryRise .44s .2s ease-out both}.recomp-summary-reveal>.recomp-summary-momentum{animation:recompSummaryRise .44s .6s ease-out both}.recomp-summary-reveal>.recomp-summary-prs{animation:recompSummaryRise .44s .85s ease-out both}.recomp-summary-reveal>.recomp-summary-muscles{animation:recompSummaryRise .44s 1.05s ease-out both}.recomp-summary-reveal>.recomp-summary-exercises{animation:recompSummaryRise .44s 1.45s ease-out both}.recomp-summary-reveal>.recomp-summary-exercises .recomp-summary-exercise{animation:recompSummaryRise .4s ease-out both}.recomp-summary-reveal .recomp-summary-bar{transform-origin:left;animation:recompBarFill .75s 1.45s cubic-bezier(.2,.7,.25,1) both}`}</style>
+      <section className="-mx-4 rounded-b-[2rem] bg-primary px-5 py-7 text-primary-foreground"><div className="grid size-12 place-items-center rounded-full bg-primary-foreground/15"><CircleCheck className="size-7"/></div><p className="mt-5 text-xs font-extrabold uppercase tracking-wider text-primary-foreground/75">Workout crushed.</p><h1 className="mt-1 text-3xl font-black">Back, Legs & Bis</h1><p className="mt-3 text-sm text-primary-foreground/75">{scenario} new personal record{scenario === 1 ? "" : "s"}</p></section>
+      <div className="recomp-summary-metrics mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-border bg-card px-2 py-4 text-center">{[["36:55","Time"],["7","Exercises"],["22","Sets"],["10.2t","Volume"]].map(([value,label]) => <div key={label}><p className="text-lg font-black tabular-nums">{value}</p><p className="text-[0.62rem] text-muted-foreground">{label}</p></div>)}</div>
+      <div className="recomp-summary-momentum mt-3 rounded-2xl border border-border bg-card p-4"><p className="text-xs font-black uppercase tracking-wide text-muted-foreground">This week's momentum</p><p className="mt-2 text-xl font-black">3 workouts this week</p></div>
+      <div className="recomp-summary-prs mt-3 rounded-2xl border border-amber-400/35 bg-amber-400/10 p-4"><p className="text-xs font-black uppercase tracking-wide">New personal records</p><div className="mt-2 space-y-1">{examples.slice(0,scenario).map(pr=><div key={pr.exerciseId} className="flex justify-between gap-2 text-xs font-semibold"><span>{pr.name}</span><span>{pr.set.weight} kg × {pr.set.reps}</span></div>)}</div></div>
+      <section className="recomp-summary-muscles mt-4 rounded-2xl border border-border bg-card p-4"><h2 className="text-sm font-black">Muscles trained</h2><div className="mt-3 space-y-3">{[["Back",85],["Legs",70],["Biceps",40]].map(([name,pct])=><div key={name}><div className="mb-1 text-xs font-bold">{name}</div><div className="h-2 overflow-hidden rounded-full bg-primary/10"><div className="recomp-summary-bar h-full rounded-full bg-primary" style={{width:`${pct}%`}}/></div></div>)}</div></section>
+      <section className="recomp-summary-exercises mt-6"><h2 className="text-base font-black">Exercises performed</h2><button type="button" onClick={()=>setExpanded(!expanded)} className="recomp-summary-exercise mt-2 w-full rounded-2xl border border-border bg-card p-4 text-left"><span className="flex justify-between text-sm font-bold"><span>Seated Leg Curl</span><ChevronDown className="size-4"/></span><p className="mt-1 text-xs text-muted-foreground">3 sets · Best: 36 kg × 10</p>{expanded&&<p className="mt-3 text-sm">36 kg × 10 · 34 kg × 10 · 32 kg × 12</p>}</button></section>
+      <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.06] p-4 text-sm font-bold">Share to your feed <span className="float-right text-muted-foreground">Demo only</span></div>
+      <button type="button" onClick={()=>restart(scenario)} className="mt-4 min-h-12 w-full rounded-2xl bg-primary font-black text-primary-foreground">Replay full experience</button>
+    </div>}
   </div>;
 }
 
