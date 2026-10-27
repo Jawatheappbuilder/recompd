@@ -37,9 +37,9 @@ function HomePage() {
   const training = useTrainingData();
   const promoMonth = wrappedPromoMonth();
   const promoBounds = promoMonth ? monthBounds(promoMonth) : null;
-  const showWrapped = status === "signedIn" && !viewedWrapped && !!promoBounds && !!training?.workouts.some(w => w.startedAt >= promoBounds.start && w.startedAt < promoBounds.end);
   const wrappedFinal = new Date().getDate() <= 4;
   const [viewedWrapped, setViewedWrapped] = useState(false);
+  const showWrapped = status === "signedIn" && !viewedWrapped && !!promoBounds && !!training?.workouts.some(w => w.startedAt >= promoBounds.start && w.startedAt < promoBounds.end);
   const wrappedKey = promoMonth ? `recomp-wrapped-viewed-${promoMonth.getFullYear()}-${promoMonth.getMonth()+1}` : "";
   useEffect(() => { try { setViewedWrapped(!!wrappedKey && localStorage.getItem(wrappedKey) === "1"); } catch { setViewedWrapped(false); } }, [wrappedKey]);
   useEffect(() => { const refresh = () => { try { setViewedWrapped(!!wrappedKey && localStorage.getItem(wrappedKey) === "1"); } catch {} }; window.addEventListener("focus", refresh); window.addEventListener("pageshow", refresh); return () => {window.removeEventListener("focus",refresh);window.removeEventListener("pageshow",refresh)}; }, [wrappedKey]);
