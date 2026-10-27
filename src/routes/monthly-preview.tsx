@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { monthBounds, wrappedLabel, wrappedMonth } from "@/lib/monthly-wrapped";
+import { useEffect } from "react";
 import { ArrowLeft, ArrowRight, Award, CalendarDays, ChevronRight, Dumbbell, Heart, Sparkles, TrendingUp, Trophy } from "lucide-react";
 import { useTrainingData, personalRecords, estimate1RM, isCardioSet } from "@/lib/training-data";
 
@@ -19,6 +20,7 @@ function MonthlyWrapped() {
   const [step,setStep] = useState(0);
   const [selectedMonth,setSelectedMonth] = useState(() => wrappedMonth());
   const MONTH = wrappedLabel(selectedMonth).toUpperCase();
+  useEffect(() => { try { localStorage.setItem(`recomp-wrapped-viewed-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()+1}`, "1"); } catch {} }, [selectedMonth]);
 
   
   const data = useMemo(()=>{
