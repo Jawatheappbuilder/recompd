@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarPlus, Dumbbell, Hammer, Plus, Settings, Sparkles, UserPlus, Users, X } from "lucide-react";
-import { completeAccentChoice, hasCompletedAccentChoice, hasStoredUserPreferences, useUserPreferences, type AccentPreference } from "@/lib/user-preferences";
+import { useUserPreferences } from "@/lib/user-preferences";
 import { plannedWorkout } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, Screen } from "@/components/recomp/core";
@@ -13,7 +13,6 @@ import { StepsCard } from "@/components/recomp/steps-card";
 import { ActiveProgramHome } from "@/components/recomp/active-program-home";
 import { useActiveWorkout } from "@/hooks/use-active-workout";
 import { LogWeightSheet } from "@/components/recomp/progress/bodyweight";
-import { ColourwayExplorer } from "@/components/recomp/colourway-explorer";
 import { useTrainingData } from "@/lib/training-data";
 import { monthBounds, wrappedLabel, wrappedPromoMonth } from "@/lib/monthly-wrapped";
 
@@ -30,39 +29,26 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const [preferences, setPreferences] = useUserPreferences();
+  const [preferences] = useUserPreferences();
   const { workout: activeWorkout } = useActiveWorkout();
   const activeSets = activeWorkout?.exercises.flatMap((exercise) => exercise.sessionSets.filter((set) => set.kind !== "warmup")) ?? [];
-  const [showAccentChoice, setShowAccentChoice] = useState(false);
   const [logWeightOpen, setLogWeightOpen] = useState(false);
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
-  const [showColourwayLaunch, setShowColourwayLaunch] = useState(false);
-  useEffect(() => {
-    try { setShowColourwayLaunch(localStorage.getItem("recomp-colourways-launch-v1") !== "seen" && hasStoredUserPreferences() && localStorage.getItem("recomp-accent-choice-complete-v1")==="1"); } catch { /* optional modal */ }
-  }, []);
-  const closeColourwayLaunch=()=>{try {localStorage.setItem("recomp-colourways-launch-v1","seen");}catch{} setShowColourwayLaunch(false);};
-  useEffect(() => { setShowAccentChoice(!hasCompletedAccentChoice()); }, []);
   const { status } = useAuth();
   const training = useTrainingData();
   const promoMonth = wrappedPromoMonth();
   const promoBounds = promoMonth ? monthBounds(promoMonth) : null;
-  const showWrapped = status === "signedIn" && !!promoBounds && !!training?.workouts.some(w => w.startedAt >= promoBounds.start && w.startedAt < promoBounds.end);
+  const showWrapped = status === "signedIn" && !viewedWrapped && !!promoBounds && !!training?.workouts.some(w => w.startedAt >= promoBounds.start && w.startedAt < promoBounds.end);
   const wrappedFinal = new Date().getDate() <= 4;
-  useEffect(() => {
-    if (status !== "signedIn") return;
-    const key = "recomp-announcement-programs-launch-oct-2026-v1";
-    try { setShowAnnouncement(localStorage.getItem(key) !== "seen"); } catch { setShowAnnouncement(true); }
-  }, [status]);
-  const dismissAnnouncement = () => {
-    try { localStorage.setItem("recomp-announcement-programs-launch-oct-2026-v1", "seen"); } catch { /* still dismiss this session */ }
-    setShowAnnouncement(false);
-  };
+  const [viewedWrapped, setViewedWrapped] = useState(false);
+  const wrappedKey = promoMonth ? `recomp-wrapped-viewed-${promoMonth.getFullYear()}-${promoMonth.getMonth()+1}` : "";
+  useEffect(() => { try { setViewedWrapped(!!wrappedKey && localStorage.getItem(wrappedKey) === "1"); } catch { setViewedWrapped(false); } }, [wrappedKey]);
+  useEffect(() => { const refresh = () => { try { setViewedWrapped(!!wrappedKey && localStorage.getItem(wrappedKey) === "1"); } catch {} }; window.addEventListener("focus", refresh); window.addEventListener("pageshow", refresh); return () => {window.removeEventListener("focus",refresh);window.removeEventListener("pageshow",refresh)}; }, [wrappedKey]);
   const firstName = preferences.name.trim().split(/\s+/)[0];
   const planned = plannedWorkout;
   const upcoming = useUpcomingWorkouts();
   const today = upcoming.find((w) => w.date === localDateKey());
   const next = upcoming.find((w) => w !== today);
-  return <Screen>{showColourwayLaunch && <ColourwayExplorer modal initial={preferences.accent} onApply={accent=>setPreferences({...preferences,accent})} onClose={closeColourwayLaunch}/>}{!showColourwayLaunch && showAnnouncement && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]"><div role="dialog" aria-modal="true" aria-labelledby="whats-new-title" className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"><div className="relative bg-primary px-5 pb-5 pt-6 text-primary-foreground"><button type="button" aria-label="Dismiss announcement" onClick={dismissAnnouncement} className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/10"><X className="size-4"/></button><div className="text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-80">What’s new</div><h2 id="whats-new-title" className="mt-1 pr-8 text-2xl font-black">Introducing Training Programs 💪</h2><p className="mt-1 text-sm font-semibold opacity-80">Your training plan, all in one place.</p></div><div className="p-5"><div className="space-y-3 text-sm font-semibold"><div>📅 Build multi-week training programs</div><div>🏋️ Start with our Push / Pull / Legs gym split</div><div>✨ Customise every workout to suit you</div><div>✅ Track your weeks and completed sessions</div><div>🏠 Start your next program workout from Home</div></div><p className="mt-5 text-sm font-extrabold">Find Programs under Build and give it a go.</p><Button variant="primary" size="lg" className="mt-4 h-12 w-full" onClick={dismissAnnouncement}>Let’s train</Button></div></div></div>}<div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
+  return <Screen><div className="relative -mx-4 -mt-[calc(1rem+env(safe-area-inset-top))] overflow-hidden bg-primary px-4 pb-10 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
     <div aria-hidden className="pointer-events-none absolute -right-16 top-12 size-56 rounded-full bg-white/[0.10] blur-3xl" />
     <div aria-hidden className="pointer-events-none absolute -left-12 bottom-0 size-40 rounded-full bg-white/[0.05] blur-3xl" />
     <header className="relative flex items-center justify-between gap-4">
@@ -74,7 +60,6 @@ function HomePage() {
       <h1 className="mt-1 text-[1.7rem] font-extrabold leading-tight">Ready to train?</h1>
     </div>
   </div>
-  {showAccentChoice && !showColourwayLaunch && <ColourwayExplorer modal initial={preferences.accent} onApply={accent=>{setPreferences({...preferences,accent});completeAccentChoice();setShowAccentChoice(false);}} onClose={()=>{completeAccentChoice();setShowAccentChoice(false);}}/>}
   <div className="relative z-10 -mt-5">{activeWorkout ? <Card className="workout-action border-primary/20 bg-card p-4 shadow-sm"><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">Workout in progress</div><h2 className="mt-1 truncate text-lg font-extrabold">{activeWorkout.name}</h2><p className="mt-1 text-xs text-muted-foreground">{activeSets.filter((set) => set.completed).length} of {activeSets.length} {activeWorkout.exercises.some((exercise) => exercise.tracking === "cardio") ? "entries" : "sets"} completed</p><Button asChild variant="primary" size="lg" className="mt-3 h-12 w-full"><Link to="/workout"><Dumbbell />Resume workout</Link></Button></Card> : today ? <TodayWorkoutCard workout={today}/> : <Card className="workout-action overflow-hidden border-primary/15 bg-card p-3.5 shadow-[0_10px_32px_-22px_var(--primary)]"><div className="mb-3.5 flex items-start justify-between"><div><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] text-primary">{planned ? "Next session" : "No plan yet"}</div><div className="mt-1 text-lg font-extrabold">{planned ? planned.name : "Start a workout"}</div></div><div className="grid size-9 place-items-center rounded-xl bg-accent text-primary"><Dumbbell className="size-[1.1rem]"/></div></div>{planned ? <><Button asChild variant="primary" size="lg" className="h-12 w-full text-xs uppercase tracking-[0.1em]"><Link to="/workout">Start workout</Link></Button><Button asChild variant="ghost" className="mt-1.5 w-full text-muted-foreground"><Link to="/build"><CalendarPlus/>Plan workout</Link></Button></> : <div className="grid grid-cols-2 gap-2"><Button asChild variant="primary" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "generate" }}><Sparkles/>Generate</Link></Button><Button asChild variant="surface" className="h-12 text-xs uppercase tracking-[0.08em]"><Link to="/build" search={{ mode: "manual" }}><Hammer/>Build</Link></Button></div>}</Card>}</div>
   {showWrapped && <Link to="/monthly-preview" className="group relative mt-4 block overflow-hidden rounded-[1.65rem] border border-primary/30 bg-primary p-[1px] shadow-[0_14px_36px_-20px_var(--primary)] transition-transform active:scale-[.985]" aria-label="Open your monthly Wrapped">
     <div className="relative overflow-hidden rounded-[calc(1.65rem-1px)] bg-primary px-5 py-5 text-primary-foreground">
@@ -98,14 +83,3 @@ function HomePage() {
   {next && <UpcomingWorkoutCard workout={next} className="mt-4 block"/>}<Button variant="surface" className="mt-4 w-full justify-start" onClick={() => setLogWeightOpen(true)}><Plus />Log weight</Button><LogWeightSheet open={logWeightOpen} onOpenChange={setLogWeightOpen} /><div className="mt-6 space-y-4"><WeeklyTraining/><TrainingPriority compact/><WorkoutSummary/><BodyweightSummary/><StepsCard/></div></Screen>;
 }
 
-function AccentChoiceCard({ accent, onPreview, onSave }: { accent: AccentPreference; onPreview: (accent: AccentPreference) => void; onSave: () => void }) {
-  const choices: { id: AccentPreference; label: string; swatch: string }[] = [
-    { id: "red", label: "Red", swatch: "oklch(0.625 0.145 24)" },
-    { id: "blue", label: "Blue", swatch: "oklch(0.60 0.155 252)" },
-    { id: "black", label: "Black", swatch: "oklch(0.20 0.01 40)" },
-  ];
-  return <Card className="mb-4 overflow-hidden p-0">
-    <div className="bg-primary px-4 py-4 text-primary-foreground"><div className="text-[0.65rem] font-bold uppercase tracking-[0.13em] opacity-80">One quick thing</div><div className="mt-1 text-xl font-extrabold">Make RECOMP'D yours</div><p className="mt-1 text-xs font-medium opacity-80">Tap a colour and watch the app change.</p></div>
-    <div className="p-3.5"><div className="grid grid-cols-3 gap-2">{choices.map((choice) => <button key={choice.id} type="button" onClick={() => onPreview(choice.id)} className={`flex min-h-16 flex-col items-center justify-center gap-2 rounded-xl border px-2 text-xs font-extrabold transition-all ${accent === choice.id ? "border-primary bg-primary/10 ring-2 ring-primary/20" : "border-border bg-secondary"}`}><span className="size-6 rounded-full border border-black/10 shadow-sm" style={{ background: choice.swatch }} />{choice.label}</button>)}</div><Button variant="primary" size="lg" className="mt-3 h-12 w-full text-xs uppercase tracking-[0.08em]" onClick={onSave}>Save my look</Button></div>
-  </Card>;
-}
