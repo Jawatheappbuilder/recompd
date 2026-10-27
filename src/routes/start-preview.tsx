@@ -10,6 +10,7 @@ export const Route = createFileRoute("/start-preview")({
 function StartPreview() {
   const [run, setRun] = useState(0);
   const [playing, setPlaying] = useState(true);
+  const [exiting, setExiting] = useState(false);
   useEffect(() => {
     const root = document.documentElement;
     const old = { accent: root.dataset.accent, dark: root.classList.contains("dark"), light: root.classList.contains("light"), scheme: root.style.colorScheme };
@@ -22,10 +23,11 @@ function StartPreview() {
   }, []);
   useEffect(() => {
     if (!playing) return;
-    const timer = window.setTimeout(() => setPlaying(false), 1550);
-    return () => window.clearTimeout(timer);
+    const exitTimer = window.setTimeout(() => setExiting(true), 1450);
+    const endTimer = window.setTimeout(() => setPlaying(false), 1880);
+    return () => { window.clearTimeout(exitTimer); window.clearTimeout(endTimer); };
   }, [run, playing]);
-  const replay = () => { setRun((n) => n + 1); setPlaying(true); };
+  const replay = () => { setExiting(false); setRun((n) => n + 1); setPlaying(true); };
   return <div className="min-h-dvh bg-background px-4 pb-10 text-foreground">
     <header className="-mx-4 bg-primary px-5 pb-7 pt-8 text-primary-foreground">
       <p className="font-display text-2xl font-black">RECOMP'D</p>
@@ -41,6 +43,6 @@ function StartPreview() {
     {["Bench Press", "Lat Pulldown", "Shoulder Press"].map((name, index) => <div key={name} className="mt-2 rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm font-extrabold">{index + 1}. {name}</p><p className="mt-1 text-xs text-muted-foreground">3 working sets</p></div>)}
     <button type="button" onClick={replay} className="mt-6 min-h-12 w-full rounded-2xl bg-primary text-sm font-extrabold text-primary-foreground">Replay start animation</button>
     <p className="mt-3 text-center text-xs text-muted-foreground">Spectrum Light · Sample data · No workout saved</p>
-    {playing && <WorkoutStartIntro key={run} name="Upper Body Builder" count={6} onDismiss={() => setPlaying(false)} />}
+    {playing && <WorkoutStartIntro key={run} name="Upper Body Builder" count={6} exiting={exiting} onDismiss={() => setPlaying(false)} />}
   </div>;
 }
