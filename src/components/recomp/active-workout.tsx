@@ -982,6 +982,32 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   </div>;
 }
 
+// QA-only demo: renders the real celebration component with sample records, without saving a workout.
+export function PbCelebrationPreview() {
+  const [scenario, setScenario] = useState<1 | 3 | 6>(3);
+  const [run, setRun] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const examples = [
+    { exerciseId: "demo-leg-curl", name: "Seated Leg Curl", set: { weight: 36, reps: 10 } },
+    { exerciseId: "demo-row", name: "Barbell Row", set: { weight: 80, reps: 8 } },
+    { exerciseId: "demo-pulldown", name: "Lat Pulldown", set: { weight: 72, reps: 12 } },
+    { exerciseId: "demo-squat", name: "Squat", set: { weight: 120, reps: 5 } },
+    { exerciseId: "demo-press", name: "Bench Press", set: { weight: 95, reps: 6 } },
+    { exerciseId: "demo-curl", name: "Dumbbell Curl", set: { weight: 22, reps: 10 } },
+  ];
+  const restart = (count: 1 | 3 | 6) => { setScenario(count); setFinished(false); setRun((n) => n + 1); };
+  return <div className="relative min-h-[100dvh] bg-background">
+    <div className="sticky top-0 z-[120] flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/95 px-3 py-2 text-foreground shadow-sm backdrop-blur">
+      <div><div className="text-xs font-black">PB animation preview</div><div className="text-[0.62rem] text-muted-foreground">Sample data · No workout saved</div></div>
+      <div className="flex items-center gap-1">
+        {([1, 3, 6] as const).map((count) => <button key={count} onClick={() => restart(count)} className={`min-h-9 rounded-lg px-2 text-xs font-bold ${scenario === count ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{count} PB{count === 1 ? "" : "s"}</button>)}
+        <button onClick={() => restart(scenario)} className="min-h-9 rounded-lg border border-border px-3 text-xs font-bold">Replay</button>
+      </div>
+    </div>
+    {finished ? <div className="flex min-h-[75dvh] flex-col items-center justify-center gap-4 px-5 text-center"><CircleCheck className="size-12 text-primary"/><h1 className="text-2xl font-black">Celebration complete</h1><p className="text-sm text-muted-foreground">The real flow now opens your workout summary. This demo doesn't create a workout.</p><Button onClick={() => restart(scenario)}>Replay celebration</Button></div> : <GoldPbCelebration key={run} prs={examples.slice(0, scenario)} onComplete={() => setFinished(true)} />}
+  </div>;
+}
+
 function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: string; name: string; set: { weight: number; reps: number } }>; onComplete: () => void }) {
   const [revealed, setRevealed] = useState(0);
   const reducedMotion = useRef(false);
