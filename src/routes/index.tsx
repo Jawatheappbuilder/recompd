@@ -47,7 +47,7 @@ function HomePage() {
   const promoMonth = wrappedPromoMonth();
   const promoBounds = promoMonth ? monthBounds(promoMonth) : null;
   const showWrapped = status === "signedIn" && !!promoBounds && !!training?.workouts.some(w => w.startedAt >= promoBounds.start && w.startedAt < promoBounds.end);
-  const wrappedFinal = new Date().getDate() <= 7;
+  const wrappedFinal = new Date().getDate() <= 4;
   useEffect(() => {
     if (status !== "signedIn") return;
     const key = "recomp-announcement-programs-launch-oct-2026-v1";
