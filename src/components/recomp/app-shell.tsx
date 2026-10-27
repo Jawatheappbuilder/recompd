@@ -25,12 +25,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onboardingRoute = pathname.startsWith("/onboarding");
   const resetRoute = pathname === "/reset-password";
   const shareRoute = pathname.startsWith("/share/");
-  const entryRoute = signedOutRoute || onboardingRoute || resetRoute || (shareRoute && status !== "signedIn");
+  const previewRoute = pathname === "/pb-preview";
+  const entryRoute = previewRoute || signedOutRoute || onboardingRoute || resetRoute || (shareRoute && status !== "signedIn");
 
   let target: "/welcome" | "/onboarding/about" | "/" | null = null;
-  if (status === "signedOut" && !signedOutRoute && !resetRoute && !shareRoute) target = "/welcome";
+  if (status === "signedOut" && !previewRoute && !signedOutRoute && !resetRoute && !shareRoute) target = "/welcome";
   if (status === "demo" && ((signedOutRoute && pathname !== "/create-account" && pathname !== "/login" && pathname !== "/forgot-password" && pathname !== "/check-email") || onboardingRoute)) target = "/";
-  if (status === "signedIn" && !resetRoute) {
+  if (status === "signedIn" && !resetRoute && !previewRoute) {
     if (!onboardingComplete && !onboardingRoute) target = "/onboarding/about";
     if (onboardingComplete && (signedOutRoute || onboardingRoute)) target = "/";
   }
@@ -42,11 +43,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     else void navigate({ to: target, replace: true });
   }, [target, navigate]);
 
-  const blocked = (status === "loading" && !resetRoute) || Boolean(target);
+  const blocked = (status === "loading" && !resetRoute && !previewRoute) || Boolean(target);
   return (
     <><div className="min-h-dvh bg-app-canvas">
       <div className="relative mx-auto min-h-dvh max-w-[430px] bg-background md:border-x md:border-border">
-        {status === "profileError" && !resetRoute ? <ProfileError onRetry={retryProfile} onSignOut={() => void signOut()} /> : blocked ? <AuthLoading /> : <>
+        {status === "profileError" && !resetRoute && !previewRoute ? <ProfileError onRetry={retryProfile} onSignOut={() => void signOut()} /> : blocked ? <AuthLoading /> : <>
           <main className={cn("min-h-dvh", !entryRoute && "pb-[calc(5.25rem+env(safe-area-inset-bottom))]")}>{children}</main>
           {!entryRoute && <BottomNavigation />}
         </>}
