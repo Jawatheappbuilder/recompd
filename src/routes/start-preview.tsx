@@ -24,11 +24,12 @@ function StartPreview() {
   useEffect(() => {
     if (!playing) return;
     const exitTimer = window.setTimeout(() => setExiting(true), 1450);
-    const endTimer = window.setTimeout(() => setPlaying(false), 1880);
+    const endTimer = window.setTimeout(() => setPlaying(false), 2350);
     return () => { window.clearTimeout(exitTimer); window.clearTimeout(endTimer); };
   }, [run, playing]);
   const replay = () => { setExiting(false); setRun((n) => n + 1); setPlaying(true); };
   return <div className="min-h-dvh bg-background px-4 pb-10 text-foreground">
+    <style>{`@keyframes recompDemoExercise{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}.recomp-demo-cascade>div{animation:recompDemoExercise .52s ease-out both}@media(prefers-reduced-motion:reduce){.recomp-demo-cascade>div{animation:none!important}}`}</style>
     <header className="-mx-4 bg-primary px-5 pb-7 pt-8 text-primary-foreground">
       <p className="font-display text-2xl font-black">RECOMP'D</p>
       <p className="mt-6 text-xs font-bold uppercase tracking-widest text-primary-foreground/70">Workout in progress · Demo</p>
@@ -40,7 +41,7 @@ function StartPreview() {
       <div><p className="text-lg font-black">6</p><p className="text-xs text-muted-foreground">Exercises</p></div>
     </div>
     <h2 className="mt-6 text-sm font-black">Up next</h2>
-    {["Bench Press", "Lat Pulldown", "Shoulder Press"].map((name, index) => <div key={name} className="mt-2 rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm font-extrabold">{index + 1}. {name}</p><p className="mt-1 text-xs text-muted-foreground">3 working sets</p></div>)}
+    <div className={exiting ? "recomp-demo-cascade" : ""}>{["Bench Press", "Lat Pulldown", "Shoulder Press"].map((name, index) => <div key={name} style={exiting ? {animationDelay: `${70 + index * 140}ms`} : undefined} className="mt-2 rounded-2xl border border-border bg-card px-4 py-4"><p className="text-sm font-extrabold">{index + 1}. {name}</p><p className="mt-1 text-xs text-muted-foreground">3 working sets</p></div>)}</div>
     <button type="button" onClick={replay} className="mt-6 min-h-12 w-full rounded-2xl bg-primary text-sm font-extrabold text-primary-foreground">Replay start animation</button>
     <p className="mt-3 text-center text-xs text-muted-foreground">Spectrum Light · Sample data · No workout saved</p>
     {playing && <WorkoutStartIntro key={run} name="Upper Body Builder" count={6} exiting={exiting} onDismiss={() => setPlaying(false)} />}
