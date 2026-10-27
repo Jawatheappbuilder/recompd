@@ -57,6 +57,7 @@ function ProgressPage() {
               <div className="mt-3 flex items-center justify-between"><span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="size-4"/>{programStats.completed} complete</span><Link to="/programs" search={{programId:program.id}} className="flex items-center gap-1 text-xs font-extrabold text-primary">View program <ChevronRight className="size-4"/></Link></div>
             </div>
           </section>}
+          <Link to="/monthly-preview" className="flex items-center justify-between rounded-2xl border border-primary/20 bg-card p-4 shadow-sm"><div><div className="text-[10px] font-black uppercase tracking-widest text-primary">Your month in strength</div><div className="mt-1 text-lg font-black">Monthly recap</div><p className="text-xs text-muted-foreground">Your real training, highlights and comparisons</p></div><ChevronRight className="text-primary"/></Link>
           <PeriodSelector value={period} options={periods} onChange={setPeriod} className="relative z-10 border-primary/15 bg-card p-1 shadow-sm" />
           {data.workouts.length ? (
             <>
