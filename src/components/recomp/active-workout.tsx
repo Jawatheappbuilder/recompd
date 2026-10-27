@@ -822,6 +822,7 @@ function recalledReplacements(fromId: string) { const choices = replacementMemor
 function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   const [celebrating, setCelebrating] = useState(true);
   const [showStats, setShowStats] = useState(false);
+  const [showPbCelebration, setShowPbCelebration] = useState(false);
   const [expandedExercises, setExpandedExercises] = useState<string[]>([]);
   const { user } = useAuth();
   const [sharedToFeed, setSharedToFeed] = useState(false);
@@ -890,18 +891,25 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   }
 
   useEffect(() => {
+    // Wait for loaded training history so records don't disappear on the first render.
+    if (!data) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
       setCelebrating(false);
       setShowStats(true);
+      setShowPbCelebration(sharePrs.length > 0);
       return;
     }
     const statsTimer = window.setTimeout(() => setShowStats(true), 500);
-    const finishTimer = window.setTimeout(() => setCelebrating(false), 1450);
+    const finishTimer = window.setTimeout(() => {
+      setCelebrating(false);
+      setShowPbCelebration(sharePrs.length > 0);
+    }, 1450);
     return () => { window.clearTimeout(statsTimer); window.clearTimeout(finishTimer); };
-  }, []);
+  }, [data, sharePrs.length]);
 
   if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
+  if (showPbCelebration && sharePrs.length > 0) return <GoldPbCelebration prs={sharePrs} onComplete={() => setShowPbCelebration(false)} />;
 
   return <div className="animate-in fade-in pb-8 duration-500">
     <section className="-mx-4 rounded-b-[2rem] bg-primary px-5 pb-7 pt-7 text-primary-foreground shadow-sm">
@@ -971,6 +979,48 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
       <p className="text-xs text-muted-foreground">{result.workout.notes?.reduce((count, note) => count + note.checked.filter((id) => note.checklist.some((item) => item.id === id)).length, 0)} of {result.workout.notes?.reduce((count, note) => count + note.checklist.length, 0)} checklist activities completed</p>
     </section>}
     {shareWorkout.exercises.length > 0 && <ShareWorkoutButton workout={{ ...shareWorkout, notes: [] }} prs={sharePrs} className="mt-5 w-full" />}
+  </div>;
+}
+
+function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: string; name: string; set: { weight: number; reps: number } }>; onComplete: () => void }) {
+  const [revealed, setRevealed] = useState(0);
+  const reducedMotion = useRef(false);
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion.current) {
+      setRevealed(prs.length);
+      return;
+    }
+    const timers = prs.map((_, index) => window.setTimeout(() => setRevealed(index + 1), 450 + index * 420));
+    return () => timers.forEach(window.clearTimeout);
+  }, [prs.length]);
+
+  useEffect(() => {
+    // Keep the reward on screen long enough to enjoy; no individual card navigation.
+    const timeout = window.setTimeout(onComplete, reducedMotion.current ? 2400 : Math.max(3600, 1600 + prs.length * 550));
+    return () => window.clearTimeout(timeout);
+  }, [onComplete, prs.length]);
+
+  return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col overflow-hidden bg-[#C99730] px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-10 text-[#362006]" role="status" aria-label={`${prs.length} new personal bests`}>
+    <style>{`@keyframes recompPbBurst {0%{opacity:0;transform:scale(.66) translateY(22px);filter:blur(5px)}65%{opacity:1;transform:scale(1.045) translateY(-4px);filter:blur(0)}100%{opacity:1;transform:scale(1) translateY(0)}} @keyframes recompPbGlow {0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.48;transform:scale(1.12)}} @media (prefers-reduced-motion:reduce){.recomp-pb-burst{animation:none!important}}`}</style>
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_10%,#FFE8A0_0%,#E6B956_38%,#B9801E_100%)]" />
+    <div className="pointer-events-none absolute -left-20 -top-24 size-72 rounded-full bg-[#FFF1BA]/30 blur-3xl" />
+    <div className="relative z-10 mx-auto w-full max-w-lg">
+      <div className="mx-auto grid size-16 place-items-center rounded-full border border-[#FFF1BA]/75 bg-[#FFF1BA]/45 shadow-[0_0_65px_rgba(255,241,186,.65)]"><span className="text-4xl" aria-hidden="true">★</span></div>
+      <p className="mt-5 text-center text-[0.7rem] font-black uppercase tracking-[0.23em] text-[#744613]">Your hard work paid off</p>
+      <h1 className="mt-2 text-center text-[clamp(2rem,9vw,3.3rem)] font-black leading-[1.05] tracking-tight">NEW PERSONAL<br/>BEST{prs.length > 1 ? "S" : ""}!</h1>
+      <p className="mt-3 text-center text-sm font-bold text-[#704514]">{prs.length === 1 ? "One new record unlocked" : `${prs.length} records unlocked in one workout`}</p>
+      <div className="mt-7 max-h-[min(48dvh,460px)] space-y-3 overflow-y-auto pb-3">
+        {prs.map((pr, index) => <div key={pr.exerciseId} aria-hidden={index >= revealed} className={`recomp-pb-burst relative rounded-[1.4rem] border border-[#FFF5CB]/75 bg-gradient-to-br from-[#FFF6CE] via-[#FCE5A1] to-[#EDC66B] p-4 shadow-[0_8px_20px_rgba(93,49,1,.17)] ${index < revealed ? "opacity-100" : "opacity-0"}`} style={index < revealed && !reducedMotion.current ? { animation: "recompPbBurst 650ms cubic-bezier(.2,1.4,.4,1) both" } : undefined}>
+          <div className="flex items-center justify-between gap-2"><span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-[#946019]">Personal best #{index + 1}</span><span className="text-xl text-[#A66B19]" aria-hidden="true">✦</span></div>
+          <p className="mt-1 text-base font-extrabold leading-tight">{pr.name}</p>
+          <p className="mt-1 text-[1.8rem] font-black tabular-nums tracking-tight">{pr.set.weight > 0 ? `${pr.set.weight} kg × ${pr.set.reps}` : `${pr.set.reps} reps`}</p>
+        </div>)}
+      </div>
+    </div>
+    <div className="relative z-10 mt-auto pt-5 text-center">
+      <button type="button" onClick={onComplete} className="min-h-12 w-full max-w-lg rounded-2xl bg-[#3D280E] px-6 py-3 text-sm font-black text-[#FFF2CB] shadow-lg transition-transform active:scale-[.98]">View workout summary</button>
+    </div>
   </div>;
 }
 
