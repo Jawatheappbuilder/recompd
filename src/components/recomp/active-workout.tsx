@@ -892,8 +892,8 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
   }
 
   useEffect(() => {
-    // Wait for loaded training history so records don't disappear on the first render.
-    if (!data) return;
+    // Training history can be unavailable during sync or offline. Never trap the
+    // user on the completion animation while waiting for cloud data.
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
       setCelebrating(false);
