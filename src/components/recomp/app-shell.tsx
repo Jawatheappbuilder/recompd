@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onboardingRoute = pathname.startsWith("/onboarding");
   const resetRoute = pathname === "/reset-password";
   const shareRoute = pathname.startsWith("/share/");
-  const previewRoute = pathname === "/pb-preview" || pathname === "/start-preview";
+  const previewRoute = pathname === "/pb-preview" || pathname === "/start-preview" || pathname === "/monthly-preview";
   const entryRoute = previewRoute || signedOutRoute || onboardingRoute || resetRoute || (shareRoute && status !== "signedIn");
 
   let target: "/welcome" | "/onboarding/about" | "/" | null = null;
