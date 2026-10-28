@@ -1,1 +1,5 @@
 project_id = "apnclikxqjejnbsznpay"
+# Apple Shortcuts send a restricted sync token, not a Supabase JWT.
+# Function verifies JWT for token management and hashes sync tokens for daily writes.
+[functions.apple-health-sync]
+verify_jwt = false
