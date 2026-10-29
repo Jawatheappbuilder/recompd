@@ -891,25 +891,31 @@ function WorkoutSummary({ result }: { result: FinishedWorkout }) {
     finally { setSharingToFeed(false); }
   }
 
+  // Keep live PRs in a ref: syncing training data must never restart the
+  // celebration timeout (which previously could leave this screen stuck).
+  const sharePrsRef = useRef(sharePrs);
+  sharePrsRef.current = sharePrs;
+  const advanceCelebration = () => {
+    setCelebrating(false);
+    setShowPbCelebration(sharePrsRef.current.length > 0);
+  };
+
   useEffect(() => {
-    // Training history can be unavailable during sync or offline. Never trap the
-    // user on the completion animation while waiting for cloud data.
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) {
-      setCelebrating(false);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setShowStats(true);
-      setShowPbCelebration(sharePrs.length > 0);
+      setCelebrating(false);
+      setShowPbCelebration(sharePrsRef.current.length > 0);
       return;
     }
     const statsTimer = window.setTimeout(() => setShowStats(true), 500);
     const finishTimer = window.setTimeout(() => {
       setCelebrating(false);
-      setShowPbCelebration(sharePrs.length > 0);
+      setShowPbCelebration(sharePrsRef.current.length > 0);
     }, 1450);
     return () => { window.clearTimeout(statsTimer); window.clearTimeout(finishTimer); };
-  }, [data, sharePrs.length]);
+  }, []);
 
-  if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} />;
+  if (celebrating) return <WorkoutCompleteCelebration result={result} showStats={showStats} prs={sharePrs.length} onContinue={advanceCelebration} />;
   if (showPbCelebration && sharePrs.length > 0) return <GoldPbCelebration prs={sharePrs} onComplete={() => setShowPbCelebration(false)} />;
 
   return <div className="recomp-summary-reveal animate-in fade-in pb-8 duration-500">
@@ -1087,7 +1093,7 @@ function GoldPbCelebration({ prs, onComplete }: { prs: Array<{ exerciseId: strin
 
 function SummaryMetric({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-border bg-card p-4"><div className="text-xl font-black tabular-nums">{value}</div><div className="mt-1 text-[0.68rem] font-medium text-muted-foreground">{label}</div></div>; }
 
-function WorkoutCompleteCelebration({ result, showStats, prs }: { result: FinishedWorkout; showStats: boolean; prs: number }) {
+function WorkoutCompleteCelebration({ result, showStats, prs, onContinue }: { result: FinishedWorkout; showStats: boolean; prs: number; onContinue: () => void }) {
   const circumference = 2 * Math.PI * 54;
   return <div className="relative -mx-4 flex min-h-[calc(100dvh-7rem)] flex-col items-center justify-center overflow-hidden bg-background px-5 py-8 text-center">
     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_55%)] opacity-[0.07]" />
@@ -1107,6 +1113,7 @@ function WorkoutCompleteCelebration({ result, showStats, prs }: { result: Finish
       <CelebrationStat value={result.volume ? Math.round(result.volume).toLocaleString() : "—"} label={result.volume ? "kg volume" : "Volume"}/>
     </div>
     {prs > 0 && <div className={cn("mt-4 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.12em] text-primary transition-all delay-300 duration-500", showStats ? "scale-100 opacity-100" : "scale-90 opacity-0")}>New personal record{prs > 1 ? "s" : ""} · {prs}</div>}
+    <button type="button" onClick={onContinue} className="relative mt-6 min-h-11 rounded-xl border border-border bg-card px-5 py-2 text-sm font-bold text-foreground transition-colors hover:bg-secondary">Continue to results</button>
   </div>;
 }
 
